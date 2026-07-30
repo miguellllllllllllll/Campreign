@@ -11,6 +11,7 @@ import {
   type Encounter,
 } from '../lib/dnd/encounter.ts'
 import type { AttackOutcome, Combatant, GridPosition, Team } from '../types/combat.ts'
+import type { Rng } from '../types/dice.ts'
 
 interface CombatStore {
   encounter: Encounter | null
@@ -18,11 +19,12 @@ interface CombatStore {
   lastOutcome: AttackOutcome | null
   /** Why the last attempted action was rejected, cleared as soon as one lands. */
   refusal: string | null
-  start: (roster: readonly Combatant[]) => void
+  /** `rng` is injectable so a test can pin initiative and the foe's swing. */
+  start: (roster: readonly Combatant[], rng?: Rng) => void
   move: (to: GridPosition) => boolean
   attack: (args: { targetId: string; attackId: string }) => AttackOutcome | null
   /** Ends the player's turn and plays out every enemy turn until it is the player's again. */
-  finishTurn: () => void
+  finishTurn: (rng?: Rng) => void
   reset: () => void
 }
 
@@ -31,10 +33,10 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   lastOutcome: null,
   refusal: null,
 
-  start: (roster) => {
+  start: (roster, rng = Math.random) => {
     // The goblin can win initiative, so hand control back to the player before
     // the board is ever shown — otherwise there is nothing they can press.
-    const played = playFoeTurns(createEncounter(roster))
+    const played = playFoeTurns(createEncounter(roster, rng), rng)
     set({ encounter: played.encounter, lastOutcome: played.outcome, refusal: null })
   },
 
@@ -62,11 +64,11 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     return result.outcome
   },
 
-  finishTurn: () => {
+  finishTurn: (rng = Math.random) => {
     const { encounter } = get()
     if (encounter === null) return
 
-    const played = playFoeTurns(endTurn(encounter))
+    const played = playFoeTurns(endTurn(encounter), rng)
     set({
       encounter: played.encounter,
       lastOutcome: played.outcome ?? get().lastOutcome,
@@ -87,7 +89,10 @@ function activeTeam(encounter: Encounter): Team | undefined {
  * store rather than the component so the player never sees a board they cannot
  * act on.
  */
-function playFoeTurns(encounter: Encounter): {
+function playFoeTurns(
+  encounter: Encounter,
+  rng: Rng = Math.random,
+): {
   encounter: Encounter
   outcome: AttackOutcome | null
 } {
@@ -95,9 +100,12 @@ function playFoeTurns(encounter: Encounter): {
   let outcome: AttackOutcome | null = null
 
   while (activeTeam(current) === 'foes' && encounterWinner(current) === null) {
-    const enemy = takeEnemyTurn(current)
+    const enemy = takeEnemyTurn(current, rng)
     outcome = enemy.outcome ?? outcome
     const after = endTurn(enemy.encounter)
+    // endTurn refuses to advance once the fight is decided, which is how a foe
+    // can still be the active combatant here: it just killed the hero. There is
+    // no turn to hand back, and the UI shows the defeat rather than a board.
     if (after === enemy.encounter) return { encounter: enemy.encounter, outcome }
     current = after
   }
