@@ -23,8 +23,17 @@ export interface CreationAnswers {
   flawId: string
   equipmentChoice: EquipmentChoice
   auraId: AuraId
-  /** Only spellcasting classes offer a pick, so this stays optional. */
-  spellId?: string
+  /**
+   * The high-level magic style a caster picked. Only casters are asked, so it
+   * stays optional; it seeds the two lists below rather than replacing them.
+   */
+  magicStyleId?: string
+  /**
+   * The spells actually taken. Written when a style is chosen and rewritten if
+   * the player customises, so these — not the style — are the truth.
+   */
+  cantripIds?: readonly string[]
+  preparedSpellIds?: readonly string[]
 }
 
 /** Everything gathered so far, before the wizard is finished. */
@@ -103,7 +112,11 @@ export interface Character {
   personality: Personality
   cosmetics: Cosmetics
   spellcasting?: Spellcasting
-  chosenSpells?: string[]
+  /** Cantrips never run out; prepared spells cost a slot. Absent for non-casters. */
+  cantrips?: string[]
+  preparedSpells?: string[]
+  /** Which magic style produced the lists, kept so the sheet can name it. */
+  magicStyleId?: string
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

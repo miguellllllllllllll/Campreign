@@ -35,9 +35,13 @@ import { CharacterCard } from './CharacterCard.tsx'
 import { ExportPdfButton } from './ExportPdfButton.tsx'
 import { HeroPreview } from './HeroPreview.tsx'
 import { QuestionStep, type Choice } from './QuestionStep.tsx'
-import { CREATION_STEPS, choicesFor, stepAnswered } from '../../content/creationQuestions.ts'
+import { choicesFor, stepAnswered, stepsFor } from '../../content/creationQuestions.ts'
 import type { CreationField, CreationFieldId } from '../../content/creationQuestions.ts'
-import { previewCharacter } from '../../lib/dnd/characterBuilder.ts'
+import { SpellSelectionWizard, type SpellSelection } from './SpellSelectionWizard.tsx'
+import { magicStyleById } from '../../content/spellPresets.ts'
+import { previewCharacter, resolveSpellSelection } from '../../lib/dnd/characterBuilder.ts'
+import { getSpellcastingLimits } from '../../lib/dnd/spellcasting.ts'
+import { abilityModifier } from '../../lib/dnd/stats.ts'
 import { AURA_PRESETS } from '../../lib/dnd/presets.ts'
 import { useCharacterStore } from '../../stores/characterStore.ts'
 import type { Character, CreationAnswers, CreationDraft } from '../../types/character.ts'
@@ -80,7 +84,7 @@ const OPTION_ICONS: Record<string, LucideIcon> = {
 const PREVIEW_META = { id: 'preview', now: 0 }
 
 function isComplete(draft: CreationDraft): draft is CreationAnswers {
-  return CREATION_STEPS.every((step) => stepAnswered(step, draft))
+  return stepsFor(draft).every((step) => stepAnswered(step, draft))
 }
 
 export function CreatorWizard() {
@@ -91,12 +95,39 @@ export function CreatorWizard() {
   const [name, setName] = useState('')
   const [hero, setHero] = useState<Character | null>(null)
 
-  const step = CREATION_STEPS[stepIndex]
-  if (step === undefined) throw new Error(`No creation step at index ${stepIndex}`)
+  // Fighters and rogues have no magic step, so the sequence depends on the draft.
+  // Changing class can shorten it under our feet; clamp rather than crash.
+  const steps = stepsFor(draft)
+  const safeIndex = Math.min(stepIndex, steps.length - 1)
+  const step = steps[safeIndex]
+  if (step === undefined) throw new Error(`No creation step at index ${safeIndex}`)
 
-  const isLastStep = stepIndex === CREATION_STEPS.length - 1
-  const canAdvance = stepAnswered(step, draft)
+  const isLastStep = safeIndex === steps.length - 1
   const preview = previewCharacter(draft, name, PREVIEW_META)
+  const selection = resolveSpellSelection(draft)
+  const onMagicStep = step.id === 'magic'
+
+  const limits =
+    preview === null || draft.classId === undefined
+      ? null
+      : getSpellcastingLimits(
+          draft.classId,
+          abilityModifier(preview.scores.wis),
+          abilityModifier(preview.scores.int),
+        )
+
+  /**
+   * The magic step is only satisfied once the spell lists are actually legal, so
+   * nobody can half-customise and walk away holding two cantrips. A paladin's
+   * limits are zero, which passes without asking them for anything.
+   */
+  const spellsComplete =
+    !onMagicStep
+    || limits === null
+    || (selection.cantripIds.length === limits.cantripsCount
+      && selection.preparedSpellIds.length === limits.preparedSpellsCount)
+
+  const canAdvance = stepAnswered(step, draft) && spellsComplete
 
   /**
    * Records an answer and drops any later answer it invalidates: a new class
@@ -106,12 +137,34 @@ export function CreatorWizard() {
     setDraft((previous) => {
       const next = { ...previous, [fieldId]: value } as CreationDraft
       if (fieldId === 'classId') {
-        delete next.spellId
+        delete next.magicStyleId
+        delete next.cantripIds
+        delete next.preparedSpellIds
         delete next.equipmentChoice
       }
       if (fieldId === 'backgroundId') delete next.flawId
+      // Choosing a style is what fills the spell lists in. Any earlier
+      // hand-picked list is dropped, or the new style would not take effect.
+      if (fieldId === 'magicStyleId') {
+        const style = magicStyleById(value)
+        if (style === undefined) {
+          delete next.cantripIds
+          delete next.preparedSpellIds
+        } else {
+          next.cantripIds = [...style.cantripIds]
+          next.preparedSpellIds = [...style.preparedSpellIds]
+        }
+      }
       return next
     })
+  }
+
+  function changeSpells(next: SpellSelection) {
+    setDraft((previous) => ({
+      ...previous,
+      cantripIds: next.cantripIds,
+      preparedSpellIds: next.preparedSpellIds,
+    }))
   }
 
   function forge() {
@@ -172,16 +225,16 @@ export function CreatorWizard() {
       </div>
 
       <ol className="flex flex-wrap gap-2" aria-label="Progress">
-        {CREATION_STEPS.map((candidate, index) => (
+        {steps.map((candidate, index) => (
           <li
             key={candidate.id}
-            aria-current={index === stepIndex ? 'step' : undefined}
+            aria-current={index === safeIndex ? 'step' : undefined}
             className={cn(
               'rounded-full border px-3 py-1 font-serif text-xs font-semibold tracking-wide transition-colors',
-              index === stepIndex &&
+              index === safeIndex &&
                 'border-amber-torch bg-amber-torch/10 text-amber-torch shadow-torch',
-              index !== stepIndex && stepAnswered(candidate, draft) && 'border-moss/50 text-moss',
-              index !== stepIndex && !stepAnswered(candidate, draft) && 'border-edge text-muted',
+              index !== safeIndex && stepAnswered(candidate, draft) && 'border-moss/50 text-moss',
+              index !== safeIndex && !stepAnswered(candidate, draft) && 'border-edge text-muted',
             )}
           >
             {index + 1}. {candidate.title}
@@ -207,6 +260,19 @@ export function CreatorWizard() {
             {step.fields.map((field) => (
               <FieldCard key={field.id} field={field} draft={draft} onAnswer={answer} />
             ))}
+
+            {/* Step 3b: what the chosen style actually got you, and a way in. */}
+            {onMagicStep && preview !== null && draft.classId !== undefined
+              && (draft.classId === 'paladin' || draft.magicStyleId !== undefined) && (
+              <SpellSelectionWizard
+                classId={draft.classId}
+                cantripIds={selection.cantripIds}
+                preparedSpellIds={selection.preparedSpellIds}
+                scores={preview.scores}
+                spellcasting={preview.spellcasting}
+                onChange={changeSpells}
+              />
+            )}
           </motion.div>
 
           {isLastStep && canAdvance && (
@@ -231,14 +297,14 @@ export function CreatorWizard() {
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            {stepIndex > 0 && (
-              <FantasyButton variant="ghost" onClick={() => setStepIndex(stepIndex - 1)}>
+            {safeIndex > 0 && (
+              <FantasyButton variant="ghost" onClick={() => setStepIndex(safeIndex - 1)}>
                 <ArrowLeft aria-hidden />
                 Back
               </FantasyButton>
             )}
             {!isLastStep && (
-              <FantasyButton disabled={!canAdvance} onClick={() => setStepIndex(stepIndex + 1)}>
+              <FantasyButton disabled={!canAdvance} onClick={() => setStepIndex(safeIndex + 1)}>
                 Next
                 <ArrowRight aria-hidden />
               </FantasyButton>

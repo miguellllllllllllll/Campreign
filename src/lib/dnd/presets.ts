@@ -162,20 +162,9 @@ export const CLASS_PRESETS: Record<ClassId, ClassPreset> = {
     scores: { str: 8, dex: 14, con: 13, int: 15, wis: 12, cha: 10 },
     savingThrows: ['int', 'wis'],
     skillProficiencies: ['arcana', 'investigation'],
+    // Fire Bolt is no longer granted here: cantrips are chosen in creation, so
+    // handing one over for free would put a spell on the sheet nobody picked.
     attacks: [
-      {
-        id: 'fireBolt',
-        name: 'Fire Bolt',
-        kind: 'spell',
-        ability: 'int',
-        proficient: true,
-        damage: '1d10',
-        damageType: 'fire',
-        addAbilityToDamage: false,
-        ranged: true,
-        rangeSquares: 8,
-        description: 'Fling a mote of fire at anything you can see.',
-      },
       {
         id: 'quarterstaff',
         name: 'Quarterstaff',
@@ -368,21 +357,9 @@ export const CLASS_PRESETS: Record<ClassId, ClassPreset> = {
     scores: { str: 13, dex: 8, con: 14, int: 10, wis: 15, cha: 12 },
     savingThrows: ['wis', 'cha'],
     skillProficiencies: ['medicine', 'insight'],
-    attacks: [
-      {
-        id: 'sacredFlame',
-        name: 'Sacred Flame',
-        kind: 'spell',
-        ability: 'wis',
-        proficient: true,
-        damage: '1d8',
-        damageType: 'radiant',
-        addAbilityToDamage: false,
-        ranged: true,
-        rangeSquares: 8,
-        description: 'Call down a column of holy fire on a foe.',
-      },
-    ],
+    // No class attack: a cleric's offensive magic is whichever cantrip they
+    // chose, and their weapon comes from the loadout.
+    attacks: [],
     loadouts: {
       defensive: {
         id: 'defensive',

@@ -4,6 +4,7 @@ import {
   CLASS_PRESETS,
   RACE_PRESETS,
 } from '../lib/dnd/presets.ts'
+import { magicStylesFor } from './spellPresets.ts'
 import type { BackgroundId, ClassId, CreationDraft } from '../types/character.ts'
 
 /**
@@ -18,7 +19,7 @@ export type CreationFieldId =
   | 'backgroundId'
   | 'flawId'
   | 'equipmentChoice'
-  | 'spellId'
+  | 'magicStyleId'
   | 'auraId'
 
 export interface CreationChoice {
@@ -125,20 +126,27 @@ export const CREATION_STEPS: readonly CreationStepDef[] = [
     ],
   },
   {
+    id: 'magic',
+    title: 'Your Magic',
+    subtitle: 'Pick the shape of your power. The individual spells are chosen for you.',
+    fields: [
+      {
+        id: 'magicStyleId',
+        question: 'Which magic is yours?',
+        helper:
+          'Choose a style and you get a legal, playable spell list straight away. You can open it up and swap spells afterwards if you want to.',
+      },
+    ],
+  },
+  {
     id: 'loadout',
     title: 'Loadout & Visual Identity',
-    subtitle: 'What you carry, what you cast, and what colour you burn on the map.',
+    subtitle: 'What you carry and what colour you burn on the map.',
     fields: [
       {
         id: 'equipmentChoice',
         question: 'How do you want to be equipped?',
         helper: 'Survive longer or hit harder. This one changes your numbers.',
-      },
-      {
-        id: 'spellId',
-        question: 'Which magic is yours?',
-        helper: 'Your class casts, so pick the trick you reach for first.',
-        optional: true,
       },
       {
         id: 'auraId',
@@ -170,13 +178,30 @@ export function flawChoices(backgroundId: BackgroundId | undefined): readonly Cr
   }))
 }
 
-export function spellChoices(classId: ClassId | undefined): readonly CreationChoice[] {
-  if (classId === undefined) return []
-  return (CLASS_PRESETS[classId].spellcasting?.options ?? []).map((option) => ({
-    id: option.id,
-    label: option.name,
-    tagline: option.tagline,
+export function magicStyleChoices(classId: ClassId | undefined): readonly CreationChoice[] {
+  if (classId !== 'wizard' && classId !== 'cleric') return []
+  return magicStylesFor(classId).map((style) => ({
+    id: style.id,
+    label: style.title,
+    tagline: style.description,
   }))
+}
+
+/**
+ * Whether the magic step has anything to say to this class. Paladins are
+ * included deliberately: they get no spells at 1st level, and the step exists to
+ * explain that rather than to vanish and leave them wondering.
+ */
+export function hasMagicStep(classId: ClassId | undefined): boolean {
+  return classId === 'wizard' || classId === 'cleric' || classId === 'paladin'
+}
+
+/**
+ * The steps this particular character actually walks through. Fighters and rogues
+ * never see the magic step at all.
+ */
+export function stepsFor(draft: CreationDraft): readonly CreationStepDef[] {
+  return CREATION_STEPS.filter((step) => step.id !== 'magic' || hasMagicStep(draft.classId))
 }
 
 /** The options a field is currently offering, static or derived. */
@@ -190,8 +215,8 @@ export function choicesFor(
       return flawChoices(draft.backgroundId)
     case 'equipmentChoice':
       return loadoutChoices(draft.classId)
-    case 'spellId':
-      return spellChoices(draft.classId)
+    case 'magicStyleId':
+      return magicStyleChoices(draft.classId)
     default:
       return []
   }

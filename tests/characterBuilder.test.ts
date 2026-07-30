@@ -10,8 +10,11 @@ import {
   damageNotation,
   spellAttackBonus,
   spellSaveDc,
+  resolveSpellSelection,
 } from '../src/lib/dnd/characterBuilder.ts'
 import { ARMORS, BACKGROUND_PRESETS, CLASS_PRESETS } from '../src/lib/dnd/presets.ts'
+import { magicStyleById } from '../src/content/spellPresets.ts'
+import { SPELLS_BY_ID } from '../src/content/spells.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 
 const meta = { id: 'test-id', now: 1_700_000_000_000 }
@@ -153,7 +156,8 @@ test('a tiefling paladin has the numbers before it has the spells', () => {
   assert.equal(hero.spellcasting?.saveDc, 12, '8 + 2 proficiency + 2 cha')
   assert.equal(hero.spellcasting?.attackBonus, 4)
   assert.ok(hero.spellcasting?.note !== undefined, 'the level-2 caveat is spelled out')
-  assert.equal(hero.chosenSpells, undefined, 'there is no spell list to pick from yet')
+  assert.equal(hero.cantrips, undefined, 'a level 1 paladin has no cantrips at all')
+  assert.equal(hero.preparedSpells, undefined, 'and no prepared spells either')
 })
 
 test('the background trains two skills and hands over a trinket', () => {
@@ -215,19 +219,23 @@ test('the aura is cosmetic and lands on the character as raw colour', () => {
 
 test('a chosen attack cantrip becomes a usable attack', () => {
   const hero = buildCharacter(
-    answers({ classId: 'wizard', spellId: 'rayOfFrost' }),
+    answers({ classId: 'wizard', cantripIds: ['rayOfFrost'] }),
     'Alarin',
     meta,
   )
 
-  assert.deepEqual(hero.chosenSpells, ['rayOfFrost'])
+  assert.deepEqual(hero.cantrips, ['rayOfFrost'])
   assert.ok(hero.attacks.some((attack) => attack.id === 'rayOfFrost'))
 })
 
 test('a chosen utility cantrip is remembered without becoming an attack', () => {
-  const hero = buildCharacter(answers({ classId: 'cleric', spellId: 'guidance' }), 'Doran', meta)
+  const hero = buildCharacter(
+    answers({ classId: 'cleric', cantripIds: ['guidance'] }),
+    'Doran',
+    meta,
+  )
 
-  assert.deepEqual(hero.chosenSpells, ['guidance'])
+  assert.deepEqual(hero.cantrips, ['guidance'])
   assert.ok(!hero.attacks.some((attack) => attack.id === 'guidance'))
 })
 
@@ -239,14 +247,15 @@ test('attack and damage bonuses use the right ability', () => {
   assert.equal(damageNotation(longsword, fighter.scores), '1d8+2')
 
   const wizard = buildCharacter(answers({ classId: 'wizard' }), 'Alarin', meta)
-  const fireBolt = CLASS_PRESETS.wizard.attacks[0]
+  // Fire Bolt now lives in the spell registry, not the class's granted attacks.
+  const fireBolt = SPELLS_BY_ID.fireBolt?.attack
   assert.ok(fireBolt)
   assert.equal(attackBonus(fireBolt, wizard.scores, 1), 5, '+3 int, +2 proficiency')
   assert.equal(damageNotation(fireBolt, wizard.scores), '1d10', 'cantrips add no ability damage')
 })
 
 test('the same answers always build an identical character', () => {
-  const same = answers({ classId: 'cleric', raceId: 'halfling', spellId: 'light' })
+  const same = answers({ classId: 'cleric', raceId: 'halfling', cantripIds: ['light'] })
   const first = buildCharacter(same, 'Pip', meta)
   const second = buildCharacter(same, 'Pip', meta)
   assert.deepEqual(first, second)
@@ -269,4 +278,69 @@ test('the preview shows real numbers, not placeholders', () => {
 
   assert.equal(preview?.ac, built.ac)
   assert.equal(preview?.maxHp, built.maxHp)
+})
+
+test('a magic style fills the spell lists without being asked twice', () => {
+  const hero = buildCharacter(answers({ classId: 'wizard', magicStyleId: 'pyromancer' }), 'Vae', meta)
+  const style = magicStyleById('pyromancer')
+
+  assert.deepEqual(hero.cantrips, [...(style?.cantripIds ?? [])])
+  assert.deepEqual(hero.preparedSpells, [...(style?.preparedSpellIds ?? [])])
+  assert.equal(hero.magicStyleId, 'pyromancer')
+})
+
+test('hand-picked spells override the style they came from', () => {
+  const hero = buildCharacter(
+    answers({ classId: 'cleric', magicStyleId: 'healersMercy', cantripIds: ['sacredFlame'] }),
+    'Doran',
+    meta,
+  )
+
+  assert.deepEqual(hero.cantrips, ['sacredFlame'], 'the explicit list wins')
+  // The prepared list was never touched, so it still comes from the style.
+  assert.deepEqual(hero.preparedSpells, [...(magicStyleById('healersMercy')?.preparedSpellIds ?? [])])
+})
+
+test('picking a cantrip the class already grants does not double the attack', () => {
+  const hero = buildCharacter(answers({ classId: 'wizard', cantripIds: ['fireBolt'] }), 'Vae', meta)
+  const fireBolts = hero.attacks.filter((attack) => attack.id === 'fireBolt')
+
+  assert.equal(fireBolts.length, 1, 'Fire Bolt appears once, not twice')
+})
+
+test('every attack on a built character has a unique id', () => {
+  const hero = buildCharacter(
+    answers({ classId: 'cleric', magicStyleId: 'radiantWrath' }),
+    'Doran',
+    meta,
+  )
+  const ids = hero.attacks.map((attack) => attack.id)
+  assert.equal(new Set(ids).size, ids.length)
+})
+
+test('resolving a selection prefers explicit lists, then the style, then nothing', () => {
+  assert.deepEqual(resolveSpellSelection({}), { cantripIds: [], preparedSpellIds: [] })
+  assert.deepEqual(resolveSpellSelection({ magicStyleId: 'nonsense' }), {
+    cantripIds: [],
+    preparedSpellIds: [],
+  })
+  assert.deepEqual(resolveSpellSelection({ cantripIds: ['light'] }).cantripIds, ['light'])
+})
+
+test('a caster is granted no spell attack they did not choose', () => {
+  const bare = buildCharacter(answers({ classId: 'wizard' }), 'Alarin', meta)
+  assert.ok(
+    !bare.attacks.some((attack) => attack.kind === 'spell'),
+    'no cantrips chosen means no spell on the bar',
+  )
+
+  const chosen = buildCharacter(
+    answers({ classId: 'wizard', cantripIds: ['rayOfFrost'] }),
+    'Alarin',
+    meta,
+  )
+  assert.deepEqual(
+    chosen.attacks.filter((attack) => attack.kind === 'spell').map((attack) => attack.id),
+    ['rayOfFrost'],
+  )
 })

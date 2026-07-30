@@ -32,6 +32,8 @@ export type ExplainKey =
   | 'spellSaveDc'
   | 'spellAttack'
   | 'loadout'
+  | 'concentration'
+  | 'preparedSpell'
   | 'str'
   | 'dex'
   | 'con'
@@ -153,6 +155,14 @@ export const EXPLANATIONS: Record<ExplainKey, Explanation> = {
   spellAttack: {
     title: 'Spell Attack Bonus',
     plain: 'What you add to the die when you aim a spell at something, exactly like a weapon attack. It is your proficiency bonus plus your casting ability.',
+  },
+  concentration: {
+    title: 'Concentration',
+    plain: 'You have to keep your mind on this spell for it to keep working. You can only concentrate on one at a time, and taking a bad hit can break it.',
+  },
+  preparedSpell: {
+    title: 'Prepared Spell',
+    plain: 'A spell you chose in advance and can cast today. Unlike a cantrip it uses up a slot, so you only get a couple of casts before you need a long rest.',
   },
   loadout: {
     title: 'Loadout',

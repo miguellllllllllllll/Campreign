@@ -9,6 +9,8 @@ import type {
   Spellcasting,
 } from '../../types/character.ts'
 import type { Armor } from '../../types/items.ts'
+import { magicStyleById } from '../../content/spellPresets.ts'
+import { spellsByIds } from '../../content/spells.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
   ARMORS,
@@ -17,7 +19,6 @@ import {
   CLASS_PRESETS,
   RACE_PRESETS,
   personalityOf,
-  type ClassPreset,
   type ClassSpellcasting,
 } from './presets.ts'
 
@@ -101,9 +102,37 @@ function uniqueSkills(...groups: readonly SkillName[][]): SkillName[] {
   return [...new Set(groups.flat())]
 }
 
-function chosenSpellOption(klass: ClassPreset, spellId: string | undefined) {
-  if (spellId === undefined) return undefined
-  return klass.spellcasting?.options.find((option) => option.id === spellId)
+/**
+ * The spells a set of answers actually amounts to.
+ *
+ * Explicit lists win, because they only exist when the player hand-picked them;
+ * otherwise the chosen style supplies them. Reads spell data from content, which
+ * is pure data like the presets beside it — no side effects cross the boundary.
+ */
+export function resolveSpellSelection(answers: CreationDraft): {
+  cantripIds: readonly string[]
+  preparedSpellIds: readonly string[]
+} {
+  const style = answers.magicStyleId === undefined ? undefined : magicStyleById(answers.magicStyleId)
+  return {
+    cantripIds: answers.cantripIds ?? style?.cantripIds ?? [],
+    preparedSpellIds: answers.preparedSpellIds ?? style?.preparedSpellIds ?? [],
+  }
+}
+
+/**
+ * Keeps the first attack of each id. A wizard's class list already carries Fire
+ * Bolt, so choosing it as a cantrip would otherwise print the same button twice.
+ */
+function dedupeAttacks(attacks: readonly AttackAction[]): AttackAction[] {
+  const seen = new Set<string>()
+  const kept: AttackAction[] = []
+  for (const attack of attacks) {
+    if (seen.has(attack.id)) continue
+    seen.add(attack.id)
+    kept.push({ ...attack })
+  }
+  return kept
 }
 
 /**
@@ -130,8 +159,9 @@ export function buildCharacter(
 
   const maxHp = maxHitPoints(klass.hitDie, scores.con)
   const trimmedName = name.trim()
-  const spell = chosenSpellOption(klass, answers.spellId)
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)
+  const selection = resolveSpellSelection(answers)
+  const cantrips = spellsByIds(selection.cantripIds)
 
   return {
     id: meta.id,
@@ -153,16 +183,21 @@ export function buildCharacter(
     proficiencyBonus: proficiencyBonus(level),
     skillProficiencies: uniqueSkills(klass.skillProficiencies, background.skills),
     savingThrows: [...klass.savingThrows],
-    attacks: [
-      ...loadout.attacks.map((attack) => ({ ...attack })),
-      ...klass.attacks.map((attack) => ({ ...attack })),
-      ...(spell?.attack === undefined ? [] : [{ ...spell.attack }]),
-    ],
+    attacks: dedupeAttacks([
+      ...loadout.attacks,
+      ...klass.attacks,
+      // An aimed cantrip becomes a real button; utility magic stays off the bar.
+      ...cantrips.flatMap((cantrip) => (cantrip.attack === undefined ? [] : [cantrip.attack])),
+    ]),
     trinket: { ...background.trinket },
     personality: personalityOf(background, answers.flawId),
     cosmetics: { ...aura.cosmetics },
     ...(spellcasting === undefined ? {} : { spellcasting }),
-    ...(spell === undefined ? {} : { chosenSpells: [spell.id] }),
+    ...(selection.cantripIds.length === 0 ? {} : { cantrips: [...selection.cantripIds] }),
+    ...(selection.preparedSpellIds.length === 0
+      ? {}
+      : { preparedSpells: [...selection.preparedSpellIds] }),
+    ...(answers.magicStyleId === undefined ? {} : { magicStyleId: answers.magicStyleId }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }
 }
@@ -190,7 +225,13 @@ export function previewCharacter(
       flawId: draft.flawId ?? background.flaws[0]?.id ?? '',
       equipmentChoice: draft.equipmentChoice ?? 'defensive',
       auraId: draft.auraId ?? 'amber',
-      ...(draft.spellId === undefined ? {} : { spellId: draft.spellId }),
+      // Spells pass through as chosen; the preview shows an empty list honestly
+      // rather than inventing a spell nobody picked.
+      ...(draft.magicStyleId === undefined ? {} : { magicStyleId: draft.magicStyleId }),
+      ...(draft.cantripIds === undefined ? {} : { cantripIds: draft.cantripIds }),
+      ...(draft.preparedSpellIds === undefined
+        ? {}
+        : { preparedSpellIds: draft.preparedSpellIds }),
     },
     name,
     meta,

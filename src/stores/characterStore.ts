@@ -45,12 +45,16 @@ export const useCharacterStore = create<CharacterStore>()(
     }),
     {
       name: 'hero-step-roster',
-      version: 2,
+      version: 3,
       /**
        * Version 2 added a background, a trinket, a personality and an aura.
-       * Older heroes are discarded rather than backfilled: inventing a past the
-       * player never chose would put a guess on the sheet, and rebuilding a
-       * 1st-level character takes six clicks.
+       * Version 3 replaced the single chosen spell with a cantrip list and a
+       * prepared list.
+       *
+       * Older heroes are discarded rather than backfilled, at both versions, for
+       * the same reason: inventing a past or a spell list the player never chose
+       * would put a guess on the sheet, and rebuilding a 1st-level character
+       * takes a handful of clicks.
        */
       migrate: () => ({ roster: [], activeId: null }),
     },

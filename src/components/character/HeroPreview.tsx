@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { Explain } from '../Explain.tsx'
 import { ResourceBar } from '../ui/resource-bar.tsx'
 import { BACKGROUND_PRESETS, CLASS_PRESETS, RACE_PRESETS } from '../../lib/dnd/presets.ts'
+import { spellsByIds } from '../../content/spells.ts'
 import { SKILL_LABELS, formatModifier } from '../../lib/dnd/stats.ts'
 import type { ExplainKey } from '../../lib/dnd/explanations.ts'
 import type { Character, CreationDraft } from '../../types/character.ts'
@@ -98,8 +99,12 @@ export function HeroPreview({ hero, draft }: HeroPreviewProps) {
   const background = draft.backgroundId === undefined ? null : BACKGROUND_PRESETS[hero.backgroundId]
   const aura = draft.auraId === undefined ? null : hero.cosmetics
   const geared = draft.equipmentChoice !== undefined
-  const spell = hero.chosenSpells?.[0]
-  const spellName = klass.spellcasting?.options.find((option) => option.id === spell)?.name
+  const spellNames = spellsByIds([
+    ...(hero.cantrips ?? []),
+    ...(hero.preparedSpells ?? []),
+  ])
+    .map((spell) => spell.name)
+    .join(' · ')
 
   return (
     <div className="border-gold-ornate rounded-card flex flex-col gap-4 p-5">
@@ -190,7 +195,7 @@ export function HeroPreview({ hero, draft }: HeroPreviewProps) {
         </Entry>
       )}
 
-      {spellName !== undefined && <Entry label="Signature Magic">{spellName}</Entry>}
+      {spellNames.length > 0 && <Entry label="Signature Magic">{spellNames}</Entry>}
 
       {background !== null && (
         <Entry label="Trinket" explainKey="trinket">
