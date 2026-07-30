@@ -46,19 +46,10 @@ export interface LoadoutOption {
   attacks: AttackAction[]
 }
 
-export interface SpellOption {
-  id: string
-  name: string
-  tagline: string
-  /** Present when the spell is thrown at something; absent for utility magic. */
-  attack?: AttackAction
-}
-
 export interface ClassSpellcasting {
   ability: AbilityName
   /** Shown when the class has the numbers before it has the spells. */
   note?: string
-  options: readonly SpellOption[]
 }
 
 export interface ClassPreset {
@@ -215,62 +206,6 @@ export const CLASS_PRESETS: Record<ClassId, ClassPreset> = {
     },
     spellcasting: {
       ability: 'int',
-      options: [
-        {
-          id: 'rayOfFrost',
-          name: 'Ray of Frost',
-          tagline: 'A freezing beam that also slows what it hits.',
-          attack: {
-            id: 'rayOfFrost',
-            name: 'Ray of Frost',
-            kind: 'spell',
-            ability: 'int',
-            proficient: true,
-            damage: '1d8',
-            damageType: 'cold',
-            addAbilityToDamage: false,
-            ranged: true,
-            rangeSquares: 8,
-            description: 'A pale beam of cold that bites harder than it looks.',
-          },
-        },
-        {
-          id: 'shockingGrasp',
-          name: 'Shocking Grasp',
-          tagline: 'Lightning through your palm, for anything that closes on you.',
-          attack: {
-            id: 'shockingGrasp',
-            name: 'Shocking Grasp',
-            kind: 'spell',
-            ability: 'int',
-            proficient: true,
-            damage: '1d8',
-            damageType: 'lightning',
-            addAbilityToDamage: false,
-            ranged: false,
-            rangeSquares: 1,
-            description: 'A jolt delivered by hand to whatever got too close.',
-          },
-        },
-        {
-          id: 'acidSplash',
-          name: 'Acid Splash',
-          tagline: 'A thrown bubble of acid — weaker, but it can catch two foes.',
-          attack: {
-            id: 'acidSplash',
-            name: 'Acid Splash',
-            kind: 'spell',
-            ability: 'int',
-            proficient: true,
-            damage: '1d6',
-            damageType: 'acid',
-            addAbilityToDamage: false,
-            ranged: true,
-            rangeSquares: 8,
-            description: 'A lobbed bubble of acid that bursts on contact.',
-          },
-        },
-      ],
     },
   },
   rogue: {
@@ -410,23 +345,6 @@ export const CLASS_PRESETS: Record<ClassId, ClassPreset> = {
     },
     spellcasting: {
       ability: 'wis',
-      options: [
-        {
-          id: 'guidance',
-          name: 'Guidance',
-          tagline: 'Touch an ally and their next careful task goes better.',
-        },
-        {
-          id: 'light',
-          name: 'Light',
-          tagline: 'Make an object shine — cellars are dark, and darkness costs you rolls.',
-        },
-        {
-          id: 'spareTheDying',
-          name: 'Spare the Dying',
-          tagline: 'Steady someone who has dropped, before the dying becomes dead.',
-        },
-      ],
     },
   },
   paladin: {
@@ -507,7 +425,6 @@ export const CLASS_PRESETS: Record<ClassId, ClassPreset> = {
       // SRD paladins gain spellcasting at 2nd level. The numbers are already
       // fixed by Charisma, so they are shown now and the spell list is not.
       note: 'Your oath already sets these numbers. Paladins learn their first spells at level 2.',
-      options: [],
     },
   },
 }
