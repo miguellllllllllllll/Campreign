@@ -2,10 +2,16 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildCharacter, maxHitPoints, previewCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { CLASS_PRESETS } from '../src/lib/dnd/presets.ts'
-import { rollInitiative } from '../src/lib/dnd/combat.ts'
+import { resolveAttack, rollInitiative } from '../src/lib/dnd/combat.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
+import { DEFAULT_CRIT_ON, roll } from '../src/lib/dnd/dice.ts'
 import { FEATS, bonusInitiative, bonusMaxHp, featById } from '../src/content/feats.ts'
-import { SUBCLASSES, subclassById, subclassesFor } from '../src/content/subclasses.ts'
+import {
+  SUBCLASSES,
+  critThresholdFor,
+  subclassById,
+  subclassesFor,
+} from '../src/content/subclasses.ts'
 import { stepsFor } from '../src/content/creationQuestions.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue } from './helpers/rng.ts'
@@ -186,17 +192,108 @@ test('a feature that is not wired up says so, and one that is does not', () => {
   }
 })
 
-test('no subclass silently changes a number', () => {
-  // Tier 1 deliberately ships subclasses as identity only. If one ever starts
-  // carrying a stat, this test should fail and force the engine work with it.
+test('a subclass changes a number only when it declares that it does', () => {
+  // The honesty rule, stated as an invariant: an effect and an active feature
+  // travel together. A subclass may not quietly alter the sheet, and one that
+  // claims to be wired up may not turn out to be decorative.
+  for (const subclass of SUBCLASSES) {
+    const hasEffect = subclass.effect !== undefined
+    assert.equal(
+      hasEffect,
+      subclass.feature.active,
+      `${subclass.id}: effect and active must agree`,
+    )
+  }
+})
+
+test('a subclass with no effect leaves every number untouched', () => {
   const plain = buildCharacter(answers(), 'A', meta)
   for (const subclass of subclassesFor('fighter')) {
+    if (subclass.effect !== undefined) continue
     const specialised = buildCharacter(answers({ subclassId: subclass.id }), 'A', meta)
     assert.equal(specialised.maxHp, plain.maxHp)
     assert.equal(specialised.ac, plain.ac)
-    assert.equal(specialised.initiativeBonus, plain.initiativeBonus)
+    assert.equal(specialised.critOn, undefined)
     assert.equal(specialised.subclassId, subclass.id)
   }
+})
+
+// --- Improved Critical ----------------------------------------------------
+
+test('only the Champion widens the critical range', () => {
+  assert.equal(critThresholdFor('champion'), 19)
+  assert.equal(critThresholdFor('battlemaster'), undefined)
+  assert.equal(critThresholdFor('no-such-subclass'), undefined)
+  assert.equal(critThresholdFor(undefined), undefined)
+})
+
+test('a Champion carries the threshold onto the sheet and into combat', () => {
+  const champion = buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)
+  assert.equal(champion.critOn, 19)
+  assert.equal(characterToCombatant(champion, { position: { x: 0, y: 0 } }).critOn, 19)
+})
+
+test('everyone else stores no threshold at all', () => {
+  const plain = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  assert.equal('critOn' in plain, false)
+  assert.equal(characterToCombatant(plain, { position: { x: 0, y: 0 } }).critOn, undefined)
+})
+
+test('a natural 19 is an ordinary hit normally and a critical for a Champion', () => {
+  const nineteen = () => faceValue(19, 20)
+  assert.equal(roll('1d20', { rng: nineteen }).crit, null)
+  assert.equal(roll('1d20', { rng: nineteen, critOn: 19 }).crit, 'hit')
+})
+
+test('a natural 18 is not a critical even for a Champion', () => {
+  assert.equal(roll('1d20', { rng: () => faceValue(18, 20), critOn: 19 }).crit, null)
+})
+
+test('a natural 20 stays a critical for everybody', () => {
+  const twenty = () => faceValue(20, 20)
+  assert.equal(roll('1d20', { rng: twenty }).crit, 'hit')
+  assert.equal(roll('1d20', { rng: twenty, critOn: 19 }).crit, 'hit')
+})
+
+test('widening the critical range never widens the fumble range', () => {
+  const one = () => faceValue(1, 20)
+  assert.equal(roll('1d20', { rng: one }).crit, 'fumble')
+  assert.equal(roll('1d20', { rng: one, critOn: 19 }).crit, 'fumble')
+  // The pathological case: a threshold of 1 must not make a 1 both at once.
+  assert.equal(roll('1d20', { rng: one, critOn: 1 }).crit, 'fumble')
+})
+
+test('the default threshold is exactly the old behaviour', () => {
+  assert.equal(DEFAULT_CRIT_ON, 20)
+  for (const face of [2, 10, 18, 19]) {
+    assert.equal(roll('1d20', { rng: () => faceValue(face, 20) }).crit, null, `face ${face}`)
+  }
+})
+
+test("a Champion's 19 crits in a real attack, and a rogue's does not", () => {
+  const nineteen = () => faceValue(19, 20)
+  const champion = buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)
+  const ordinary = buildCharacter(answers(), 'A', meta)
+  const attack = champion.attacks[0]
+  assert.ok(attack !== undefined)
+
+  const dummy = characterToCombatant(ordinary, { position: { x: 1, y: 0 }, team: 'foes' })
+
+  const asChampion = resolveAttack({
+    attacker: characterToCombatant(champion, { position: { x: 0, y: 0 } }),
+    target: dummy,
+    attack,
+    rng: nineteen,
+  })
+  const asOrdinary = resolveAttack({
+    attacker: characterToCombatant(ordinary, { position: { x: 0, y: 0 } }),
+    target: dummy,
+    attack,
+    rng: nineteen,
+  })
+
+  assert.equal(asChampion.kind, 'crit')
+  assert.equal(asOrdinary.kind, 'hit')
 })
 
 // --- Step gating ----------------------------------------------------------

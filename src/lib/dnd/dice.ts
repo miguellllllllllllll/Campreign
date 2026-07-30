@@ -64,12 +64,22 @@ function isSingleD20(terms: DiceTerm[]): boolean {
   return diceTerms.length === 1 && first !== undefined && first.size === 20 && first.count === 1
 }
 
+/**
+ * The natural roll at or above which a d20 is a critical hit.
+ *
+ * A parameter rather than the constant 20 because a Champion crits on 19. It
+ * defaults everywhere, so every existing call — and every test that pins an
+ * exact sequence — behaves exactly as it did.
+ */
+export const DEFAULT_CRIT_ON = 20
+
 export function roll(
   notation: string,
-  opts: { rng?: Rng; mode?: RollMode } = {},
+  opts: { rng?: Rng; mode?: RollMode; critOn?: number } = {},
 ): DiceRoll {
   const rng = opts.rng ?? Math.random
   const requestedMode = opts.mode ?? 'normal'
+  const critOn = opts.critOn ?? DEFAULT_CRIT_ON
   const terms = parseNotation(notation)
   const mode = isSingleD20(terms) ? requestedMode : 'normal'
 
@@ -99,17 +109,21 @@ export function roll(
     total += term.sign * kept.reduce((sum, value) => sum + value, 0)
   }
 
-  return { notation, groups, modifier, total, mode, crit: detectCrit(groups) }
+  return { notation, groups, modifier, total, mode, crit: detectCrit(groups, critOn) }
 }
 
-function detectCrit(groups: DieGroup[]): 'hit' | 'fumble' | null {
+function detectCrit(groups: DieGroup[], critOn: number): 'hit' | 'fumble' | null {
   const d20s = groups.filter((group) => group.size === 20)
   const only = d20s[0]
   if (d20s.length !== 1 || only === undefined || only.kept.length !== 1) return null
 
   const natural = only.kept[0]
-  if (natural === 20) return 'hit'
+  if (natural === undefined) return null
+  // A natural 1 stays a fumble even for a Champion: widening the crit range
+  // never narrows the fumble range, and a threshold of 1 would make every roll
+  // both at once.
   if (natural === 1) return 'fumble'
+  if (natural >= critOn) return 'hit'
   return null
 }
 

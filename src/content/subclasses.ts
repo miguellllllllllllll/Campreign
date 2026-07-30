@@ -24,6 +24,13 @@ export interface SubclassFeature {
   pending?: string
 }
 
+/**
+ * A subclass effect the rules engine genuinely applies. Present only where
+ * `feature.active` is true; a union rather than a bag of optional numbers so
+ * adding a second kind forces every reader to handle it.
+ */
+export type SubclassEffect = { kind: 'critOn'; value: number }
+
 export interface Subclass {
   id: string
   classId: ClassId
@@ -32,6 +39,7 @@ export interface Subclass {
   /** The playstyle this points at, in the game's voice. */
   description: string
   feature: SubclassFeature
+  effect?: SubclassEffect
 }
 
 export const SUBCLASSES: readonly Subclass[] = [
@@ -46,9 +54,9 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Improved Critical',
       description: 'Your critical hits land on a roll of 19 or 20, not just 20.',
-      active: false,
-      pending: 'The dice engine treats 20 as the only critical for now.',
+      active: true,
     },
+    effect: { kind: 'critOn', value: 19 },
   },
   {
     id: 'battlemaster',
@@ -196,4 +204,14 @@ export function subclassesFor(classId: ClassId): readonly Subclass[] {
 /** Undefined rather than a throw, so a stale saved id degrades to "no subclass". */
 export function subclassById(id: string | undefined): Subclass | undefined {
   return id === undefined ? undefined : BY_ID.get(id)
+}
+
+/**
+ * The natural roll this subclass crits on, or undefined for the ordinary 20.
+ * Undefined rather than 20 so the field stays absent on every character who has
+ * not widened it, and nothing downstream has to store a default.
+ */
+export function critThresholdFor(id: string | undefined): number | undefined {
+  const effect = subclassById(id)?.effect
+  return effect?.kind === 'critOn' ? effect.value : undefined
 }

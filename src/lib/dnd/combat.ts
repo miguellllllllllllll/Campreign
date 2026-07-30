@@ -60,7 +60,13 @@ export function resolveAttack(args: {
   const mode = args.mode ?? attackRollMode(attacker.conditions, target.conditions)
 
   const bonus = attackBonusFor(attacker, attack)
-  const attackRoll = roll(`1d20${formatModifier(bonus)}`, { rng, mode })
+  // The attacker's own crit range, so a Champion swinging is not the same roll
+  // as anybody else swinging. Absent for everyone who has not widened it.
+  const attackRoll = roll(`1d20${formatModifier(bonus)}`, {
+    rng,
+    mode,
+    ...(attacker.critOn === undefined ? {} : { critOn: attacker.critOn }),
+  })
   const natural = attackRoll.groups[0]?.kept[0] ?? 0
 
   const breakdown: AttackBreakdown = {

@@ -12,7 +12,7 @@ import type { Armor } from '../../types/items.ts'
 import { magicStyleById } from '../../content/spellPresets.ts'
 import { spellsByIds } from '../../content/spells.ts'
 import { bonusInitiative, bonusMaxHp, featById } from '../../content/feats.ts'
-import { subclassById } from '../../content/subclasses.ts'
+import { critThresholdFor, subclassById } from '../../content/subclasses.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
   ARMORS,
@@ -163,6 +163,7 @@ export function buildCharacter(
   // maxHitPoints, so the base calculation stays the one the sheet explains.
   const maxHp = maxHitPoints(klass.hitDie, scores.con) + bonusMaxHp(answers.featId)
   const initiativeBonus = bonusInitiative(answers.featId)
+  const critOn = critThresholdFor(answers.subclassId)
   const trimmedName = name.trim()
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)
   const selection = resolveSpellSelection(answers)
@@ -208,6 +209,7 @@ export function buildCharacter(
     ...(subclassById(answers.subclassId) === undefined ? {} : { subclassId: answers.subclassId }),
     ...(featById(answers.featId) === undefined ? {} : { featId: answers.featId }),
     ...(initiativeBonus === 0 ? {} : { initiativeBonus }),
+    ...(critOn === undefined ? {} : { critOn }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }
 }

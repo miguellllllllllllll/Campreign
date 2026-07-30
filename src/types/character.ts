@@ -137,6 +137,11 @@ export interface Character {
    * than recomputed so combat never has to know what a feat is.
    */
   initiativeBonus?: number
+  /**
+   * The natural roll this character crits on. Absent means the ordinary 20, so
+   * only a Champion carries it — and combat never has to know what a subclass is.
+   */
+  critOn?: number
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

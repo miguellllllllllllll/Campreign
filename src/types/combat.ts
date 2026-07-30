@@ -42,6 +42,11 @@ export interface Combatant {
    * exactly as it did before feats existed.
    */
   initiativeBonus?: number
+  /**
+   * The natural roll this combatant crits on. Absent means 20, which is
+   * everyone except a Champion.
+   */
+  critOn?: number
   initiative: number
 }
 
