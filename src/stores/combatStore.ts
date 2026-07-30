@@ -22,7 +22,7 @@ interface CombatStore {
   /** `rng` is injectable so a test can pin initiative and the foe's swing. */
   start: (roster: readonly Combatant[], rng?: Rng) => void
   move: (to: GridPosition) => boolean
-  attack: (args: { targetId: string; attackId: string }) => AttackOutcome | null
+  attack: (args: { targetId: string; attackId: string; maneuverId?: 'trip' }) => AttackOutcome | null
   /** Ends the player's turn and plays out every enemy turn until it is the player's again. */
   finishTurn: (rng?: Rng) => void
   reset: () => void
@@ -52,10 +52,14 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     return true
   },
 
-  attack: ({ targetId, attackId }) => {
+  attack: ({ targetId, attackId, maneuverId }) => {
     const { encounter } = get()
     if (encounter === null) return null
-    const result = attackWith(encounter, { targetId, attackId })
+    const result = attackWith(encounter, {
+      targetId,
+      attackId,
+      ...(maneuverId === undefined ? {} : { maneuverId }),
+    })
     set({
       encounter: result.encounter,
       lastOutcome: result.outcome ?? get().lastOutcome,

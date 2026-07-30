@@ -11,7 +11,8 @@ import {
   resolveAttack,
   rollInitiative,
 } from './combat.ts'
-import { tickConditions } from './conditions.ts'
+import { addCondition, tickConditions } from './conditions.ts'
+import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { narrateAttackFully } from './narrate.ts'
 
 /** The tutorial board. Small enough to read at a glance on a phone. */
@@ -157,11 +158,13 @@ export interface AttackResult {
   outcome: AttackOutcome | null
   /** Why the attack could not be made, for the guidance banner to relay. */
   refusal: string | null
+  /** Present only when a manoeuvre was spent and the attack actually landed. */
+  maneuver?: TripAttackResult
 }
 
 export function attackWith(
   encounter: Encounter,
-  args: { targetId: string; attackId: string; rng?: Rng },
+  args: { targetId: string; attackId: string; maneuverId?: 'trip'; rng?: Rng },
 ): AttackResult {
   const attacker = activeCombatant(encounter)
   const target = encounter.combatants[args.targetId]
@@ -188,15 +191,52 @@ export function attackWith(
     }
   }
 
+  // Manoeuvres are checked before the die is thrown, so a refusal costs nothing.
+  if (args.maneuverId !== undefined) {
+    if (attack.kind !== 'weapon') {
+      return { encounter, outcome: null, refusal: 'Manoeuvres go with a weapon, not a spell.' }
+    }
+    if (!canSpendSuperiorityDie(attacker)) {
+      return { encounter, outcome: null, refusal: 'You have no superiority dice left.' }
+    }
+  }
+
   const outcome = resolveAttack({ attacker, target, attack, rng: args.rng })
-  const damaged =
-    outcome.kind === 'hit' || outcome.kind === 'crit' ? applyDamage(target, outcome.damage) : target
+  const landed = outcome.kind === 'hit' || outcome.kind === 'crit'
+
+  /*
+   * The die is only spent on a hit. The SRD lets a Battle Master decide after
+   * they know they connected, and charging for a miss would make the manoeuvre
+   * strictly worse than not declaring it.
+   */
+  const maneuver =
+    args.maneuverId === undefined || !landed
+      ? undefined
+      : resolveTripAttack({ attacker, target, attack, rng: args.rng })
+
+  const totalDamage = landed ? outcome.damage + (maneuver?.bonusDamage.total ?? 0) : 0
+  let damaged = landed ? applyDamage(target, totalDamage) : target
+  if (maneuver?.knockedProne === true && !isDefeated(damaged)) {
+    damaged = { ...damaged, conditions: addCondition(damaged.conditions, 'prone') }
+  }
+
+  const spender =
+    maneuver === undefined
+      ? attacker
+      : { ...attacker, superiorityDice: maneuver.diceRemaining }
 
   const log = [
     ...encounter.log,
     `${attacker.name} attacks with ${attack.name}. `
       + narrateAttackFully(outcome, target.name, attack.damageType),
   ]
+  if (maneuver !== undefined) {
+    log.push(
+      `Trip Attack adds ${maneuver.bonusDamage.total} damage. `
+        + `${target.name} rolls ${maneuver.save.total} against DC ${maneuver.save.dc} and `
+        + (maneuver.knockedProne ? 'goes down.' : 'stays on their feet.'),
+    )
+  }
   if (isDefeated(damaged) && !isDefeated(target)) {
     log.push(`${damaged.name} drops to 0 hit points and is out of the fight.`)
   }
@@ -204,12 +244,13 @@ export function attackWith(
   return {
     encounter: {
       ...encounter,
-      combatants: { ...encounter.combatants, [damaged.id]: damaged },
+      combatants: { ...encounter.combatants, [spender.id]: spender, [damaged.id]: damaged },
       hasActed: true,
       log,
     },
     outcome,
     refusal: null,
+    ...(maneuver === undefined ? {} : { maneuver }),
   }
 }
 

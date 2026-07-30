@@ -47,6 +47,12 @@ export interface Combatant {
    * everyone except a Champion.
    */
   critOn?: number
+  /**
+   * Superiority dice still unspent this fight. Absent for everyone who is not a
+   * Battle Master, which is how a manoeuvre stays unavailable without any
+   * caller having to ask what subclass someone is.
+   */
+  superiorityDice?: number
   initiative: number
 }
 

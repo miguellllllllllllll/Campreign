@@ -144,9 +144,15 @@ export function TutorialRunner() {
     if (useCombatStore.getState().move(to)) dispatch({ type: 'moved' })
   }
 
-  function attack(attackId: string) {
+  function attack(attackId: string, maneuverId?: 'trip') {
     if (foe === undefined) return
-    const outcome = useCombatStore.getState().attack({ targetId: foe.id, attackId })
+    const outcome = useCombatStore.getState().attack({
+      targetId: foe.id,
+      attackId,
+      ...(maneuverId === undefined ? {} : { maneuverId }),
+    })
+    // The tutorial only cares that an attack resolved; a manoeuvre rides along
+    // with it rather than being a second beat the script has to know about.
     if (outcome !== null) dispatch({ type: 'attackResolved' })
   }
 

@@ -1,3 +1,4 @@
+import { SUPERIORITY_DICE_AT_LEVEL_1 } from '../lib/dnd/maneuvers.ts'
 import type { ClassId } from '../types/character.ts'
 
 /**
@@ -29,7 +30,9 @@ export interface SubclassFeature {
  * `feature.active` is true; a union rather than a bag of optional numbers so
  * adding a second kind forces every reader to handle it.
  */
-export type SubclassEffect = { kind: 'critOn'; value: number }
+export type SubclassEffect =
+  | { kind: 'critOn'; value: number }
+  | { kind: 'superiorityDice'; count: number }
 
 export interface Subclass {
   id: string
@@ -67,10 +70,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You treat combat as a problem with moving parts. Trip a foe, punish an opening, control where everyone stands.',
     feature: {
       name: 'Superiority Dice',
-      description: 'Two d6 you spend on manoeuvres like Trip Attack and Riposte.',
-      active: false,
-      pending: 'Manoeuvres need a reaction system, which combat does not have yet.',
+      description:
+        'Two d6 you spend on Trip Attack: extra damage, and the target falls over unless it saves.',
+      active: true,
     },
+    effect: { kind: 'superiorityDice', count: SUPERIORITY_DICE_AT_LEVEL_1 },
   },
 
   // --- Wizard ---------------------------------------------------------------
@@ -214,4 +218,10 @@ export function subclassById(id: string | undefined): Subclass | undefined {
 export function critThresholdFor(id: string | undefined): number | undefined {
   const effect = subclassById(id)?.effect
   return effect?.kind === 'critOn' ? effect.value : undefined
+}
+
+/** The superiority-dice pool this subclass grants, or undefined for none. */
+export function superiorityDiceFor(id: string | undefined): number | undefined {
+  const effect = subclassById(id)?.effect
+  return effect?.kind === 'superiorityDice' ? effect.count : undefined
 }

@@ -11,8 +11,8 @@ import type {
 import type { Armor } from '../../types/items.ts'
 import { magicStyleById } from '../../content/spellPresets.ts'
 import { spellsByIds } from '../../content/spells.ts'
-import { bonusInitiative, bonusMaxHp, featById } from '../../content/feats.ts'
-import { critThresholdFor, subclassById } from '../../content/subclasses.ts'
+import { bonusInitiative, bonusMaxHp, featById, grantedCantripId } from '../../content/feats.ts'
+import { critThresholdFor, subclassById, superiorityDiceFor } from '../../content/subclasses.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
   ARMORS,
@@ -164,10 +164,19 @@ export function buildCharacter(
   const maxHp = maxHitPoints(klass.hitDie, scores.con) + bonusMaxHp(answers.featId)
   const initiativeBonus = bonusInitiative(answers.featId)
   const critOn = critThresholdFor(answers.subclassId)
+  const superiorityDice = superiorityDiceFor(answers.subclassId)
   const trimmedName = name.trim()
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)
   const selection = resolveSpellSelection(answers)
-  const cantrips = spellsByIds(selection.cantripIds)
+  // Magic Initiate's cantrip joins the class list rather than replacing it, and
+  // dedupeAttacks below stops a wizard who also took the feat printing Fire
+  // Bolt on the bar twice.
+  const featCantripId = grantedCantripId(answers.featId, answers.magicInitiateSpellId)
+  const cantripIds =
+    featCantripId === undefined || selection.cantripIds.includes(featCantripId)
+      ? selection.cantripIds
+      : [...selection.cantripIds, featCantripId]
+  const cantrips = spellsByIds(cantripIds)
 
   return {
     id: meta.id,
@@ -199,7 +208,7 @@ export function buildCharacter(
     personality: personalityOf(background, answers.flawId),
     cosmetics: { ...aura.cosmetics },
     ...(spellcasting === undefined ? {} : { spellcasting }),
-    ...(selection.cantripIds.length === 0 ? {} : { cantrips: [...selection.cantripIds] }),
+    ...(cantripIds.length === 0 ? {} : { cantrips: [...cantripIds] }),
     ...(selection.preparedSpellIds.length === 0
       ? {}
       : { preparedSpells: [...selection.preparedSpellIds] }),
@@ -208,8 +217,10 @@ export function buildCharacter(
     // character serialises exactly as it did before the feature existed.
     ...(subclassById(answers.subclassId) === undefined ? {} : { subclassId: answers.subclassId }),
     ...(featById(answers.featId) === undefined ? {} : { featId: answers.featId }),
+    ...(featCantripId === undefined ? {} : { magicInitiateSpellId: featCantripId }),
     ...(initiativeBonus === 0 ? {} : { initiativeBonus }),
     ...(critOn === undefined ? {} : { critOn }),
+    ...(superiorityDice === undefined ? {} : { superiorityDice }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }
 }
@@ -244,6 +255,9 @@ export function previewCharacter(
       // so advanced answers pass straight through to the same builder.
       ...(draft.subclassId === undefined ? {} : { subclassId: draft.subclassId }),
       ...(draft.featId === undefined ? {} : { featId: draft.featId }),
+      ...(draft.magicInitiateSpellId === undefined
+        ? {}
+        : { magicInitiateSpellId: draft.magicInitiateSpellId }),
       ...(draft.cantripIds === undefined ? {} : { cantripIds: draft.cantripIds }),
       ...(draft.preparedSpellIds === undefined
         ? {}

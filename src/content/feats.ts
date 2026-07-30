@@ -1,10 +1,9 @@
 /**
  * Origin feats, offered at level 1 behind the advanced toggle.
  *
- * Only feats whose whole effect is a flat number the builder can apply are
- * listed. Savage Attacker (reroll a damage die) and Magic Initiate (a cantrip
- * for a class the spell registry does not index) both need engine work that
- * does not exist yet, and a feat that silently does nothing is worse than a
+ * Only feats the builder can genuinely apply are listed. Savage Attacker still
+ * is not: rerolling a damage die means interrupting damage resolution, which
+ * the engine has no seam for. A feat that silently does nothing is worse than a
  * feat that is not offered — the player spends a choice and gets a lie.
  *
  * Origin feats are a 2024 idea and this build is 2014 SRD, so this is a
@@ -14,6 +13,8 @@
 export type FeatEffect =
   | { kind: 'maxHp'; amount: number }
   | { kind: 'initiative'; amount: number }
+  /** Grants one cantrip, chosen separately because the feat does not name it. */
+  | { kind: 'cantrip'; choices: readonly string[] }
 
 export interface Feat {
   id: string
@@ -44,6 +45,18 @@ export const FEATS: readonly Feat[] = [
     effectLabel: '+5 initiative',
     effect: { kind: 'initiative', amount: 5 },
   },
+  {
+    id: 'magicInitiate',
+    label: 'Magic Initiate',
+    tagline: 'You picked up one real spell somewhere along the way.',
+    description:
+      'A dabbler rather than a caster. One cantrip, cast as often as you like, and nobody expects it from someone holding a sword.',
+    effectLabel: 'one cantrip of your choice',
+    // Fire Bolt is the wizard's attack cantrip and Guidance the cleric's
+    // utility one, so a martial gets a genuine choice between a new button on
+    // the action bar and a better chance on a skill check.
+    effect: { kind: 'cantrip', choices: ['fireBolt', 'guidance'] },
+  },
 ]
 
 const BY_ID = new Map(FEATS.map((feat) => [feat.id, feat]))
@@ -64,4 +77,24 @@ export function bonusMaxHp(id: string | undefined): number {
 export function bonusInitiative(id: string | undefined): number {
   const effect = featById(id)?.effect
   return effect?.kind === 'initiative' ? effect.amount : 0
+}
+
+/** The cantrips a feat lets you pick from, or none. */
+export function cantripChoicesFor(id: string | undefined): readonly string[] {
+  const effect = featById(id)?.effect
+  return effect?.kind === 'cantrip' ? effect.choices : []
+}
+
+/**
+ * The cantrip a feat actually granted.
+ *
+ * Returns undefined unless the chosen spell is one the feat offers, so a stale
+ * or hand-edited id cannot smuggle an arbitrary spell onto a martial's sheet.
+ */
+export function grantedCantripId(
+  featId: string | undefined,
+  spellId: string | undefined,
+): string | undefined {
+  if (spellId === undefined) return undefined
+  return cantripChoicesFor(featId).includes(spellId) ? spellId : undefined
 }

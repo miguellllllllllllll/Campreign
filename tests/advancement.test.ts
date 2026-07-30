@@ -5,16 +5,32 @@ import { CLASS_PRESETS } from '../src/lib/dnd/presets.ts'
 import { resolveAttack, rollInitiative } from '../src/lib/dnd/combat.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { DEFAULT_CRIT_ON, roll } from '../src/lib/dnd/dice.ts'
-import { FEATS, bonusInitiative, bonusMaxHp, featById } from '../src/content/feats.ts'
+import {
+  FEATS,
+  bonusInitiative,
+  bonusMaxHp,
+  cantripChoicesFor,
+  featById,
+  grantedCantripId,
+} from '../src/content/feats.ts'
+import { SPELLS_BY_ID } from '../src/content/spells.ts'
+import {
+  SUPERIORITY_DICE_AT_LEVEL_1,
+  canSpendSuperiorityDie,
+  maneuverSaveDc,
+  resolveTripAttack,
+} from '../src/lib/dnd/maneuvers.ts'
+import { attackWith, createEncounter } from '../src/lib/dnd/encounter.ts'
+import { hasCondition } from '../src/lib/dnd/conditions.ts'
 import {
   SUBCLASSES,
   critThresholdFor,
   subclassById,
   subclassesFor,
 } from '../src/content/subclasses.ts'
-import { stepsFor } from '../src/content/creationQuestions.ts'
+import { magicInitiateChoices, stepsFor } from '../src/content/creationQuestions.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
-import { faceValue } from './helpers/rng.ts'
+import { faceValue, sequenceRng } from './helpers/rng.ts'
 
 const meta = { id: 'test-id', now: 1_700_000_000_000 }
 
@@ -34,9 +50,24 @@ function answers(overrides: Partial<CreationAnswers> = {}): CreationAnswers {
 
 test('only feats the engine can actually apply are offered', () => {
   // A feat that silently does nothing costs the player a choice and gives back
-  // a lie, so the list is allowed to be short but not aspirational.
+  // a lie, so the list is allowed to be short but not aspirational. The switch
+  // is exhaustive on purpose: a new effect kind must state what "real" means
+  // for it here before it can ship.
   for (const feat of FEATS) {
-    assert.ok(feat.effect.amount > 0, `${feat.id} has no effect worth picking`)
+    const effect = feat.effect
+    switch (effect.kind) {
+      case 'maxHp':
+      case 'initiative':
+        assert.ok(effect.amount > 0, `${feat.id} grants nothing`)
+        break
+      case 'cantrip':
+        assert.ok(effect.choices.length > 1, `${feat.id} offers no real choice`)
+        for (const id of effect.choices) {
+          assert.ok(SPELLS_BY_ID[id] !== undefined, `${feat.id} offers unknown spell ${id}`)
+          assert.equal(SPELLS_BY_ID[id]?.level, 0, `${feat.id} may only grant cantrips`)
+        }
+        break
+    }
     assert.ok(feat.effectLabel.length > 0, `${feat.id} does not say what it does`)
     assert.ok(feat.description.length > 30, `${feat.id} needs a real sentence`)
   }
@@ -294,6 +325,261 @@ test("a Champion's 19 crits in a real attack, and a rogue's does not", () => {
 
   assert.equal(asChampion.kind, 'crit')
   assert.equal(asOrdinary.kind, 'hit')
+})
+
+// --- Battle Master: superiority dice and Trip Attack ----------------------
+
+test('a Battle Master starts with a pool and nobody else has one', () => {
+  const bm = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  assert.equal(bm.superiorityDice, SUPERIORITY_DICE_AT_LEVEL_1)
+  assert.equal(characterToCombatant(bm, { position: { x: 0, y: 0 } }).superiorityDice, 2)
+
+  const champion = buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)
+  assert.equal('superiorityDice' in champion, false)
+})
+
+test('a pool is only spendable while it has dice in it', () => {
+  assert.equal(canSpendSuperiorityDie({ superiorityDice: 2 }), true)
+  assert.equal(canSpendSuperiorityDie({ superiorityDice: 0 }), false)
+  assert.equal(canSpendSuperiorityDie({}), false)
+})
+
+test('the manoeuvre DC follows the ability the attack itself uses', () => {
+  const hero = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const combatant = characterToCombatant(hero, { position: { x: 0, y: 0 } })
+  const attack = hero.attacks[0]
+  assert.ok(attack !== undefined)
+  const expected = 8 + hero.proficiencyBonus + Math.floor((hero.scores[attack.ability] - 10) / 2)
+  assert.equal(maneuverSaveDc(combatant, attack), expected)
+})
+
+test('a failed save knocks the target down and a passed one does not', () => {
+  const hero = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const attacker = characterToCombatant(hero, { position: { x: 0, y: 0 } })
+  const target = characterToCombatant(
+    buildCharacter(answers(), 'B', { ...meta, id: 'b' }),
+    { position: { x: 1, y: 0 }, team: 'foes' },
+  )
+  const attack = hero.attacks[0]
+  assert.ok(attack !== undefined)
+
+  // First value feeds the damage die, second the saving throw.
+  const failed = resolveTripAttack({
+    attacker, target, attack,
+    rng: sequenceRng([faceValue(3, 6), faceValue(1, 20)]),
+  })
+  assert.equal(failed.knockedProne, true)
+  assert.equal(failed.save.success, false)
+
+  const saved = resolveTripAttack({
+    attacker, target, attack,
+    rng: sequenceRng([faceValue(3, 6), faceValue(20, 20)]),
+  })
+  assert.equal(saved.knockedProne, false)
+  assert.equal(saved.save.success, true)
+})
+
+test('spending a die leaves one fewer, and never goes below zero', () => {
+  const hero = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const attack = hero.attacks[0]
+  assert.ok(attack !== undefined)
+  const target = characterToCombatant(
+    buildCharacter(answers(), 'B', { ...meta, id: 'b' }),
+    { position: { x: 1, y: 0 }, team: 'foes' },
+  )
+  const rng = sequenceRng([faceValue(3, 6), faceValue(10, 20)])
+
+  const withTwo = characterToCombatant(hero, { position: { x: 0, y: 0 } })
+  assert.equal(resolveTripAttack({ attacker: withTwo, target, attack, rng }).diceRemaining, 1)
+
+  const empty = { ...withTwo, superiorityDice: 0 }
+  assert.equal(resolveTripAttack({ attacker: empty, target, attack, rng }).diceRemaining, 0)
+})
+
+test('an encounter refuses a manoeuvre nobody can pay for', () => {
+  const plain = buildCharacter(answers(), 'A', meta)
+  const foe = buildCharacter(answers(), 'B', { ...meta, id: 'b' })
+  const attack = plain.attacks[0]
+  assert.ok(attack !== undefined)
+
+  const encounter = createEncounter(
+    [
+      characterToCombatant(plain, { position: { x: 0, y: 0 }, initiative: 20 }),
+      characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes', initiative: 1 }),
+    ],
+    () => 0.99,
+  )
+  const result = attackWith(encounter, {
+    targetId: foe.id,
+    attackId: attack.id,
+    maneuverId: 'trip',
+    rng: () => 0.5,
+  })
+  assert.match(result.refusal ?? '', /superiority dice/i)
+  assert.equal(result.encounter, encounter, 'a refusal must not consume the turn')
+})
+
+test('a landed Trip Attack adds damage, spends a die, and floors the target', () => {
+  const bm = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const foe = buildCharacter(answers(), 'B', { ...meta, id: 'b' })
+  const attack = bm.attacks[0]
+  assert.ok(attack !== undefined)
+
+  // Deliberately tough, so the hit lands without killing: you cannot knock down
+  // somebody who is already on the floor, which the assertion below would
+  // otherwise be silently testing instead.
+  const target = {
+    ...characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes', initiative: 1 }),
+    maxHp: 60,
+    currentHp: 60,
+  }
+  const encounter = createEncounter(
+    [characterToCombatant(bm, { position: { x: 0, y: 0 }, initiative: 20 }), target],
+    () => 0.99,
+  )
+
+  // A 15 to hit, minimum weapon damage, then a natural 1 on the target's save.
+  const rng = sequenceRng([
+    faceValue(15, 20), faceValue(1, 8),
+    faceValue(4, 6), faceValue(1, 20),
+  ])
+  const result = attackWith(encounter, {
+    targetId: foe.id, attackId: attack.id, maneuverId: 'trip', rng,
+  })
+
+  assert.equal(result.refusal, null)
+  assert.ok(result.maneuver !== undefined)
+  assert.equal(result.maneuver.knockedProne, true)
+  assert.equal(result.encounter.combatants[bm.id]?.superiorityDice, 1)
+
+  const hit = result.encounter.combatants[foe.id]
+  assert.ok(hit !== undefined && hit.currentHp < 60, 'the attack should have landed')
+  assert.ok(hasCondition(hit.conditions, 'prone'))
+})
+
+test('a target dropped by the same blow is not also knocked prone', () => {
+  // Prone is a state a standing creature enters. Someone at 0 hit points is
+  // already down, and stacking the condition would read as a second effect the
+  // player did not get.
+  const bm = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const foe = buildCharacter(answers(), 'B', { ...meta, id: 'b' })
+  const attack = bm.attacks[0]
+  assert.ok(attack !== undefined)
+
+  const frail = {
+    ...characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes', initiative: 1 }),
+    maxHp: 2,
+    currentHp: 2,
+  }
+  const encounter = createEncounter(
+    [characterToCombatant(bm, { position: { x: 0, y: 0 }, initiative: 20 }), frail],
+    () => 0.99,
+  )
+  const result = attackWith(encounter, {
+    targetId: foe.id,
+    attackId: attack.id,
+    maneuverId: 'trip',
+    rng: sequenceRng([
+      faceValue(20, 20), faceValue(8, 8), faceValue(8, 8),
+      faceValue(6, 6), faceValue(1, 20),
+    ]),
+  })
+
+  const dropped = result.encounter.combatants[foe.id]
+  assert.ok(dropped !== undefined)
+  assert.equal(dropped.currentHp, 0)
+  assert.equal(hasCondition(dropped.conditions, 'prone'), false)
+  // The die is still spent: it was thrown, and the save genuinely failed.
+  assert.equal(result.encounter.combatants[bm.id]?.superiorityDice, 1)
+})
+
+test('a manoeuvre may not be spent on a spell', () => {
+  const caster = buildCharacter(
+    answers({ classId: 'wizard', magicStyleId: 'evoker' }),
+    'A',
+    meta,
+  )
+  const spell = caster.attacks.find((a) => a.kind === 'spell')
+  if (spell === undefined) return
+  const foe = buildCharacter(answers(), 'B', { ...meta, id: 'b' })
+  const encounter = createEncounter(
+    [
+      { ...characterToCombatant(caster, { position: { x: 0, y: 0 }, initiative: 20 }), superiorityDice: 2 },
+      characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes', initiative: 1 }),
+    ],
+    () => 0.99,
+  )
+  const result = attackWith(encounter, {
+    targetId: foe.id, attackId: spell.id, maneuverId: 'trip', rng: () => 0.5,
+  })
+  assert.match(result.refusal ?? '', /weapon/i)
+})
+
+// --- Magic Initiate -------------------------------------------------------
+
+test('Magic Initiate offers a real choice of known cantrips', () => {
+  const choices = cantripChoicesFor('magicInitiate')
+  assert.ok(choices.length >= 2)
+  for (const id of choices) assert.equal(SPELLS_BY_ID[id]?.level, 0)
+  assert.deepEqual(cantripChoicesFor('tough'), [])
+  assert.deepEqual(cantripChoicesFor(undefined), [])
+})
+
+test('only a spell the feat actually offers can be granted', () => {
+  assert.equal(grantedCantripId('magicInitiate', 'fireBolt'), 'fireBolt')
+  // Not on the feat's list, so it must not reach the sheet even if stored.
+  assert.equal(grantedCantripId('magicInitiate', 'cureWounds'), undefined)
+  assert.equal(grantedCantripId('tough', 'fireBolt'), undefined)
+  assert.equal(grantedCantripId('magicInitiate', undefined), undefined)
+})
+
+test('a fighter with Magic Initiate carries the cantrip and its button', () => {
+  const hero = buildCharacter(
+    answers({ featId: 'magicInitiate', magicInitiateSpellId: 'fireBolt' }),
+    'A',
+    meta,
+  )
+  assert.ok(hero.cantrips?.includes('fireBolt'))
+  assert.ok(hero.attacks.some((attack) => attack.id === 'fireBolt'))
+  assert.equal(hero.magicInitiateSpellId, 'fireBolt')
+})
+
+test('a utility cantrip grants no attack button', () => {
+  const hero = buildCharacter(
+    answers({ featId: 'magicInitiate', magicInitiateSpellId: 'guidance' }),
+    'A',
+    meta,
+  )
+  assert.ok(hero.cantrips?.includes('guidance'))
+  assert.equal(hero.attacks.some((attack) => attack.id === 'guidance'), false)
+})
+
+test('the feat never prints a duplicate button for a caster who already has it', () => {
+  const wizard = buildCharacter(
+    answers({
+      classId: 'wizard',
+      magicStyleId: 'evoker',
+      featId: 'magicInitiate',
+      magicInitiateSpellId: 'fireBolt',
+    }),
+    'A',
+    meta,
+  )
+  const fireBolts = wizard.attacks.filter((attack) => attack.id === 'fireBolt')
+  assert.ok(fireBolts.length <= 1, 'Fire Bolt must not appear twice on the bar')
+  assert.equal(wizard.cantrips?.filter((id) => id === 'fireBolt').length, 1)
+})
+
+test('Magic Initiate changes nothing for a hero who did not take it', () => {
+  const plain = buildCharacter(answers(), 'A', meta)
+  assert.equal('magicInitiateSpellId' in plain, false)
+  assert.equal('cantrips' in plain, false)
+})
+
+test('the cantrip question is invisible until the feat is taken', () => {
+  assert.deepEqual(magicInitiateChoices(undefined), [])
+  assert.deepEqual(magicInitiateChoices('tough'), [])
+  assert.ok(magicInitiateChoices('magicInitiate').length >= 2)
 })
 
 // --- Step gating ----------------------------------------------------------

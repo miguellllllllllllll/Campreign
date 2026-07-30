@@ -37,5 +37,8 @@ export function characterToCombatant(
       ? {}
       : { initiativeBonus: character.initiativeBonus }),
     ...(character.critOn === undefined ? {} : { critOn: character.critOn }),
+    ...(character.superiorityDice === undefined
+      ? {}
+      : { superiorityDice: character.superiorityDice }),
   }
 }

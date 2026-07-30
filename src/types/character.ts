@@ -42,6 +42,8 @@ export interface CreationAnswers {
   advanced?: boolean
   subclassId?: string
   featId?: string
+  /** Only asked when the chosen feat grants a cantrip. */
+  magicInitiateSpellId?: string
 }
 
 /** Everything gathered so far, before the wizard is finished. */
@@ -132,6 +134,8 @@ export interface Character {
    */
   subclassId?: string
   featId?: string
+  /** The cantrip Magic Initiate granted, kept so the sheet can name its source. */
+  magicInitiateSpellId?: string
   /**
    * A flat bonus on top of Dexterity when initiative is rolled. Stored rather
    * than recomputed so combat never has to know what a feat is.
@@ -142,6 +146,8 @@ export interface Character {
    * only a Champion carries it — and combat never has to know what a subclass is.
    */
   critOn?: number
+  /** The full superiority-dice pool, restored on a long rest. Battle Master only. */
+  superiorityDice?: number
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

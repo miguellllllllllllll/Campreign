@@ -1,6 +1,7 @@
 'use client'
 
 import { Hourglass, Swords } from 'lucide-react'
+import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { Explain } from '../Explain.tsx'
@@ -15,7 +16,7 @@ export interface ActionBarProps {
   endTurnEnabled: boolean
   /** No movement and nothing in reach — say so, rather than leaving them hunting. */
   stranded?: boolean
-  onAttack: (attackId: string) => void
+  onAttack: (attackId: string, maneuverId?: 'trip') => void
   onEndTurn: () => void
 }
 
@@ -30,6 +31,16 @@ export function ActionBar({
   onAttack,
   onEndTurn,
 }: ActionBarProps) {
+  /*
+   * Armed before the swing, not chosen after it. The SRD lets a Battle Master
+   * decide once they know they hit, but a second prompt mid-attack is the
+   * reaction-shaped problem this slice exists to avoid — so the die is declared
+   * up front and only actually spent if the attack lands.
+   */
+  const [tripArmed, setTripArmed] = useState(false)
+  const dice = active.superiorityDice ?? 0
+  const canTrip = dice > 0
+
   return (
     <div className="border-gold-ornate rounded-card p-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-serif text-xs text-muted">
@@ -55,7 +66,10 @@ export function ActionBar({
               key={attack.id}
               variant="brass"
               disabled={!usable}
-              onClick={() => onAttack(attack.id)}
+              onClick={() => {
+                onAttack(attack.id, tripArmed && attack.kind === 'weapon' ? 'trip' : undefined)
+                setTripArmed(false)
+              }}
               title={attack.description}
             >
               <Swords aria-hidden />
@@ -66,6 +80,22 @@ export function ActionBar({
             </FantasyButton>
           )
         })}
+
+        {canTrip && (
+          <FantasyButton
+            variant={tripArmed ? 'crimson' : 'iron'}
+            disabled={hasActed}
+            aria-pressed={tripArmed}
+            onClick={() => setTripArmed((armed) => !armed)}
+            title="Spend a superiority die: extra damage, and the target falls over unless it saves."
+          >
+            <Swords aria-hidden />
+            Trip Attack
+            <span className="font-mono text-xs font-normal">
+              {dice}d6 left
+            </span>
+          </FantasyButton>
+        )}
 
         <FantasyButton variant="iron" disabled={!endTurnEnabled} onClick={onEndTurn}>
           <Hourglass aria-hidden />

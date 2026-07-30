@@ -5,7 +5,8 @@ import {
   RACE_PRESETS,
 } from '../lib/dnd/presets.ts'
 import { magicStylesFor } from './spellPresets.ts'
-import { FEATS } from './feats.ts'
+import { FEATS, cantripChoicesFor } from './feats.ts'
+import { SPELLS_BY_ID } from './spells.ts'
 import { subclassesFor } from './subclasses.ts'
 import type { BackgroundId, ClassId, CreationDraft } from '../types/character.ts'
 
@@ -24,6 +25,7 @@ export type CreationFieldId =
   | 'magicStyleId'
   | 'subclassId'
   | 'featId'
+  | 'magicInitiateSpellId'
   | 'auraId'
 
 export interface CreationChoice {
@@ -160,6 +162,14 @@ export const CREATION_STEPS: readonly CreationStepDef[] = [
         helper: 'One extra talent, and the only thing here that changes your numbers.',
         optional: true,
       },
+      {
+        // Self-hides: with no choices it renders nothing and cannot block the
+        // step, which is how it stays invisible unless Magic Initiate is taken.
+        id: 'magicInitiateSpellId',
+        question: 'Which spell did you pick up?',
+        helper: 'Your one cantrip. You can cast it as often as you like, forever.',
+        optional: true,
+      },
     ],
   },
   {
@@ -245,6 +255,23 @@ export function subclassChoices(classId: ClassId | undefined): readonly Creation
   }))
 }
 
+/**
+ * The cantrips Magic Initiate offers, or none for every other feat — which is
+ * what keeps the question invisible unless it has been earned.
+ */
+export function magicInitiateChoices(featId: string | undefined): readonly CreationChoice[] {
+  return cantripChoicesFor(featId).flatMap((id) => {
+    const spell = SPELLS_BY_ID[id]
+    if (spell === undefined) return []
+    return [{
+      id: spell.id,
+      label: spell.name,
+      tagline: spell.damageOrEffect,
+      detail: spell.description,
+    }]
+  })
+}
+
 /** Origin feats. The same short list for every class, by design. */
 export function featChoices(): readonly CreationChoice[] {
   return FEATS.map((feat) => ({
@@ -272,6 +299,8 @@ export function choicesFor(
       return subclassChoices(draft.classId)
     case 'featId':
       return featChoices()
+    case 'magicInitiateSpellId':
+      return magicInitiateChoices(draft.featId)
     default:
       return []
   }

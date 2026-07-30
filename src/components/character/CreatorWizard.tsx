@@ -160,6 +160,8 @@ export function CreatorWizard() {
       // Subclasses belong to a class, so a new class invalidates the old pick.
       // Feats are class-agnostic and survive.
       if (fieldId === 'classId') delete next.subclassId
+      // A different feat may not grant a cantrip at all, so the spell goes with it.
+      if (fieldId === 'featId') delete next.magicInitiateSpellId
       // Choosing a style is what fills the spell lists in. Any earlier
       // hand-picked list is dropped, or the new style would not take effect.
       if (fieldId === 'magicStyleId') {
@@ -188,6 +190,7 @@ export function CreatorWizard() {
       if (!enabled) {
         delete next.subclassId
         delete next.featId
+        delete next.magicInitiateSpellId
       }
       return next
     })
