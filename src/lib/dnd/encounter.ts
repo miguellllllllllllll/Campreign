@@ -115,6 +115,24 @@ export function reachableSquares(encounter: Encounter): GridPosition[] {
   return squares
 }
 
+/**
+ * Whether the active combatant could still legally do anything this turn.
+ *
+ * A player who spends their movement walking away from the only enemy has not
+ * chosen to pass — they are stranded, and the UI has to tell the two apart or
+ * it leaves them holding a turn they cannot play.
+ */
+export function hasLegalAction(encounter: Encounter): boolean {
+  const active = activeCombatant(encounter)
+  if (active === undefined || !canAct(active)) return false
+  if (reachableSquares(encounter).length > 0) return true
+  if (encounter.hasActed) return false
+
+  return combatantsOf(encounter, active.team === 'party' ? 'foes' : 'party')
+    .filter((enemy) => !isDefeated(enemy))
+    .some((enemy) => active.attacks.some((attack) => isInRange(active, enemy, attack)))
+}
+
 export function moveActive(encounter: Encounter, to: GridPosition): Encounter {
   const active = activeCombatant(encounter)
   if (active === undefined) return encounter

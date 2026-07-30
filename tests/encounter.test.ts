@@ -7,6 +7,7 @@ import {
   createEncounter,
   encounterWinner,
   endTurn,
+  hasLegalAction,
   moveActive,
   reachableSquares,
   takeEnemyTurn,
@@ -140,6 +141,51 @@ test('you cannot walk onto an occupied square', () => {
     },
   })
   assert.equal(moveActive(state, { x: 2, y: 3 }), state)
+})
+
+test('a hero with movement left always has something to do', () => {
+  assert.equal(hasLegalAction(encounter()), true)
+})
+
+test('being out of movement but next to the goblin still leaves the swing', () => {
+  const state = encounter({
+    combatants: {
+      hero: hero({ position: { x: 3, y: 0 } }),
+      goblin: spawnMonster(GOBLIN, { id: 'goblin', position: { x: 4, y: 0 } }),
+    },
+    movementRemaining: 0,
+  })
+  assert.equal(hasLegalAction(state), true)
+})
+
+test('out of movement and out of reach is the stranded case', () => {
+  assert.equal(hasLegalAction(encounter({ movementRemaining: 0 })), false)
+})
+
+test('an adjacent hero who already acted is stranded too', () => {
+  const state = encounter({
+    combatants: {
+      hero: hero({ position: { x: 3, y: 0 } }),
+      goblin: spawnMonster(GOBLIN, { id: 'goblin', position: { x: 4, y: 0 } }),
+    },
+    movementRemaining: 0,
+    hasActed: true,
+  })
+  assert.equal(hasLegalAction(state), false)
+})
+
+test('a downed enemy is not a target worth keeping the turn open for', () => {
+  const state = encounter({
+    combatants: {
+      hero: hero({ position: { x: 3, y: 0 } }),
+      goblin: {
+        ...spawnMonster(GOBLIN, { id: 'goblin', position: { x: 4, y: 0 } }),
+        currentHp: 0,
+      },
+    },
+    movementRemaining: 0,
+  })
+  assert.equal(hasLegalAction(state), false)
 })
 
 test('attacking out of reach is refused with a reason the banner can show', () => {

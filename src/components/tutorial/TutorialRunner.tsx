@@ -8,6 +8,7 @@ import {
   activeCombatant,
   combatantsOf,
   encounterWinner,
+  hasLegalAction,
   reachableSquares,
   turnOrder,
 } from '../../lib/dnd/encounter.ts'
@@ -135,6 +136,9 @@ export function TutorialRunner() {
   // Every combat step past the initiative roll hands the board over.
   const inCombat = encounter !== null && step.phase === 'combat' && step.id !== 'initiative'
   const boardLive = inCombat && playerTurn && winner === null
+  // Out of movement and out of reach: ending the turn is the only move left, so
+  // it has to be offered even though this step was teaching something else.
+  const stranded = boardLive && !hasLegalAction(encounter)
 
   function move(to: GridPosition) {
     if (useCombatStore.getState().move(to)) dispatch({ type: 'moved' })
@@ -219,7 +223,10 @@ export function TutorialRunner() {
               movementRemaining={playerTurn ? encounter.movementRemaining : 0}
               hasActed={encounter.hasActed}
               attackEnabled={boardLive && step.id !== 'move'}
-              endTurnEnabled={boardLive && (step.id === 'endTurn' || step.id === 'finish')}
+              endTurnEnabled={
+                boardLive && (step.id === 'endTurn' || step.id === 'finish' || stranded)
+              }
+              stranded={stranded}
               onAttack={attack}
               onEndTurn={endTurn}
             />

@@ -13,6 +13,8 @@ export interface ActionBarProps {
   hasActed: boolean
   attackEnabled: boolean
   endTurnEnabled: boolean
+  /** No movement and nothing in reach — say so, rather than leaving them hunting. */
+  stranded?: boolean
   onAttack: (attackId: string) => void
   onEndTurn: () => void
 }
@@ -24,6 +26,7 @@ export function ActionBar({
   hasActed,
   attackEnabled,
   endTurnEnabled,
+  stranded = false,
   onAttack,
   onEndTurn,
 }: ActionBarProps) {
@@ -69,6 +72,13 @@ export function ActionBar({
           End Turn
         </FantasyButton>
       </div>
+
+      {stranded && (
+        <p aria-live="polite" className="mt-3 text-xs leading-relaxed text-amber-torch">
+          You have used all your movement and nothing is within reach. End your turn — your
+          movement comes back next round.
+        </p>
+      )}
     </div>
   )
 }
