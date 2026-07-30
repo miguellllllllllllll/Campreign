@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Cinzel, Cinzel_Decorative, Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google'
 import { PrintOverlay } from '../components/character/PrintOverlay.tsx'
+import { CharacterHudModal } from '../components/nav/CharacterHudModal.tsx'
 import { SoundToggle } from '../components/ui/sound-toggle.tsx'
 import './globals.css'
 
@@ -56,6 +57,7 @@ export default function RootLayout({
             className="bg-motes animate-ember-drift pointer-events-none fixed inset-0 -z-10 opacity-60"
           />
           <SoundToggle />
+          <CharacterHudModal />
           {children}
         </div>
         <PrintOverlay />
