@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/*
+ * Hero Step is deliberately single-theme: a candlelit tavern table. One theme
+ * means one set of contrast decisions to get right for a first-time player.
+ */
+@theme {
+  --color-ink: #12100e;
+  --color-surface: #1c1917;
+  --color-surface-raised: #262220;
+  --color-edge: #3a322c;
+  --color-edge-bright: #574c42;
+  --color-parchment: #f5efe6;
+  --color-muted: #a2968a;
+  --color-gold: #d9a53b;
+  --color-gold-dim: #8a6a24;
+  --color-blood: #c0463b;
+  --color-moss: #7aa35f;
+  --color-arcane: #7c8ed4;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 0.75rem;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-parchment);
+  font-family: var(--font-sans);
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% -10%,
+    rgba(217, 165, 59, 0.09),
+    transparent 70%
+  );
+  background-attachment: fixed;
+}
+
+/* A single visible focus treatment, so keyboard users are never lost. */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
