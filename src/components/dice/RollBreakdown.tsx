@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'motion/react'
 import { Explain } from '../Explain.tsx'
 import { DieFace } from './DieFace.tsx'
 import { cn } from '../../lib/utils.ts'
@@ -11,11 +12,13 @@ import type { ExplainKey } from '../../lib/dnd/explanations.ts'
 export type Verdict = 'great' | 'good' | 'bad' | 'awful'
 
 const VERDICT_CLASS: Record<Verdict, string> = {
-  great: 'border-gold bg-gold/15 text-gold',
+  great: 'border-amber-torch bg-amber-torch/15 text-amber-torch shadow-torch',
   good: 'border-moss bg-moss/15 text-moss',
   bad: 'border-edge-bright bg-surface-raised text-muted',
   awful: 'border-blood bg-blood/15 text-blood',
 }
+
+const CHIP = 'rounded-md border border-edge/80 bg-surface-raised/90 px-2 py-1 shadow-[inset_0_1px_0_rgb(244_232_193/0.06)]'
 
 export interface RollBreakdownProps {
   diceRoll: DiceRoll
@@ -50,7 +53,7 @@ export function RollBreakdown({
   const faces = d20?.results ?? [natural]
 
   return (
-    <div className="rounded-lg border border-edge bg-ink/60 p-4">
+    <div className="rounded-card border border-edge bg-ink/60 p-4">
       <div className="flex flex-wrap items-center gap-3">
         {faces.map((face, index) => (
           <DieFace
@@ -64,16 +67,26 @@ export function RollBreakdown({
 
         {!rolling && (
           <div className="flex flex-wrap items-center gap-1.5 font-mono text-sm">
-            <span className="rounded bg-surface-raised px-2 py-1 text-parchment">{natural}</span>
+            <span className={cn(CHIP, 'text-parchment')}>{natural}</span>
             {parts.map((part) => (
-              <span key={part.label} className="rounded bg-surface-raised px-2 py-1 text-muted">
+              <span key={part.label} className={cn(CHIP, 'text-muted')}>
                 {formatModifier(part.value)} {part.label}
               </span>
             ))}
             <span className="px-1 text-muted">=</span>
-            <span className="rounded bg-gold/15 px-2 py-1 font-bold text-gold">{total}</span>
+            <motion.span
+              className={cn(
+                CHIP,
+                'border-gold-border/70 bg-amber-torch/15 font-bold text-amber-torch shadow-torch',
+              )}
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 14 }}
+            >
+              {total}
+            </motion.span>
             <span className="px-1 text-muted">vs</span>
-            <span className="rounded bg-surface-raised px-2 py-1 text-parchment">
+            <span className={cn(CHIP, 'text-parchment')}>
               <Explain k={targetExplainKey}>{targetLabel}</Explain> {targetValue}
             </span>
           </div>

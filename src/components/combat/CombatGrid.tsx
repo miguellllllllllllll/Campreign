@@ -30,7 +30,7 @@ export function CombatGrid({
 
   return (
     <div
-      className="grid aspect-square w-full max-w-sm gap-1 rounded-card border border-edge bg-ink/70 p-2"
+      className="grid aspect-square w-full max-w-sm gap-1 rounded-card border border-gold-border/40 bg-ink/70 p-2 shadow-[inset_0_0_30px_rgb(0_0_0/0.6)]"
       style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
       role="grid"
       aria-label="Cellar floor, five squares by five"
@@ -60,12 +60,15 @@ export function CombatGrid({
             className={cn(
               'relative flex items-center justify-center rounded border text-lg transition-colors',
               canStepHere
-                ? 'cursor-pointer border-gold/60 bg-gold/10 hover:bg-gold/25'
-                : 'border-edge/60 bg-surface/40',
+                ? 'cursor-pointer border-amber-torch/60 bg-amber-torch/10 shadow-[inset_0_0_12px_rgb(212_175_55/0.2)] hover:bg-amber-torch/25'
+                : 'border-edge/60 bg-surface/40 shadow-[inset_0_1px_0_rgb(244_232_193/0.04)]',
             )}
           >
             {canStepHere && occupant === undefined && (
-              <span aria-hidden className="size-1.5 rounded-full bg-gold/70" />
+              <span
+                aria-hidden
+                className="animate-rune-pulse size-1.5 rounded-full bg-amber-torch shadow-[0_0_8px_rgb(212_175_55/0.8)]"
+              />
             )}
             {occupant !== undefined && (
               <motion.span
@@ -73,11 +76,11 @@ export function CombatGrid({
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 aria-hidden
                 className={cn(
-                  'flex size-full items-center justify-center rounded font-bold',
+                  'flex size-full items-center justify-center rounded font-display',
                   occupant.team === 'party'
-                    ? 'bg-arcane/25 text-arcane'
-                    : 'bg-blood/25 text-blood',
-                  occupant.id === activeId && 'ring-2 ring-gold',
+                    ? 'bg-gradient-to-b from-arcane/35 to-arcane/10 text-arcane'
+                    : 'bg-gradient-to-b from-blood/35 to-blood/10 text-blood',
+                  occupant.id === activeId && 'ring-2 ring-amber-torch shadow-torch',
                 )}
               >
                 {occupant.name.slice(0, 1).toUpperCase()}

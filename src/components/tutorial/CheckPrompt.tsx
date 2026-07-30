@@ -5,8 +5,9 @@ import { useRef, useState } from 'react'
 import { resolveCheck, type CheckResult } from '../../lib/dnd/checks.ts'
 import { narrateCheckFully } from '../../lib/dnd/narrate.ts'
 import { SKILL_LABELS } from '../../lib/dnd/stats.ts'
-import { Button } from '../ui/button.tsx'
+import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { RollBreakdown } from '../dice/RollBreakdown.tsx'
+import { playSound } from '../../lib/sound.ts'
 import type { Character } from '../../types/character.ts'
 import type { TutorialCheck } from '../../types/tutorial.ts'
 
@@ -31,8 +32,12 @@ export function CheckPrompt({ character, check, onResolved }: CheckPromptProps) 
     })
     setResult(resolved)
     setRolling(true)
+    playSound('roll')
     if (timer.current !== null) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setRolling(false), 550)
+    timer.current = setTimeout(() => {
+      setRolling(false)
+      playSound(resolved.success ? 'success' : 'failure')
+    }, 550)
   }
 
   return (
@@ -40,10 +45,10 @@ export function CheckPrompt({ character, check, onResolved }: CheckPromptProps) 
       <p className="text-sm text-muted">{check.reason}</p>
 
       {result === null ? (
-        <Button size="lg" className="self-start" onClick={rollIt}>
+        <FantasyButton size="lg" className="self-start" onClick={rollIt}>
           <Dices aria-hidden />
           Roll {SKILL_LABELS[check.skill]}
-        </Button>
+        </FantasyButton>
       ) : (
         <>
           <RollBreakdown
@@ -61,13 +66,13 @@ export function CheckPrompt({ character, check, onResolved }: CheckPromptProps) 
           />
 
           {!rolling && (
-            <Button
-              variant="secondary"
+            <FantasyButton
+              variant="iron"
               className="self-start"
               onClick={() => onResolved(result.success)}
             >
               Continue
-            </Button>
+            </FantasyButton>
           )}
         </>
       )}

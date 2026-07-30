@@ -2,9 +2,10 @@
 
 import { Swords } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Button } from '../ui/button.tsx'
+import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { Explain } from '../Explain.tsx'
 import { RollBreakdown, type Verdict } from '../dice/RollBreakdown.tsx'
+import { playSound } from '../../lib/sound.ts'
 import { characterToCombatant } from '../../lib/dnd/combatants.ts'
 import { resolveAttack } from '../../lib/dnd/combat.ts'
 import { TRAINING_DUMMY, spawnMonster } from '../../lib/dnd/data/monsters.ts'
@@ -39,31 +40,37 @@ export function AttackPractice({ character }: { character: Character }) {
 
     setAttempt({ attack, outcome })
     setRolling(true)
+    playSound('roll')
     if (timer.current !== null) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setRolling(false), 550)
+    // The verdict chime waits for the dice to settle, so it reads as the result
+    // of the roll rather than part of the throw.
+    timer.current = setTimeout(() => {
+      setRolling(false)
+      playSound(outcome.kind === 'hit' || outcome.kind === 'crit' ? 'success' : 'failure')
+    }, 550)
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+      <p className="font-serif text-xs font-semibold tracking-wide text-muted uppercase">
         Try an <Explain k="action">Action</Explain> against a practice dummy
       </p>
 
       <div className="flex flex-wrap gap-2">
         {character.attacks.map((attack) => (
-          <Button
+          <FantasyButton
             key={attack.id}
-            variant="secondary"
+            variant="iron"
             onClick={() => swing(attack)}
             title={attack.description}
           >
             <Swords aria-hidden />
             {attack.name}
-            <span className="font-mono text-xs text-gold">
+            <span className="font-mono text-xs text-amber-torch">
               {formatModifier(attackBonus(attack, character.scores, character.level))} to hit,{' '}
               {damageNotation(attack, character.scores)} dmg
             </span>
-          </Button>
+          </FantasyButton>
         ))}
       </div>
 

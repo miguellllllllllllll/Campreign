@@ -1,7 +1,8 @@
 'use client'
 
+import { Hourglass, Swords } from 'lucide-react'
 import { isInRange } from '../../lib/dnd/combat.ts'
-import { Button } from '../ui/button.tsx'
+import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { Explain } from '../Explain.tsx'
 import type { Combatant } from '../../types/combat.ts'
 
@@ -27,8 +28,8 @@ export function ActionBar({
   onEndTurn,
 }: ActionBarProps) {
   return (
-    <div className="rounded-card border border-edge bg-surface p-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+    <div className="border-gold-ornate rounded-card p-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-serif text-xs text-muted">
         <span>
           <Explain k="movement">Movement</Explain> left:{' '}
           <span className="font-mono text-parchment">
@@ -47,24 +48,26 @@ export function ActionBar({
           const usable = attackEnabled && !hasActed && target !== undefined && reachable
 
           return (
-            <Button
+            <FantasyButton
               key={attack.id}
-              variant="primary"
+              variant="brass"
               disabled={!usable}
               onClick={() => onAttack(attack.id)}
               title={attack.description}
             >
+              <Swords aria-hidden />
               {attack.name}
               {target !== undefined && !reachable && (
                 <span className="text-xs font-normal">— too far, move closer</span>
               )}
-            </Button>
+            </FantasyButton>
           )
         })}
 
-        <Button variant="secondary" disabled={!endTurnEnabled} onClick={onEndTurn}>
+        <FantasyButton variant="iron" disabled={!endTurnEnabled} onClick={onEndTurn}>
+          <Hourglass aria-hidden />
           End Turn
-        </Button>
+        </FantasyButton>
       </div>
     </div>
   )

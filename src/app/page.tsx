@@ -1,7 +1,10 @@
-import { BookOpen, Dices, Sparkles, Swords } from 'lucide-react'
+import { BookOpen, Dices, Scroll, Shield, Sparkles, Swords } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '../components/ui/button.tsx'
-import { Card, CardContent } from '../components/ui/card.tsx'
+import { FantasyButton } from '../components/ui/fantasy-button.tsx'
+import {
+  ParchmentCard,
+  ParchmentCardContent,
+} from '../components/ui/parchment-card.tsx'
 import { RosterStrip } from '../components/character/RosterStrip.tsx'
 
 const PROMISES = [
@@ -24,29 +27,48 @@ const PROMISES = [
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-10 px-5 py-16">
-      <header className="flex flex-col gap-4">
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-gold-dim bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
-          <Sparkles size={13} aria-hidden />
-          Dungeons &amp; Dragons for absolute beginners
+    <main className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col gap-12 px-5 py-16">
+      {/* The torch itself: a warm bloom behind the title that breathes. */}
+      <div
+        aria-hidden
+        className="animate-torch-flicker pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-amber-torch/12 blur-[90px]"
+      />
+
+      <header className="flex flex-col items-start gap-5">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-gold-border/50 bg-amber-torch/10 px-3 py-1 font-serif text-xs font-semibold tracking-widest text-amber-torch uppercase">
+          <Sparkles size={13} className="animate-rune-pulse" aria-hidden />
+          D&amp;D for absolute beginners
         </span>
-        <h1 className="text-4xl font-bold tracking-tight text-parchment sm:text-5xl">
+
+        <h1 className="font-display bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-5xl leading-tight font-black text-transparent drop-shadow-[0_2px_12px_rgba(212,175,55,0.25)] sm:text-6xl">
           Hero Step
         </h1>
-        <p className="max-w-2xl text-lg leading-relaxed text-muted">
+
+        {/* A divider with a rune at its centre, the way a rulebook breaks a section. */}
+        <div aria-hidden className="flex w-full max-w-md items-center gap-3">
+          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold-border/60" />
+          <Scroll size={14} className="text-gold-border" />
+          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold-border/60" />
+        </div>
+
+        <p className="max-w-2xl font-serif text-lg leading-relaxed text-parchment/80">
           Learn to play D&amp;D by actually playing it. Build a hero in three questions, then fight
           your first goblin with the rules explained one step at a time.
         </p>
+
         <div className="flex flex-wrap gap-3">
-          <Button asChild size="lg">
+          <FantasyButton asChild size="lg">
             <Link href="/create">
               Build my hero
               <Dices aria-hidden />
             </Link>
-          </Button>
-          <Button asChild variant="secondary" size="lg">
-            <Link href="/tutorial">Play the tutorial</Link>
-          </Button>
+          </FantasyButton>
+          <FantasyButton asChild variant="iron" size="lg">
+            <Link href="/tutorial">
+              Play the tutorial
+              <Shield aria-hidden />
+            </Link>
+          </FantasyButton>
         </div>
       </header>
 
@@ -54,13 +76,15 @@ export default function Home() {
 
       <section className="grid gap-4 sm:grid-cols-3">
         {PROMISES.map(({ icon: Icon, title, body }) => (
-          <Card key={title}>
-            <CardContent className="flex flex-col gap-2 pt-5">
-              <Icon size={20} className="text-gold" aria-hidden />
-              <h2 className="font-semibold text-parchment">{title}</h2>
+          <ParchmentCard key={title} interactive>
+            <ParchmentCardContent className="flex flex-col gap-2.5 pt-6">
+              <span className="grid size-10 place-items-center rounded-lg border border-gold-border/40 bg-amber-torch/10 text-amber-torch transition-all duration-300 group-hover:border-gold-border group-hover:shadow-torch">
+                <Icon size={19} aria-hidden />
+              </span>
+              <h2 className="font-serif font-semibold tracking-wide text-parchment">{title}</h2>
               <p className="text-sm leading-relaxed text-muted">{body}</p>
-            </CardContent>
-          </Card>
+            </ParchmentCardContent>
+          </ParchmentCard>
         ))}
       </section>
     </main>

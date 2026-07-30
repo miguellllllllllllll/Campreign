@@ -1,49 +1,188 @@
 @import "tailwindcss";
 
 /*
- * Hero Step is deliberately single-theme: a candlelit tavern table. One theme
- * means one set of contrast decisions to get right for a first-time player.
+ * "Arcane Parchment & Obsidian". Hero Step is deliberately single-theme: a
+ * candlelit table in a cellar. One theme means one set of contrast decisions to
+ * get right for a first-time player.
+ *
+ * Two tiers on purpose. The named palette below is the primitive layer; the
+ * semantic names beneath it (surface, edge, muted) are what components spell.
+ * Retuning the mood means editing six values here, not fifty files.
  */
 @theme {
-  --color-ink: #12100e;
-  --color-surface: #1c1917;
-  --color-surface-raised: #262220;
-  --color-edge: #3a322c;
-  --color-edge-bright: #574c42;
-  --color-parchment: #f5efe6;
-  --color-muted: #a2968a;
-  --color-gold: #d9a53b;
-  --color-gold-dim: #8a6a24;
+  --color-obsidian: #0b0d12;
+  --color-dungeon-card: #141824;
+  --color-amber-torch: #d4af37;
+  --color-gold-border: #c5a059;
+  --color-parchment: #f4e8c1;
+  --color-parchment-muted: #a39b8b;
+
+  --color-ink: var(--color-obsidian);
+  --color-surface: var(--color-dungeon-card);
+  --color-surface-raised: #1b2030;
+  --color-edge: #2a3040;
+  --color-edge-bright: #414a60;
+  --color-muted: var(--color-parchment-muted);
+  --color-gold: var(--color-amber-torch);
+  --color-gold-dim: var(--color-gold-border);
   --color-blood: #c0463b;
   --color-moss: #7aa35f;
-  --color-arcane: #7c8ed4;
+  --color-arcane: #8a9ae0;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cinzel-decorative), ui-serif, Georgia, serif;
+  --font-serif: var(--font-cinzel), ui-serif, Georgia, serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --radius-card: 0.75rem;
+
+  --animate-torch-flicker: torch-flicker 6s ease-in-out infinite;
+  --animate-ember-drift: ember-drift 18s linear infinite;
+  --animate-rune-pulse: rune-pulse 3.5s ease-in-out infinite;
+  --animate-scroll-unfurl: scroll-unfurl 160ms ease-out;
+
+  @keyframes scroll-unfurl {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes torch-flicker {
+    0%,
+    100% {
+      opacity: 0.95;
+    }
+    18% {
+      opacity: 1;
+    }
+    37% {
+      opacity: 0.96;
+    }
+    55% {
+      opacity: 1;
+    }
+    72% {
+      opacity: 0.97;
+    }
+  }
+
+  /* Dust caught in torchlight: one slow vertical drift, no JS particle loop. */
+  @keyframes ember-drift {
+    from {
+      background-position: 0 0, 0 0;
+    }
+    to {
+      background-position: 0 -600px, 0 -400px;
+    }
+  }
+
+  @keyframes rune-pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.06);
+    }
+  }
 }
 
-html {
-  color-scheme: dark;
+/* These belong in the base layer, not unlayered: an unlayered element rule
+   outranks every utility, so a bare `h1 { font-family }` would silently beat
+   `font-display` on the headings that want it. */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-obsidian);
+    color: var(--color-parchment);
+    font-family: var(--font-sans);
+  }
+
+  /* Headings carry the fantasy voice; body copy stays a plain sans for reading. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    letter-spacing: 0.01em;
+  }
+
+  /* A single visible focus treatment, so keyboard users are never lost. */
+  :focus-visible {
+    outline: 2px solid var(--color-amber-torch);
+    outline-offset: 2px;
+  }
 }
 
-body {
-  background-color: var(--color-ink);
-  color: var(--color-parchment);
-  font-family: var(--font-sans);
-  background-image: radial-gradient(
-    ellipse 80% 60% at 50% -10%,
-    rgba(217, 165, 59, 0.09),
-    transparent 70%
-  );
+/* ---------------------------------------------------------------------------
+ * Atmosphere utilities
+ * ------------------------------------------------------------------------ */
+
+@utility shadow-torch {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+@utility shadow-torch-lg {
+  box-shadow:
+    0 0 40px rgba(212, 175, 55, 0.18),
+    0 18px 40px -12px rgb(0 0 0 / 0.8);
+}
+
+/*
+ * A gradient border that survives border-radius. Painting the gradient into the
+ * border box and the fill into the padding box is the only approach that does;
+ * `border-image` squares off every corner.
+ */
+@utility border-gold-ornate {
+  --ornate-fill: var(--color-dungeon-card);
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--ornate-fill), var(--ornate-fill)),
+    linear-gradient(
+      160deg,
+      #f0dca4 0%,
+      var(--color-gold-border) 28%,
+      #6b5527 52%,
+      var(--color-gold-border) 78%,
+      #e8cf8a 100%
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: inset 0 1px 0 rgb(244 232 193 / 0.08);
+}
+
+/** Torchlight spilling from above, for full-page backdrops. */
+@utility bg-torchlight {
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% -8%, rgb(212 175 55 / 0.16), transparent 72%),
+    radial-gradient(ellipse 50% 40% at 88% 8%, rgb(138 154 224 / 0.07), transparent 70%);
   background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
-/* A single visible focus treatment, so keyboard users are never lost. */
-:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
+/**
+ * Motes of dust, drawn as two offset dot grids rather than DOM nodes — a
+ * particle loop would cost a rAF forever for something nobody looks at.
+ */
+@utility bg-motes {
+  background-image:
+    radial-gradient(rgb(244 232 193 / 0.13) 1px, transparent 1.4px),
+    radial-gradient(rgb(212 175 55 / 0.1) 1px, transparent 1.6px);
+  background-size:
+    140px 200px,
+    90px 160px;
+  background-position:
+    0 0,
+    40px 70px;
 }
 
 @media (prefers-reduced-motion: reduce) {

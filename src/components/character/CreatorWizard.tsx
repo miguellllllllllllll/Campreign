@@ -1,10 +1,27 @@
 'use client'
 
-import { ArrowLeft, ArrowRight, Dices } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Clover,
+  Coins,
+  Compass,
+  Crown,
+  Dices,
+  Feather,
+  Footprints,
+  HeartHandshake,
+  KeyRound,
+  Mountain,
+  ShieldCheck,
+  Swords,
+  WandSparkles,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
-import { Button } from '../ui/button.tsx'
-import { Card, CardContent } from '../ui/card.tsx'
+import { FantasyButton } from '../ui/fantasy-button.tsx'
+import { ParchmentCard, ParchmentCardContent } from '../ui/parchment-card.tsx'
 import { CharacterCard } from './CharacterCard.tsx'
 import { QuestionStep, type Choice } from './QuestionStep.tsx'
 import { CLASS_PRESETS, MOTIVATION_PRESETS, RACE_PRESETS } from '../../lib/dnd/presets.ts'
@@ -12,11 +29,34 @@ import { useCharacterStore } from '../../stores/characterStore.ts'
 import type { Character, ClassId, MotivationId, RaceId } from '../../types/character.ts'
 import { cn } from '../../lib/utils.ts'
 
+/** A sigil per option. Kept beside the choices, not in the rules data, which stays presentation-free. */
+const CLASS_ICONS: Record<ClassId, LucideIcon> = {
+  fighter: Swords,
+  wizard: WandSparkles,
+  rogue: Footprints,
+  cleric: HeartHandshake,
+}
+
+const RACE_ICONS: Record<RaceId, LucideIcon> = {
+  dwarf: Mountain,
+  elf: Feather,
+  human: Compass,
+  halfling: Clover,
+}
+
+const MOTIVATION_ICONS: Record<MotivationId, LucideIcon> = {
+  glory: Crown,
+  secrets: KeyRound,
+  protect: ShieldCheck,
+  fortune: Coins,
+}
+
 const CLASS_CHOICES: readonly Choice<ClassId>[] = Object.values(CLASS_PRESETS).map((preset) => ({
   id: preset.id,
   label: preset.label,
   tagline: preset.tagline,
   detail: preset.description,
+  icon: CLASS_ICONS[preset.id],
 }))
 
 const RACE_CHOICES: readonly Choice<RaceId>[] = Object.values(RACE_PRESETS).map((preset) => ({
@@ -24,10 +64,16 @@ const RACE_CHOICES: readonly Choice<RaceId>[] = Object.values(RACE_PRESETS).map(
   label: preset.label,
   tagline: preset.tagline,
   detail: preset.trait,
+  icon: RACE_ICONS[preset.id],
 }))
 
 const MOTIVATION_CHOICES: readonly Choice<MotivationId>[] = Object.values(MOTIVATION_PRESETS).map(
-  (preset) => ({ id: preset.id, label: preset.label, tagline: preset.tagline }),
+  (preset) => ({
+    id: preset.id,
+    label: preset.label,
+    tagline: preset.tagline,
+    icon: MOTIVATION_ICONS[preset.id],
+  }),
 )
 
 const STEP_LABELS = ['How you fight', 'Who you are', 'Why you go'] as const
@@ -55,8 +101,10 @@ export function CreatorWizard() {
     return (
       <div className="flex flex-col gap-5">
         <div>
-          <h1 className="text-2xl font-bold text-parchment">Your hero is ready</h1>
-          <p className="mt-1 text-sm text-muted">
+          <h1 className="font-display bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-3xl font-black text-transparent">
+            Your hero is ready
+          </h1>
+          <p className="mt-2 text-sm text-muted">
             Every number below was worked out for you. Hover or tap any underlined label to find out
             what it means.
           </p>
@@ -65,13 +113,13 @@ export function CreatorWizard() {
         <CharacterCard character={hero} />
 
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="lg">
+          <FantasyButton asChild size="lg">
             <Link href="/tutorial">
               Play the tutorial
               <ArrowRight aria-hidden />
             </Link>
-          </Button>
-          <Button
+          </FantasyButton>
+          <FantasyButton
             variant="ghost"
             size="lg"
             onClick={() => {
@@ -80,7 +128,7 @@ export function CreatorWizard() {
             }}
           >
             Start over
-          </Button>
+          </FantasyButton>
         </div>
       </div>
     )
@@ -89,8 +137,10 @@ export function CreatorWizard() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-parchment">Three questions</h1>
-        <p className="mt-1 text-sm text-muted">
+        <h1 className="font-display bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-3xl font-black text-transparent">
+          Three questions
+        </h1>
+        <p className="mt-2 text-sm text-muted">
           Answer these and Hero Step fills in the entire character sheet — no dice notation, no
           arithmetic.
         </p>
@@ -102,8 +152,8 @@ export function CreatorWizard() {
             key={label}
             aria-current={index === step ? 'step' : undefined}
             className={cn(
-              'rounded-full border px-3 py-1 text-xs font-medium',
-              index === step && 'border-gold bg-gold/10 text-gold',
+              'rounded-full border px-3 py-1 font-serif text-xs font-semibold tracking-wide transition-colors',
+              index === step && 'border-amber-torch bg-amber-torch/10 text-amber-torch shadow-torch',
               index !== step && selections[index] !== null && 'border-moss/50 text-moss',
               index !== step && selections[index] === null && 'border-edge text-muted',
             )}
@@ -113,8 +163,8 @@ export function CreatorWizard() {
         ))}
       </ol>
 
-      <Card>
-        <CardContent className="pt-5">
+      <ParchmentCard>
+        <ParchmentCardContent className="pt-5">
           {step === 0 && (
             <QuestionStep
               question="When trouble starts, what do you do?"
@@ -142,13 +192,16 @@ export function CreatorWizard() {
               onSelect={setMotivationId}
             />
           )}
-        </CardContent>
-      </Card>
+        </ParchmentCardContent>
+      </ParchmentCard>
 
       {isLastQuestion && motivationId !== null && (
-        <Card>
-          <CardContent className="flex flex-col gap-2 pt-5">
-            <label htmlFor="hero-name" className="text-sm font-semibold text-parchment">
+        <ParchmentCard>
+          <ParchmentCardContent className="flex flex-col gap-2 pt-5">
+            <label
+              htmlFor="hero-name"
+              className="font-serif text-sm font-semibold tracking-wide text-parchment"
+            >
               What are you called?
             </label>
             <input
@@ -157,30 +210,30 @@ export function CreatorWizard() {
               onChange={(event) => setName(event.target.value)}
               placeholder="Leave blank and we will call you Unnamed Hero"
               maxLength={40}
-              className="h-10 rounded-lg border border-edge bg-ink px-3 text-sm text-parchment placeholder:text-muted/60"
+              className="h-10 rounded-lg border border-edge bg-ink/70 px-3 text-sm text-parchment transition-colors placeholder:text-muted/60 focus:border-gold-border/70"
             />
-          </CardContent>
-        </Card>
+          </ParchmentCardContent>
+        </ParchmentCard>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
         {step > 0 && (
-          <Button variant="ghost" onClick={() => setStep(step - 1)}>
+          <FantasyButton variant="ghost" onClick={() => setStep(step - 1)}>
             <ArrowLeft aria-hidden />
             Back
-          </Button>
+          </FantasyButton>
         )}
         {!isLastQuestion && (
-          <Button disabled={!canAdvance} onClick={() => setStep(step + 1)}>
+          <FantasyButton disabled={!canAdvance} onClick={() => setStep(step + 1)}>
             Next
             <ArrowRight aria-hidden />
-          </Button>
+          </FantasyButton>
         )}
         {isLastQuestion && (
-          <Button size="lg" disabled={!canAdvance} onClick={forge}>
+          <FantasyButton size="lg" disabled={!canAdvance} onClick={forge}>
             <Dices aria-hidden />
             Build my hero
-          </Button>
+          </FantasyButton>
         )}
       </div>
     </div>

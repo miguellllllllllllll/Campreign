@@ -1,6 +1,7 @@
 import { Heart, Shield, Sparkles, Wind } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Explain } from '../Explain.tsx'
+import { ResourceBar } from '../ui/resource-bar.tsx'
 import { ABILITY_LABELS, ABILITY_NAMES, abilityModifier, formatModifier } from '../../lib/dnd/stats.ts'
 import type { ExplainKey } from '../../lib/dnd/explanations.ts'
 import type { Character } from '../../types/character.ts'
@@ -11,21 +12,28 @@ function StatTile({
   value,
   explainKey,
   hint,
+  bar,
 }: {
   icon: ReactNode
   label: string
   value: string
   explainKey: ExplainKey
   hint?: string
+  bar?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-lg border border-edge bg-surface-raised px-3 py-3">
-      <span className="text-gold">{icon}</span>
+    <div className="group relative flex flex-col items-center gap-1 overflow-hidden rounded-lg border border-edge bg-surface-raised/80 px-3 py-3 transition-colors hover:border-gold-border/50">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-border/50 to-transparent"
+      />
+      <span className="text-amber-torch">{icon}</span>
       <span className="font-mono text-2xl font-bold tabular-nums text-parchment">{value}</span>
-      <span className="text-center text-xs font-medium uppercase tracking-wide text-muted">
+      <span className="text-center font-serif text-xs font-semibold tracking-wide text-muted uppercase">
         <Explain k={explainKey}>{label}</Explain>
       </span>
       {hint !== undefined && <span className="text-center text-[11px] text-muted/70">{hint}</span>}
+      {bar !== undefined && <div className="mt-1 w-full">{bar}</div>}
     </div>
   )
 }
@@ -48,6 +56,13 @@ export function StatBlock({ character }: { character: Character }) {
           label="Hit Points"
           value={`${character.currentHp}/${character.maxHp}`}
           explainKey="hp"
+          bar={
+            <ResourceBar
+              current={character.currentHp}
+              max={character.maxHp}
+              label={`${character.name} hit points`}
+            />
+          }
         />
         <StatTile
           icon={<Wind size={18} />}
@@ -74,9 +89,9 @@ export function StatBlock({ character }: { character: Character }) {
             return (
               <div
                 key={ability}
-                className="flex flex-col items-center rounded-lg border border-edge bg-surface-raised py-2"
+                className="flex flex-col items-center rounded-lg border border-edge bg-surface-raised/80 py-2 transition-colors hover:border-gold-border/50"
               >
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                <span className="font-serif text-[11px] font-semibold uppercase tracking-wide text-muted">
                   <Explain k={ability} className="no-underline decoration-transparent">
                     {ability}
                   </Explain>
@@ -84,7 +99,7 @@ export function StatBlock({ character }: { character: Character }) {
                 <span className="font-mono text-lg font-bold tabular-nums text-parchment">
                   {score}
                 </span>
-                <span className="font-mono text-xs text-gold">
+                <span className="font-mono text-xs text-amber-torch">
                   {formatModifier(abilityModifier(score))}
                 </span>
                 <span className="sr-only">{ABILITY_LABELS[ability]}</span>

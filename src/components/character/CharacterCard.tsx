@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card.tsx'
+import {
+  ParchmentCard,
+  ParchmentCardContent,
+  ParchmentCardDescription,
+  ParchmentCardHeader,
+  ParchmentCardTitle,
+} from '../ui/parchment-card.tsx'
 import { Explain } from '../Explain.tsx'
 import { StatBlock } from './StatBlock.tsx'
 import { AttackPractice } from './AttackPractice.tsx'
@@ -17,25 +23,27 @@ export function CharacterCard({
   const race = RACE_PRESETS[character.raceId]
 
   return (
-    <Card>
-      <CardHeader>
+    <ParchmentCard className="shadow-torch-lg">
+      <ParchmentCardHeader>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <CardTitle className="text-2xl">{character.name}</CardTitle>
-          <span className="rounded-full border border-gold-dim bg-gold/10 px-2.5 py-0.5 text-xs font-semibold text-gold">
+          <ParchmentCardTitle className="font-display text-2xl text-parchment">
+            {character.name}
+          </ParchmentCardTitle>
+          <span className="rounded-full border border-gold-border/60 bg-amber-torch/10 px-2.5 py-0.5 font-serif text-xs font-semibold tracking-wide text-amber-torch">
             <Explain k="level">Level {character.level}</Explain>
           </span>
         </div>
-        <CardDescription>
+        <ParchmentCardDescription>
           {race.label} · {klass.label} — {character.blurb}
-        </CardDescription>
-      </CardHeader>
+        </ParchmentCardDescription>
+      </ParchmentCardHeader>
 
-      <CardContent className="flex flex-col gap-5">
+      <ParchmentCardContent className="flex flex-col gap-5">
         <StatBlock character={character} />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <p className="mb-1.5 font-serif text-xs font-semibold tracking-wide text-muted uppercase">
               <Explain k="skillCheck">Trained Skills</Explain>
             </p>
             <p className="text-sm text-parchment">
@@ -43,7 +51,7 @@ export function CharacterCard({
             </p>
           </div>
           <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <p className="mb-1.5 font-serif text-xs font-semibold tracking-wide text-muted uppercase">
               <Explain k="savingThrow">Strong Saves</Explain>
             </p>
             <p className="text-sm text-parchment">
@@ -52,12 +60,12 @@ export function CharacterCard({
           </div>
         </div>
 
-        <p className="rounded-lg border border-edge bg-ink/40 p-3 text-sm leading-relaxed text-muted">
+        <p className="rounded-lg border-l-2 border-gold-border/50 bg-ink/40 p-3 text-sm leading-relaxed text-muted italic">
           {race.trait}
         </p>
 
         {showPractice && <AttackPractice character={character} />}
-      </CardContent>
-    </Card>
+      </ParchmentCardContent>
+    </ParchmentCard>
   )
 }

@@ -18,7 +18,8 @@ import { ActionBar } from '../combat/ActionBar.tsx'
 import { CombatGrid } from '../combat/CombatGrid.tsx'
 import { InitiativeTrack } from '../combat/InitiativeTrack.tsx'
 import { TurnBanner } from '../combat/TurnBanner.tsx'
-import { Button } from '../ui/button.tsx'
+import { FantasyButton } from '../ui/fantasy-button.tsx'
+import { ParchmentCard, ParchmentCardContent } from '../ui/parchment-card.tsx'
 import { CheckPrompt } from './CheckPrompt.tsx'
 import { ChoicePrompt } from './ChoicePrompt.tsx'
 import type { Character } from '../../types/character.ts'
@@ -39,9 +40,13 @@ function StepPrompt({ step, character, dispatch }: StepPromptProps) {
   switch (step.completion.when) {
     case 'acknowledged':
       return (
-        <Button size="lg" className="self-start" onClick={() => dispatch({ type: 'acknowledged' })}>
+        <FantasyButton
+          size="lg"
+          className="self-start"
+          onClick={() => dispatch({ type: 'acknowledged' })}
+        >
           Continue
-        </Button>
+        </FantasyButton>
       )
 
     case 'skillCheck': {
@@ -104,16 +109,18 @@ export function TutorialRunner() {
 
   if (character === null) {
     return (
-      <div className="rounded-card border border-edge bg-surface p-6">
-        <h1 className="text-xl font-semibold text-parchment">You need a hero first</h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          The tutorial hands you the character you built, so it can show you your own numbers
-          rather than someone else&rsquo;s. Answer three questions and come back.
-        </p>
-        <Button asChild className="mt-4">
-          <Link href="/create">Create a hero</Link>
-        </Button>
-      </div>
+      <ParchmentCard>
+        <ParchmentCardContent className="pt-6">
+          <h1 className="font-display text-xl text-parchment">You need a hero first</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            The tutorial hands you the character you built, so it can show you your own numbers
+            rather than someone else&rsquo;s. Answer three questions and come back.
+          </p>
+          <FantasyButton asChild className="mt-4">
+            <Link href="/create">Create a hero</Link>
+          </FantasyButton>
+        </ParchmentCardContent>
+      </ParchmentCard>
     )
   }
 
@@ -161,7 +168,7 @@ export function TutorialRunner() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex flex-col gap-4">
           {resolution !== null && (
-            <p className="rounded-card border-l-2 border-gold/60 bg-surface/60 p-4 text-sm italic leading-relaxed text-parchment">
+            <p className="rounded-card border-l-2 border-amber-torch/60 bg-surface/60 p-4 text-sm leading-relaxed text-parchment italic">
               {resolution}
             </p>
           )}
@@ -169,8 +176,8 @@ export function TutorialRunner() {
           <p className="text-sm leading-relaxed text-muted">{step.narration}</p>
 
           {finished ? (
-            <div className="rounded-card border border-moss/50 bg-moss/10 p-5">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-moss">
+            <div className="rounded-card border border-moss/50 bg-moss/10 p-5 shadow-[0_0_30px_rgb(122_163_95/0.15)]">
+              <h2 className="flex items-center gap-2 font-display text-lg text-moss">
                 <PartyPopper aria-hidden className="size-5" />
                 The cellar is yours
               </h2>
@@ -179,17 +186,17 @@ export function TutorialRunner() {
                 you sit at from here is those three things, with bigger numbers.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="secondary" onClick={restart}>
+                <FantasyButton variant="iron" onClick={restart}>
                   Play it again
-                </Button>
-                <Button asChild variant="ghost">
+                </FantasyButton>
+                <FantasyButton asChild variant="ghost">
                   <Link href="/create">Build another hero</Link>
-                </Button>
+                </FantasyButton>
               </div>
             </div>
           ) : winner === 'foes' ? (
-            <div className="rounded-card border border-blood/50 bg-blood/10 p-5">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-blood">
+            <div className="rounded-card border border-blood/50 bg-blood/10 p-5 shadow-[0_0_30px_rgb(192_70_59/0.15)]">
+              <h2 className="flex items-center gap-2 font-display text-lg text-blood">
                 <Skull aria-hidden className="size-5" />
                 You went down
               </h2>
@@ -197,9 +204,9 @@ export function TutorialRunner() {
                 Dropping to zero hit points is not the end of a character at a real table, but
                 it is the end of this lesson. Take it from the top.
               </p>
-              <Button variant="secondary" className="mt-4" onClick={restart}>
+              <FantasyButton variant="iron" className="mt-4" onClick={restart}>
                 Try again
-              </Button>
+              </FantasyButton>
             </div>
           ) : (
             <StepPrompt step={step} character={character} dispatch={dispatch} />
@@ -235,8 +242,10 @@ export function TutorialRunner() {
               round={encounter.round}
             />
 
-            <div className="rounded-card border border-edge bg-surface p-4">
-              <h3 className="text-sm font-semibold text-parchment">What just happened</h3>
+            <div className="rounded-card border border-edge bg-surface/70 p-4 backdrop-blur-sm">
+              <h3 className="font-serif text-sm font-semibold tracking-wide text-parchment">
+                What just happened
+              </h3>
               <ol className="mt-2 space-y-1.5 text-xs leading-relaxed text-muted">
                 {encounter.log.slice(-6).map((line, index) => (
                   <li key={`${index}-${line.slice(0, 12)}`}>{line}</li>

@@ -2,7 +2,7 @@
 
 import { UserRound } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '../ui/button.tsx'
+import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { CLASS_PRESETS, RACE_PRESETS } from '../../lib/dnd/presets.ts'
 import { useCharacterStore, useRosterHydrated } from '../../stores/characterStore.ts'
 import { cn } from '../../lib/utils.ts'
@@ -17,8 +17,10 @@ export function RosterStrip() {
   if (!hydrated || roster.length === 0) return null
 
   return (
-    <section className="flex flex-col gap-3 rounded-card border border-edge bg-surface p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted">Your heroes</p>
+    <section className="flex flex-col gap-3 rounded-card border border-edge bg-surface/70 p-4 backdrop-blur-sm">
+      <p className="font-serif text-xs font-semibold tracking-wide text-muted uppercase">
+        Your heroes
+      </p>
       <div className="flex flex-wrap gap-2">
         {roster.map((hero) => (
           <button
@@ -29,8 +31,8 @@ export function RosterStrip() {
             className={cn(
               'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors',
               hero.id === activeId
-                ? 'border-gold bg-gold/10 text-parchment'
-                : 'border-edge bg-surface-raised text-muted hover:border-edge-bright',
+                ? 'border-amber-torch bg-amber-torch/10 text-parchment shadow-torch'
+                : 'border-edge bg-surface-raised text-muted hover:border-gold-border/60',
             )}
           >
             <UserRound size={15} aria-hidden />
@@ -41,9 +43,9 @@ export function RosterStrip() {
           </button>
         ))}
       </div>
-      <Button asChild variant="ghost" size="sm" className="w-fit">
+      <FantasyButton asChild variant="ghost" size="sm" className="w-fit">
         <Link href="/tutorial">Take the selected hero into the tutorial</Link>
-      </Button>
+      </FantasyButton>
     </section>
   )
 }

@@ -1,6 +1,8 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { playSound } from '../../lib/sound.ts'
 import { cn } from '../../lib/utils.ts'
 
 export interface Choice<T extends string> {
@@ -8,6 +10,7 @@ export interface Choice<T extends string> {
   label: string
   tagline: string
   detail?: string
+  icon?: LucideIcon
 }
 
 export interface QuestionStepProps<T extends string> {
@@ -26,35 +29,89 @@ export function QuestionStep<T extends string>({
   onSelect,
 }: QuestionStepProps<T>) {
   return (
-    <fieldset className="flex flex-col gap-4">
+    <fieldset className="flex flex-col gap-5">
       <legend className="flex flex-col gap-1">
-        <span className="text-xl font-semibold text-parchment">{question}</span>
+        <span className="font-serif text-xl font-semibold tracking-wide text-parchment">
+          {question}
+        </span>
         <span className="text-sm text-muted">{helper}</span>
       </legend>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3.5 sm:grid-cols-2">
         {choices.map((choice) => {
           const isSelected = selected === choice.id
+          const Icon = choice.icon
+
           return (
             <button
               key={choice.id}
               type="button"
               aria-pressed={isSelected}
-              onClick={() => onSelect(choice.id)}
+              onPointerEnter={(event) => {
+                if (event.pointerType === 'mouse') playSound('hover')
+              }}
+              onClick={() => {
+                playSound('press')
+                onSelect(choice.id)
+              }}
               className={cn(
-                'flex flex-col items-start gap-1 rounded-card border p-4 text-left transition-colors',
+                'group relative flex flex-col items-start gap-2 overflow-hidden rounded-card border p-4 pt-5 text-left',
+                'transition-all duration-300 ease-out',
                 isSelected
-                  ? 'border-gold bg-gold/10'
-                  : 'border-edge bg-surface hover:border-edge-bright hover:bg-surface-raised',
+                  ? 'border-amber-torch/80 bg-amber-torch/[0.07] shadow-torch'
+                  : 'border-edge bg-surface/70 hover:-translate-y-0.5 hover:border-gold-border/70 hover:shadow-torch',
               )}
             >
-              <span className="flex w-full items-center justify-between gap-2">
-                <span className="font-semibold text-parchment">{choice.label}</span>
-                {isSelected && <Check size={16} className="shrink-0 text-gold" aria-hidden />}
+              {/* The card's top band, the way a tarot card is headed. */}
+              <span
+                aria-hidden
+                className={cn(
+                  'pointer-events-none absolute inset-x-0 top-0 h-px transition-opacity duration-300',
+                  isSelected
+                    ? 'bg-gradient-to-r from-transparent via-amber-torch to-transparent opacity-100'
+                    : 'bg-gradient-to-r from-transparent via-gold-border/60 to-transparent opacity-40 group-hover:opacity-100',
+                )}
+              />
+              {/* A wash rising from the base, so the card has a lit floor. */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-amber-torch/[0.06] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              />
+
+              <span className="relative flex w-full items-start justify-between gap-2">
+                {Icon !== undefined && (
+                  <span
+                    className={cn(
+                      'grid size-9 shrink-0 place-items-center rounded-lg border transition-all duration-300',
+                      isSelected
+                        ? 'border-amber-torch/70 bg-amber-torch/15 text-amber-torch'
+                        : 'border-edge bg-ink/50 text-muted group-hover:border-gold-border/60 group-hover:text-amber-torch',
+                    )}
+                  >
+                    <Icon size={17} aria-hidden />
+                  </span>
+                )}
+                {isSelected && (
+                  // A wax seal, so the chosen card is unmistakable at a glance.
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full border border-amber-torch/70 bg-amber-torch text-obsidian shadow-torch">
+                    <Check size={13} strokeWidth={3} aria-hidden />
+                  </span>
+                )}
               </span>
-              <span className="text-sm text-muted">{choice.tagline}</span>
+
+              <span
+                className={cn(
+                  'relative font-serif font-semibold tracking-wide transition-colors',
+                  isSelected ? 'text-amber-torch' : 'text-parchment',
+                )}
+              >
+                {choice.label}
+              </span>
+              <span className="relative text-sm leading-snug text-muted">{choice.tagline}</span>
               {choice.detail !== undefined && (
-                <span className="mt-1 text-xs leading-relaxed text-muted/80">{choice.detail}</span>
+                <span className="relative mt-0.5 text-xs leading-relaxed text-muted/75">
+                  {choice.detail}
+                </span>
               )}
             </button>
           )

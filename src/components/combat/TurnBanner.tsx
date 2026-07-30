@@ -21,14 +21,14 @@ export interface TurnBannerProps {
 
 export function TurnBanner({ phase, title, guidance, refusal }: TurnBannerProps) {
   return (
-    <div className="sticky top-0 z-10 rounded-card border border-gold/40 bg-surface-raised/95 p-4 backdrop-blur">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+    <div className="border-gold-ornate rounded-card sticky top-0 z-10 p-4 shadow-torch">
+      <div className="flex flex-wrap items-center gap-2 font-serif text-xs tracking-wide">
         {PHASE_ORDER.map((candidate) => (
           <span
             key={candidate}
             className={
               candidate === phase
-                ? 'rounded-full border border-gold/60 bg-gold/15 px-2.5 py-0.5 font-semibold text-gold'
+                ? 'rounded-full border border-amber-torch/70 bg-amber-torch/15 px-2.5 py-0.5 font-semibold text-amber-torch'
                 : 'rounded-full border border-edge px-2.5 py-0.5 text-muted'
             }
           >
@@ -37,9 +37,9 @@ export function TurnBanner({ phase, title, guidance, refusal }: TurnBannerProps)
         ))}
       </div>
 
-      <h2 className="mt-3 text-lg font-semibold text-parchment">{title}</h2>
+      <h2 className="mt-3 font-display text-lg text-parchment">{title}</h2>
 
-      <p aria-live="polite" className="mt-1 text-sm leading-relaxed text-gold">
+      <p aria-live="polite" className="mt-1 text-sm leading-relaxed text-amber-torch">
         {guidance}
       </p>
 

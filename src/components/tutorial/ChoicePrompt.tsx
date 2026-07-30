@@ -4,8 +4,9 @@ import { useRef, useState } from 'react'
 import { resolveCheck, type CheckResult } from '../../lib/dnd/checks.ts'
 import { narrateCheckFully } from '../../lib/dnd/narrate.ts'
 import { SKILL_LABELS } from '../../lib/dnd/stats.ts'
-import { Button } from '../ui/button.tsx'
+import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { RollBreakdown } from '../dice/RollBreakdown.tsx'
+import { playSound } from '../../lib/sound.ts'
 import type { Character } from '../../types/character.ts'
 import type { TutorialChoice } from '../../types/tutorial.ts'
 
@@ -37,8 +38,12 @@ export function ChoicePrompt({ character, choices, onResolved }: ChoicePromptPro
     })
     setRolled({ choiceId: choice.id, result })
     setRolling(true)
+    playSound('roll')
     if (timer.current !== null) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setRolling(false), 550)
+    timer.current = setTimeout(() => {
+      setRolling(false)
+      playSound(result.success ? 'success' : 'failure')
+    }, 550)
   }
 
   if (rolled !== null) {
@@ -58,13 +63,13 @@ export function ChoicePrompt({ character, choices, onResolved }: ChoicePromptPro
           rolling={rolling}
         />
         {!rolling && (
-          <Button
-            variant="secondary"
+          <FantasyButton
+            variant="iron"
             className="self-start"
             onClick={() => onResolved(rolled.choiceId, rolled.result.success)}
           >
             Continue
-          </Button>
+          </FantasyButton>
         )}
       </div>
     )
@@ -73,20 +78,20 @@ export function ChoicePrompt({ character, choices, onResolved }: ChoicePromptPro
   return (
     <div className="flex flex-col gap-2">
       {choices.map((choice) => (
-        <Button
+        <FantasyButton
           key={choice.id}
-          variant="secondary"
+          variant="iron"
           size="lg"
-          className="h-auto justify-start whitespace-normal py-3 text-left"
+          className="h-auto justify-start gap-4 py-3 text-left whitespace-normal"
           onClick={() => pick(choice)}
         >
-          <span>{choice.label}</span>
-          <span className="ml-auto shrink-0 font-mono text-xs text-gold">
+          <span className="text-parchment">{choice.label}</span>
+          <span className="ml-auto shrink-0 rounded-md border border-gold-border/40 bg-ink/60 px-2 py-0.5 font-mono text-xs text-amber-torch">
             {choice.check === undefined
               ? 'no roll'
               : `${SKILL_LABELS[choice.check.skill]} DC ${choice.check.dc}`}
           </span>
-        </Button>
+        </FantasyButton>
       ))}
     </div>
   )
