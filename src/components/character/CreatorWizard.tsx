@@ -32,6 +32,7 @@ import { useState } from 'react'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { ParchmentCard, ParchmentCardContent } from '../ui/parchment-card.tsx'
 import { CharacterCard } from './CharacterCard.tsx'
+import { ExportPdfButton } from './ExportPdfButton.tsx'
 import { HeroPreview } from './HeroPreview.tsx'
 import { QuestionStep, type Choice } from './QuestionStep.tsx'
 import { CREATION_STEPS, choicesFor, stepAnswered } from '../../content/creationQuestions.ts'
@@ -143,6 +144,7 @@ export function CreatorWizard() {
           <FantasyButton asChild variant="ghost" size="lg">
             <Link href="/arena">Free play practice arena</Link>
           </FantasyButton>
+          <ExportPdfButton />
           <FantasyButton
             variant="ghost"
             size="lg"

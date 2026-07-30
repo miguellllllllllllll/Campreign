@@ -53,6 +53,12 @@ export const SKILL_LABELS: Record<SkillName, string> = {
   survival: 'Survival',
 }
 
+/**
+ * Every skill, in the order a character sheet prints them. Derived from the
+ * label table so a new skill cannot be added to the rules and forgotten here.
+ */
+export const SKILL_NAMES: readonly SkillName[] = Object.keys(SKILL_LABELS) as SkillName[]
+
 /** SRD: a score of 10-11 is average (+0); every 2 points above or below shifts the modifier by 1. */
 export function abilityModifier(score: number): number {
   return Math.floor((score - 10) / 2)

@@ -194,3 +194,45 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Print
+ *
+ * There are deliberately no bare `nav`, `button`, `header` or `footer` rules
+ * here. An unlayered element rule outranks every utility (see the note above
+ * @layer base), so `button { display: none !important }` would beat the sheet's
+ * own styling and could not be opted out of anywhere. The screen UI is hidden
+ * with `print:hidden` on the layout wrapper instead, and `.no-print` covers
+ * individual controls.
+ * ------------------------------------------------------------------------ */
+
+@page {
+  size: A4;
+  /* The sheet supplies its own 12mm inset, so the parchment can reach the edge. */
+  margin: 0;
+}
+
+@layer base {
+  @media print {
+    html,
+    body {
+      background: #ffffff;
+      color: #000000;
+    }
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  /*
+   * Browsers strip background colours when printing unless asked not to, which
+   * would drop the parchment fill and leave every ruled box hollow.
+   */
+  .printable-sheet {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
