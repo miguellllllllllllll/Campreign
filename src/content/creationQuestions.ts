@@ -5,6 +5,8 @@ import {
   RACE_PRESETS,
 } from '../lib/dnd/presets.ts'
 import { magicStylesFor } from './spellPresets.ts'
+import { FEATS } from './feats.ts'
+import { subclassesFor } from './subclasses.ts'
 import type { BackgroundId, ClassId, CreationDraft } from '../types/character.ts'
 
 /**
@@ -20,6 +22,8 @@ export type CreationFieldId =
   | 'flawId'
   | 'equipmentChoice'
   | 'magicStyleId'
+  | 'subclassId'
+  | 'featId'
   | 'auraId'
 
 export interface CreationChoice {
@@ -139,6 +143,26 @@ export const CREATION_STEPS: readonly CreationStepDef[] = [
     ],
   },
   {
+    id: 'advanced',
+    title: 'Specialisation',
+    subtitle: 'The optional layer. Skip any of it and your hero is still complete.',
+    fields: [
+      {
+        id: 'subclassId',
+        question: 'How do you specialise?',
+        helper:
+          'A playstyle inside your class. It goes on your sheet and shapes how you describe yourself at the table.',
+        optional: true,
+      },
+      {
+        id: 'featId',
+        question: 'Do you have a knack for anything?',
+        helper: 'One extra talent, and the only thing here that changes your numbers.',
+        optional: true,
+      },
+    ],
+  },
+  {
     id: 'loadout',
     title: 'Loadout & Visual Identity',
     subtitle: 'What you carry and what colour you burn on the map.',
@@ -201,7 +225,34 @@ export function hasMagicStep(classId: ClassId | undefined): boolean {
  * never see the magic step at all.
  */
 export function stepsFor(draft: CreationDraft): readonly CreationStepDef[] {
-  return CREATION_STEPS.filter((step) => step.id !== 'magic' || hasMagicStep(draft.classId))
+  return CREATION_STEPS.filter((step) => {
+    if (step.id === 'magic') return hasMagicStep(draft.classId)
+    // The advanced layer is opt-in: absent entirely until the player asks, so
+    // the fast-track road is exactly as long as it was before.
+    if (step.id === 'advanced') return draft.advanced === true
+    return true
+  })
+}
+
+/** The specialisations on offer, or none when the class is not yet chosen. */
+export function subclassChoices(classId: ClassId | undefined): readonly CreationChoice[] {
+  if (classId === undefined) return []
+  return subclassesFor(classId).map((subclass) => ({
+    id: subclass.id,
+    label: subclass.label,
+    tagline: subclass.tagline,
+    detail: subclass.description,
+  }))
+}
+
+/** Origin feats. The same short list for every class, by design. */
+export function featChoices(): readonly CreationChoice[] {
+  return FEATS.map((feat) => ({
+    id: feat.id,
+    label: feat.label,
+    tagline: feat.tagline,
+    detail: `${feat.description} (${feat.effectLabel})`,
+  }))
 }
 
 /** The options a field is currently offering, static or derived. */
@@ -217,6 +268,10 @@ export function choicesFor(
       return loadoutChoices(draft.classId)
     case 'magicStyleId':
       return magicStyleChoices(draft.classId)
+    case 'subclassId':
+      return subclassChoices(draft.classId)
+    case 'featId':
+      return featChoices()
     default:
       return []
   }

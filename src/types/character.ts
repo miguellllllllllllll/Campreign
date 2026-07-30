@@ -34,6 +34,14 @@ export interface CreationAnswers {
    */
   cantripIds?: readonly string[]
   preparedSpellIds?: readonly string[]
+  /**
+   * Whether the player opted into the advanced layer. The two questions below
+   * are only asked when this is true, and both stay optional even then — an
+   * advanced player is allowed to want a subclass and no feat.
+   */
+  advanced?: boolean
+  subclassId?: string
+  featId?: string
 }
 
 /** Everything gathered so far, before the wizard is finished. */
@@ -117,6 +125,18 @@ export interface Character {
   preparedSpells?: string[]
   /** Which magic style produced the lists, kept so the sheet can name it. */
   magicStyleId?: string
+  /**
+   * Advanced-mode picks. Absent on every fast-track character, which is what
+   * lets the whole feature stay opt-in: nothing downstream has to special-case
+   * a beginner's sheet.
+   */
+  subclassId?: string
+  featId?: string
+  /**
+   * A flat bonus on top of Dexterity when initiative is rolled. Stored rather
+   * than recomputed so combat never has to know what a feat is.
+   */
+  initiativeBonus?: number
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

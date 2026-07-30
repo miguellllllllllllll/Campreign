@@ -12,9 +12,10 @@ import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
 import { attackRollMode, blocksActions } from './conditions.ts'
 import { damageNotation } from './characterBuilder.ts'
 
-/** Dexterity decides who acts first. */
+/** Dexterity decides who acts first, plus whatever a feat is worth. */
 export function rollInitiative(combatant: Combatant, rng: Rng = Math.random): number {
-  return roll(`1d20${formatModifier(abilityModifier(combatant.scores.dex))}`, { rng }).total
+  const bonus = abilityModifier(combatant.scores.dex) + (combatant.initiativeBonus ?? 0)
+  return roll(`1d20${formatModifier(bonus)}`, { rng }).total
 }
 
 /** Highest initiative first; ties break on Dexterity, then name for stability. */

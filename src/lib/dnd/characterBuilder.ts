@@ -11,6 +11,8 @@ import type {
 import type { Armor } from '../../types/items.ts'
 import { magicStyleById } from '../../content/spellPresets.ts'
 import { spellsByIds } from '../../content/spells.ts'
+import { bonusInitiative, bonusMaxHp, featById } from '../../content/feats.ts'
+import { subclassById } from '../../content/subclasses.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
   ARMORS,
@@ -157,7 +159,10 @@ export function buildCharacter(
 
   if (armor === undefined) throw new Error(`Unknown armor "${loadout.armorId}"`)
 
-  const maxHp = maxHitPoints(klass.hitDie, scores.con)
+  // A feat's hit points are added to the class total rather than folded into
+  // maxHitPoints, so the base calculation stays the one the sheet explains.
+  const maxHp = maxHitPoints(klass.hitDie, scores.con) + bonusMaxHp(answers.featId)
+  const initiativeBonus = bonusInitiative(answers.featId)
   const trimmedName = name.trim()
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)
   const selection = resolveSpellSelection(answers)
@@ -198,6 +203,11 @@ export function buildCharacter(
       ? {}
       : { preparedSpells: [...selection.preparedSpellIds] }),
     ...(answers.magicStyleId === undefined ? {} : { magicStyleId: answers.magicStyleId }),
+    // Only written when advanced mode actually produced a pick, so a fast-track
+    // character serialises exactly as it did before the feature existed.
+    ...(subclassById(answers.subclassId) === undefined ? {} : { subclassId: answers.subclassId }),
+    ...(featById(answers.featId) === undefined ? {} : { featId: answers.featId }),
+    ...(initiativeBonus === 0 ? {} : { initiativeBonus }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }
 }
@@ -228,6 +238,10 @@ export function previewCharacter(
       // Spells pass through as chosen; the preview shows an empty list honestly
       // rather than inventing a spell nobody picked.
       ...(draft.magicStyleId === undefined ? {} : { magicStyleId: draft.magicStyleId }),
+      // The sidebar must show the feat's hit points the moment it is picked,
+      // so advanced answers pass straight through to the same builder.
+      ...(draft.subclassId === undefined ? {} : { subclassId: draft.subclassId }),
+      ...(draft.featId === undefined ? {} : { featId: draft.featId }),
       ...(draft.cantripIds === undefined ? {} : { cantripIds: draft.cantripIds }),
       ...(draft.preparedSpellIds === undefined
         ? {}

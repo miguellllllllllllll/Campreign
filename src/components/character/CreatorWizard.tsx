@@ -38,6 +38,7 @@ import { QuestionStep, type Choice } from './QuestionStep.tsx'
 import { choicesFor, stepAnswered, stepsFor } from '../../content/creationQuestions.ts'
 import type { CreationField, CreationFieldId } from '../../content/creationQuestions.ts'
 import { SpellSelectionWizard, type SpellSelection } from './SpellSelectionWizard.tsx'
+import { AdvancedToggle } from './AdvancedToggle.tsx'
 import { magicStyleById } from '../../content/spellPresets.ts'
 import { previewCharacter, resolveSpellSelection } from '../../lib/dnd/characterBuilder.ts'
 import { getSpellcastingLimits } from '../../lib/dnd/spellcasting.ts'
@@ -143,6 +144,9 @@ export function CreatorWizard() {
         delete next.equipmentChoice
       }
       if (fieldId === 'backgroundId') delete next.flawId
+      // Subclasses belong to a class, so a new class invalidates the old pick.
+      // Feats are class-agnostic and survive.
+      if (fieldId === 'classId') delete next.subclassId
       // Choosing a style is what fills the spell lists in. Any earlier
       // hand-picked list is dropped, or the new style would not take effect.
       if (fieldId === 'magicStyleId') {
@@ -157,6 +161,24 @@ export function CreatorWizard() {
       }
       return next
     })
+  }
+
+  /**
+   * Turning the layer off discards its answers rather than remembering them.
+   * A hidden subclass that silently reappears on re-toggling is a worse
+   * surprise than having to pick again, and it would otherwise reach the
+   * builder while the player believed they were on the fast track.
+   */
+  function setAdvanced(enabled: boolean) {
+    setDraft((previous) => {
+      const next = { ...previous, advanced: enabled }
+      if (!enabled) {
+        delete next.subclassId
+        delete next.featId
+      }
+      return next
+    })
+    setStepIndex(0)
   }
 
   function changeSpells(next: SpellSelection) {
@@ -241,6 +263,8 @@ export function CreatorWizard() {
           </li>
         ))}
       </ol>
+
+      <AdvancedToggle enabled={draft.advanced === true} onChange={setAdvanced} />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-5">

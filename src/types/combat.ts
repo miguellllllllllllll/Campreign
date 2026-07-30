@@ -36,6 +36,12 @@ export interface Combatant {
   position: GridPosition
   attacks: AttackAction[]
   conditions: ActiveCondition[]
+  /**
+   * Added to the initiative roll on top of Dexterity. Optional so every existing
+   * combatant — monsters, the practice dummy, a fast-track hero — keeps rolling
+   * exactly as it did before feats existed.
+   */
+  initiativeBonus?: number
   initiative: number
 }
 

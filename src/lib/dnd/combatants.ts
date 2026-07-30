@@ -33,5 +33,8 @@ export function characterToCombatant(
     attacks: character.attacks.map((attack) => ({ ...attack })),
     conditions: [],
     initiative: args.initiative ?? 0,
+    ...(character.initiativeBonus === undefined
+      ? {}
+      : { initiativeBonus: character.initiativeBonus }),
   }
 }
