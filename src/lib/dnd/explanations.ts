@@ -34,6 +34,7 @@ export type ExplainKey =
   | 'loadout'
   | 'concentration'
   | 'preparedSpell'
+  | 'longRest'
   | 'str'
   | 'dex'
   | 'con'
@@ -163,6 +164,10 @@ export const EXPLANATIONS: Record<ExplainKey, Explanation> = {
   preparedSpell: {
     title: 'Prepared Spell',
     plain: 'A spell you chose in advance and can cast today. Unlike a cantrip it uses up a slot, so you only get a couple of casts before you need a long rest.',
+  },
+  longRest: {
+    title: 'Long Rest',
+    plain: 'A full night of sleep. Anything measured "per long rest" — spell slots, a healing pool — comes back the next morning.',
   },
   loadout: {
     title: 'Loadout',

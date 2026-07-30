@@ -1,18 +1,16 @@
 'use client'
 
-import { Check, ChevronDown, HandHeart, ScanEye, Sparkles } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { Explain } from '../Explain.tsx'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { ParchmentCard, ParchmentCardContent } from '../ui/parchment-card.tsx'
+import { PaladinPowerCard } from './PaladinPowerCard.tsx'
+import { SpellStatBar } from './SpellStatBar.tsx'
 import { SPELLS_BY_ID, spellsByIds, spellsFor } from '../../content/spells.ts'
 import type { Spell } from '../../content/spells.ts'
-import {
-  PALADIN_LEVEL_1_FEATURES,
-  PALADIN_LEVEL_2_PREVIEW,
-  getSpellcastingLimits,
-} from '../../lib/dnd/spellcasting.ts'
-import { abilityModifier, formatModifier } from '../../lib/dnd/stats.ts'
+import { getSpellcastingLimits } from '../../lib/dnd/spellcasting.ts'
+import { abilityModifier } from '../../lib/dnd/stats.ts'
 import { playSound } from '../../lib/sound.ts'
 import { cn } from '../../lib/utils.ts'
 import type { AbilityScores, ClassId, Spellcasting } from '../../types/character.ts'
@@ -29,26 +27,6 @@ export interface SpellSelectionWizardProps {
   scores: AbilityScores
   spellcasting: Spellcasting | undefined
   onChange: (next: SpellSelection) => void
-}
-
-/** The two live numbers a caster is really choosing between. */
-function StatBar({ spellcasting }: { spellcasting: Spellcasting }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gold-border/40 bg-amber-torch/5 px-3 py-2">
-      <Sparkles size={14} aria-hidden className="text-amber-torch" />
-      <span className="font-serif text-xs text-muted">
-        <Explain k="spellSaveDc">Spell Save DC</Explain>{' '}
-        <span className="font-mono text-sm font-bold text-parchment">{spellcasting.saveDc}</span>
-      </span>
-      <span className="text-edge-bright">·</span>
-      <span className="font-serif text-xs text-muted">
-        <Explain k="spellAttack">Spell Attack</Explain>{' '}
-        <span className="font-mono text-sm font-bold text-parchment">
-          {formatModifier(spellcasting.attackBonus)}
-        </span>
-      </span>
-    </div>
-  )
 }
 
 function Counter({ label, taken, of }: { label: React.ReactNode; taken: number; of: number }) {
@@ -133,44 +111,8 @@ export function SpellSelectionWizard({
 }: SpellSelectionWizardProps) {
   const [customizing, setCustomizing] = useState(false)
 
-  if (classId === 'paladin') {
-    return (
-      <ParchmentCard>
-        <ParchmentCardContent className="flex flex-col gap-3 pt-5">
-          <div>
-            <h2 className="font-serif text-base font-semibold text-parchment">Sacred Power</h2>
-            <p className="mt-1 text-sm leading-relaxed text-muted">
-              Your oath begins in earnest at level 2, where you unlock 1st-level paladin spells.
-              At level 1 your faith shows up as innate divine ability instead.
-            </p>
-          </div>
+  if (classId === 'paladin') return <PaladinPowerCard spellcasting={spellcasting} />
 
-          {spellcasting !== undefined && <StatBar spellcasting={spellcasting} />}
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            {PALADIN_LEVEL_1_FEATURES.map((feature) => (
-              <div key={feature.id} className="rounded-card border border-edge p-3">
-                <p className="flex items-center gap-2 font-serif text-sm font-semibold text-parchment">
-                  {feature.id === 'layOnHands' ? (
-                    <HandHeart size={15} aria-hidden className="text-amber-torch" />
-                  ) : (
-                    <ScanEye size={15} aria-hidden className="text-amber-torch" />
-                  )}
-                  {feature.name}
-                </p>
-                <p className="mt-1 font-mono text-xs text-amber-torch">{feature.value}</p>
-                <p className="mt-1 text-[11px] leading-snug text-muted">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-[11px] leading-relaxed text-muted/80 italic">
-            Waiting for you at level 2: {PALADIN_LEVEL_2_PREVIEW.join(', ')}.
-          </p>
-        </ParchmentCardContent>
-      </ParchmentCard>
-    )
-  }
 
   if (classId !== 'wizard' && classId !== 'cleric') return null
 
@@ -223,7 +165,7 @@ export function SpellSelectionWizard({
           </span>
         </div>
 
-        {spellcasting !== undefined && <StatBar spellcasting={spellcasting} />}
+        {spellcasting !== undefined && <SpellStatBar spellcasting={spellcasting} />}
 
         {!customizing && (
           <>

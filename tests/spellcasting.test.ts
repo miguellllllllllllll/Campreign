@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   PALADIN_LEVEL_1_FEATURES,
+  PALADIN_LEVEL_2_PREVIEW,
   calculateSpellStats,
   getSpellcastingLimits,
   spellcastingAbilityFor,
@@ -99,6 +100,72 @@ test('paladins have their level 1 features to show instead of spells', () => {
     assert.ok(feature.value.length > 0)
     assert.ok(feature.description.length > 0)
   }
+})
+
+test('every level 1 feature value splits into an amount and a period', () => {
+  // PaladinPowerCard splits on ' / ' so the period can carry its own tooltip.
+  // If a value ever stops having one, the card would render a bare amount.
+  for (const feature of PALADIN_LEVEL_1_FEATURES) {
+    const parts = feature.value.split(' / ')
+    assert.equal(parts.length, 2, `${feature.id} should read "<amount> / <period>"`)
+    assert.ok(parts[0].length > 0, `${feature.id} has no amount`)
+    assert.ok(parts[1].length > 0, `${feature.id} has no period`)
+  }
+})
+
+test("Lay on Hands is the pool the card's Long Rest tooltip hangs off", () => {
+  const layOnHands = PALADIN_LEVEL_1_FEATURES.find((f) => f.id === 'layOnHands')
+  assert.ok(layOnHands !== undefined)
+  assert.equal(layOnHands.value, '5 HP / Long Rest')
+})
+
+// --- The level 2 preview --------------------------------------------------
+
+test('the preview covers all four paladin pillars', () => {
+  const names = PALADIN_LEVEL_2_PREVIEW.map((spell) => spell.name)
+  assert.deepEqual(names, ['Divine Favor', 'Searing Smite', 'Cure Wounds', 'Heroism'])
+})
+
+test('every previewed spell can fill a card without a blank field', () => {
+  for (const spell of PALADIN_LEVEL_2_PREVIEW) {
+    assert.ok(spell.id.length > 0, 'a preview spell needs an id to key on')
+    assert.ok(spell.name.length > 0, `${spell.id} has no name`)
+    assert.ok(spell.school.length > 0, `${spell.id} has no school`)
+    assert.ok(spell.effect.length > 0, `${spell.id} has no effect`)
+    assert.ok(spell.description.length > 30, `${spell.id} needs a real sentence, not a stub`)
+    assert.match(spell.description, /[.!]$/, `${spell.id} should read as a finished sentence`)
+  }
+})
+
+test('preview spell ids are unique, so React keys cannot collide', () => {
+  const ids = PALADIN_LEVEL_2_PREVIEW.map((spell) => spell.id)
+  assert.equal(new Set(ids).size, ids.length)
+})
+
+test('concentration is recorded per spell rather than assumed', () => {
+  const byName = new Map(PALADIN_LEVEL_2_PREVIEW.map((spell) => [spell.name, spell]))
+  // Cure Wounds is the one instantaneous spell of the four; the rest hold.
+  assert.equal(byName.get('Cure Wounds')?.isConcentration, false)
+  assert.equal(byName.get('Divine Favor')?.isConcentration, true)
+  assert.equal(byName.get('Searing Smite')?.isConcentration, true)
+  assert.equal(byName.get('Heroism')?.isConcentration, true)
+})
+
+test('the preview never overlaps the level 1 features it sits beneath', () => {
+  const featureNames = new Set(PALADIN_LEVEL_1_FEATURES.map((f) => f.name))
+  for (const spell of PALADIN_LEVEL_2_PREVIEW) {
+    assert.ok(!featureNames.has(spell.name), `${spell.name} is already a level 1 feature`)
+  }
+})
+
+test('a paladin has no castable magic even though the preview is populated', () => {
+  // The preview is copy, not capability: the limits must still read zero, or a
+  // level 1 paladin could end up holding spells the rules do not grant yet.
+  const limits = getSpellcastingLimits('paladin', 2, 0)
+  assert.equal(limits.cantripsCount, 0)
+  assert.equal(limits.preparedSpellsCount, 0)
+  assert.equal(limits.unlocksAtLevel, 2)
+  assert.ok(PALADIN_LEVEL_2_PREVIEW.length > 0)
 })
 
 // --- The spell registry ---------------------------------------------------

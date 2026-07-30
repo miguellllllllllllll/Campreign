@@ -126,9 +126,63 @@ export const PALADIN_LEVEL_1_FEATURES: readonly ClassFeature[] = [
   },
 ]
 
-/** The spells a paladin unlocks at 2nd level, for the preview the step offers. */
-export const PALADIN_LEVEL_2_PREVIEW: readonly string[] = [
-  'Divine Favor',
-  'Searing Smite',
-  'Heroism',
+/**
+ * A spell a paladin cannot cast yet, described well enough to render a real card.
+ *
+ * Deliberately not a `Spell` from the content registry: that type is indexed by
+ * `'wizard' | 'cleric'` and every entry in it is castable now. These are neither,
+ * and giving them their own shape keeps an unselectable preview from ever being
+ * mistaken for something a level 1 character can put on a sheet.
+ */
+export interface PaladinSpellPreview {
+  id: string
+  name: string
+  school: string
+  /** The headline number or effect, in the register the spell registry uses. */
+  effect: string
+  description: string
+  isConcentration: boolean
+}
+
+/**
+ * The four 1st-level paladin spells previewed at level 1, one per pillar of the
+ * class: smiting, healing, buffing, and staying on your feet.
+ */
+export const PALADIN_LEVEL_2_PREVIEW: readonly PaladinSpellPreview[] = [
+  {
+    id: 'divineFavor',
+    name: 'Divine Favor',
+    school: 'Evocation',
+    effect: '+1d4 radiant',
+    description:
+      'Your weapon glows with holy power. Every hit you land adds radiant damage on top of the usual roll.',
+    isConcentration: true,
+  },
+  {
+    id: 'searingSmite',
+    name: 'Searing Smite',
+    school: 'Evocation',
+    effect: '1d6 fire + burn',
+    description:
+      'Your next hit sets the target alight. It keeps burning on its own turns until someone puts it out.',
+    isConcentration: true,
+  },
+  {
+    id: 'cureWounds',
+    name: 'Cure Wounds',
+    school: 'Evocation',
+    effect: 'Heal 1d8 + CHA',
+    description:
+      'Touch a wounded ally and close the wound. The single most useful thing you will learn to do.',
+    isConcentration: false,
+  },
+  {
+    id: 'heroism',
+    name: 'Heroism',
+    school: 'Enchantment',
+    effect: 'Temp HP + no fear',
+    description:
+      'An ally becomes briefly fearless and gains a cushion of temporary hit points every turn.',
+    isConcentration: true,
+  },
 ]
