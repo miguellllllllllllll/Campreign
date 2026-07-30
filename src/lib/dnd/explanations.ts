@@ -26,6 +26,12 @@ export type ExplainKey =
   | 'level'
   | 'hitDie'
   | 'cantrip'
+  | 'background'
+  | 'trinket'
+  | 'personality'
+  | 'spellSaveDc'
+  | 'spellAttack'
+  | 'loadout'
   | 'str'
   | 'dex'
   | 'con'
@@ -127,6 +133,30 @@ export const EXPLANATIONS: Record<ExplainKey, Explanation> = {
   cantrip: {
     title: 'Cantrip',
     plain: 'A small spell you can cast as often as you like. It never runs out, which is why it does not add your ability modifier to damage.',
+  },
+  background: {
+    title: 'Background',
+    plain: 'What you did before you started adventuring. It trains you in two skills and hands you something small from that old life.',
+  },
+  trinket: {
+    title: 'Trinket',
+    plain: 'A keepsake you carry that has no rules attached. It exists so you have something to talk about that is not a number.',
+  },
+  personality: {
+    title: 'Ideal, Flaw and Bond',
+    plain: 'Three sentences about who you are: what you believe, where you fall short, and who you would come back for. They guide how you play, not what you roll.',
+  },
+  spellSaveDc: {
+    title: 'Spell Save DC',
+    plain: 'The number your enemies must beat when they try to resist your magic. It is 8, plus your proficiency bonus, plus your casting ability.',
+  },
+  spellAttack: {
+    title: 'Spell Attack Bonus',
+    plain: 'What you add to the die when you aim a spell at something, exactly like a weapon attack. It is your proficiency bonus plus your casting ability.',
+  },
+  loadout: {
+    title: 'Loadout',
+    plain: 'The gear you walk in with. A shield buys you Armour Class, while a two-handed weapon buys you damage — you cannot have both.',
   },
   str: {
     title: 'Strength',

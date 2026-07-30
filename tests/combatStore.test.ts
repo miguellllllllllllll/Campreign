@@ -7,7 +7,14 @@ import { GOBLIN, spawnMonster } from '../src/lib/dnd/data/monsters.ts'
 import { useCombatStore } from '../src/stores/combatStore.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 
-const answers: CreationAnswers = { classId: 'fighter', raceId: 'dwarf', motivationId: 'glory' }
+const answers: CreationAnswers = {
+  classId: 'fighter',
+  raceId: 'dwarf',
+  backgroundId: 'guildArtisan',
+  flawId: 'haggler',
+  equipmentChoice: 'defensive',
+  auraId: 'amber',
+}
 
 function roster() {
   const hero = buildCharacter(answers, 'Test Hero', { id: 'hero-1', now: 1 })

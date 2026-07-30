@@ -6,7 +6,14 @@ import { useCombatStore } from '../src/stores/combatStore.ts'
 import { useTutorialStore } from '../src/stores/tutorialStore.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 
-const answers: CreationAnswers = { classId: 'fighter', raceId: 'dwarf', motivationId: 'glory' }
+const answers: CreationAnswers = {
+  classId: 'fighter',
+  raceId: 'dwarf',
+  backgroundId: 'guildArtisan',
+  flawId: 'haggler',
+  equipmentChoice: 'defensive',
+  auraId: 'amber',
+}
 
 function freshHero() {
   return buildCharacter(answers, 'Test Hero', { id: 'hero-1', now: 1_700_000_000_000 })

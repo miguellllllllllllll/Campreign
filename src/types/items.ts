@@ -17,6 +17,9 @@ export type DamageType =
   | 'bludgeoning'
   | 'fire'
   | 'radiant'
+  | 'cold'
+  | 'lightning'
+  | 'acid'
 
 export interface Weapon {
   id: string

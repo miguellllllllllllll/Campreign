@@ -4,17 +4,31 @@ export type AbilityName = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 
 export type AbilityScores = Record<AbilityName, number>
 
-export type ClassId = 'fighter' | 'wizard' | 'rogue' | 'cleric'
+export type ClassId = 'fighter' | 'wizard' | 'rogue' | 'cleric' | 'paladin'
 
-export type RaceId = 'dwarf' | 'elf' | 'human' | 'halfling'
+export type RaceId = 'dwarf' | 'elf' | 'human' | 'halfling' | 'tiefling'
 
-export type MotivationId = 'glory' | 'secrets' | 'protect' | 'fortune'
+export type BackgroundId = 'guildArtisan' | 'streetUrchin' | 'noble'
+
+/** Fight harder or survive longer — the fork every class loadout offers. */
+export type EquipmentChoice = 'offensive' | 'defensive'
+
+export type AuraId = 'amber' | 'violet' | 'crimson' | 'azure'
 
 export interface CreationAnswers {
   classId: ClassId
   raceId: RaceId
-  motivationId: MotivationId
+  backgroundId: BackgroundId
+  /** Which of the background's flaws the player owned up to. */
+  flawId: string
+  equipmentChoice: EquipmentChoice
+  auraId: AuraId
+  /** Only spellcasting classes offer a pick, so this stays optional. */
+  spellId?: string
 }
+
+/** Everything gathered so far, before the wizard is finished. */
+export type CreationDraft = Partial<CreationAnswers>
 
 export type SkillName =
   | 'acrobatics'
@@ -36,6 +50,33 @@ export type SkillName =
   | 'stealth'
   | 'survival'
 
+/** A small keepsake from the character's old life. Flavour, not mechanics. */
+export interface Trinket {
+  name: string
+  description: string
+}
+
+export interface Personality {
+  ideal: string
+  flaw: string
+  bond: string
+}
+
+/** Raw CSS colours, so a token can be painted without importing the palette. */
+export interface Cosmetics {
+  auraColor: string
+  tokenBorder: string
+}
+
+export interface Spellcasting {
+  ability: AbilityName
+  /** 8 + proficiency + the casting ability modifier. */
+  saveDc: number
+  attackBonus: number
+  /** Set when the class has the numbers but not yet the spells. */
+  note?: string
+}
+
 export interface Character {
   id: string
   name: string
@@ -43,7 +84,7 @@ export interface Character {
   level: number
   classId: ClassId
   raceId: RaceId
-  motivationId: MotivationId
+  backgroundId: BackgroundId
   scores: AbilityScores
   maxHp: number
   currentHp: number
@@ -51,10 +92,18 @@ export interface Character {
   ac: number
   armorName: string
   hasShield: boolean
+  equipmentChoice: EquipmentChoice
+  /** The loadout's own name, e.g. "Longsword & Shield". */
+  loadoutName: string
   proficiencyBonus: number
   skillProficiencies: SkillName[]
   savingThrows: AbilityName[]
   attacks: AttackAction[]
-  /** One-sentence story summary built from the three creation answers. */
+  trinket: Trinket
+  personality: Personality
+  cosmetics: Cosmetics
+  spellcasting?: Spellcasting
+  chosenSpells?: string[]
+  /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

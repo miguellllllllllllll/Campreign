@@ -8,9 +8,11 @@ import { cn } from '../../lib/utils.ts'
 export interface Choice<T extends string> {
   id: T
   label: string
-  tagline: string
+  tagline?: string
   detail?: string
   icon?: LucideIcon
+  /** A colour to show instead of an icon, for purely cosmetic options. */
+  swatch?: string
 }
 
 export interface QuestionStepProps<T extends string> {
@@ -19,6 +21,8 @@ export interface QuestionStepProps<T extends string> {
   choices: readonly Choice<T>[]
   selected: T | null
   onSelect: (id: T) => void
+  /** Two-line options that do not need half the row each. */
+  compact?: boolean
 }
 
 export function QuestionStep<T extends string>({
@@ -27,6 +31,7 @@ export function QuestionStep<T extends string>({
   choices,
   selected,
   onSelect,
+  compact = false,
 }: QuestionStepProps<T>) {
   return (
     <fieldset className="flex flex-col gap-5">
@@ -37,7 +42,7 @@ export function QuestionStep<T extends string>({
         <span className="text-sm text-muted">{helper}</span>
       </legend>
 
-      <div className="grid gap-3.5 sm:grid-cols-2">
+      <div className={cn('grid gap-3.5', compact ? 'sm:grid-cols-4' : 'sm:grid-cols-2')}>
         {choices.map((choice) => {
           const isSelected = selected === choice.id
           const Icon = choice.icon
@@ -79,7 +84,18 @@ export function QuestionStep<T extends string>({
               />
 
               <span className="relative flex w-full items-start justify-between gap-2">
-                {Icon !== undefined && (
+                {choice.swatch !== undefined && (
+                  <span
+                    aria-hidden
+                    className="size-9 shrink-0 rounded-lg border"
+                    style={{
+                      backgroundColor: choice.swatch,
+                      borderColor: choice.swatch,
+                      boxShadow: `0 0 16px ${choice.swatch}66`,
+                    }}
+                  />
+                )}
+                {choice.swatch === undefined && Icon !== undefined && (
                   <span
                     className={cn(
                       'grid size-9 shrink-0 place-items-center rounded-lg border transition-all duration-300',
@@ -107,7 +123,9 @@ export function QuestionStep<T extends string>({
               >
                 {choice.label}
               </span>
-              <span className="relative text-sm leading-snug text-muted">{choice.tagline}</span>
+              {choice.tagline !== undefined && choice.tagline.length > 0 && (
+                <span className="relative text-sm leading-snug text-muted">{choice.tagline}</span>
+              )}
               {choice.detail !== undefined && (
                 <span className="relative mt-0.5 text-xs leading-relaxed text-muted/75">
                   {choice.detail}

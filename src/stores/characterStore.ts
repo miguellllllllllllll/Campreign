@@ -43,7 +43,17 @@ export const useCharacterStore = create<CharacterStore>()(
 
       clearRoster: () => set({ roster: [], activeId: null }),
     }),
-    { name: 'hero-step-roster', version: 1 },
+    {
+      name: 'hero-step-roster',
+      version: 2,
+      /**
+       * Version 2 added a background, a trinket, a personality and an aura.
+       * Older heroes are discarded rather than backfilled: inventing a past the
+       * player never chose would put a guess on the sheet, and rebuilding a
+       * 1st-level character takes six clicks.
+       */
+      migrate: () => ({ roster: [], activeId: null }),
+    },
   ),
 )
 
