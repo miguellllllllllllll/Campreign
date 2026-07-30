@@ -53,6 +53,19 @@ import { cn } from '../../lib/utils.ts'
  * rules data, which stays presentation-free. Options with no entry — the flaws,
  * which are sentences — simply render without one.
  */
+/**
+ * The one place a class is allowed a colour of its own. Written as whole class
+ * strings because Tailwind resolves utilities statically — an interpolated
+ * `text-class-${id}` would be scanned as a literal and dropped from the build.
+ */
+const CLASS_ACCENTS: Record<string, string> = {
+  fighter: 'text-class-fighter',
+  wizard: 'text-class-wizard',
+  rogue: 'text-class-rogue',
+  cleric: 'text-class-cleric',
+  paladin: 'text-class-paladin',
+}
+
 const OPTION_ICONS: Record<string, LucideIcon> = {
   fighter: Swords,
   wizard: WandSparkles,
@@ -253,8 +266,11 @@ export function CreatorWizard() {
             aria-current={index === safeIndex ? 'step' : undefined}
             className={cn(
               'rounded-full border px-3 py-1 font-serif text-xs font-semibold tracking-wide transition-colors',
-              index === safeIndex &&
-                'border-amber-torch bg-amber-torch/10 text-amber-torch shadow-torch',
+              // The current step is a filled crimson ribbon rather than another
+              // gold outline: crimson cannot carry text on leather, but it can
+              // sit under parchment at 7.49:1, which is the one high-contrast
+              // way this palette gets to shout.
+              index === safeIndex && 'banner-dnd-red border-gold-border/60 rounded-full',
               index !== safeIndex && stepAnswered(candidate, draft) && 'border-moss/50 text-moss',
               index !== safeIndex && !stepAnswered(candidate, draft) && 'border-edge text-muted',
             )}
@@ -364,6 +380,7 @@ function FieldCard({
 
   const options: readonly Choice<string>[] = choices.map((choice) => {
     const icon = OPTION_ICONS[choice.id]
+    const accentClass = CLASS_ACCENTS[choice.id]
     const swatch = AURA_PRESETS[choice.id as keyof typeof AURA_PRESETS]?.cosmetics.auraColor
     return {
       id: choice.id,
@@ -371,6 +388,7 @@ function FieldCard({
       tagline: choice.tagline,
       ...(choice.detail === undefined ? {} : { detail: choice.detail }),
       ...(icon === undefined ? {} : { icon }),
+      ...(accentClass === undefined ? {} : { accentClass }),
       ...(swatch === undefined ? {} : { swatch }),
     }
   })

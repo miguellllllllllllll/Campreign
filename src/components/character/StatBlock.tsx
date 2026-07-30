@@ -29,7 +29,7 @@ function StatTile({
       />
       <span className="text-amber-torch">{icon}</span>
       <span className="font-mono text-2xl font-bold tabular-nums text-parchment">{value}</span>
-      <span className="text-center font-serif text-xs font-semibold tracking-wide text-muted uppercase">
+      <span className="heading-small-caps text-center text-xs font-semibold">
         <Explain k={explainKey}>{label}</Explain>
       </span>
       {hint !== undefined && <span className="text-center text-[11px] text-muted/70">{hint}</span>}
@@ -80,7 +80,7 @@ export function StatBlock({ character }: { character: Character }) {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+        <p className="heading-small-caps mb-2 text-xs font-semibold">
           <Explain k="abilityMod">Ability Scores</Explain>
         </p>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -91,7 +91,7 @@ export function StatBlock({ character }: { character: Character }) {
                 key={ability}
                 className="flex flex-col items-center rounded-lg border border-edge bg-surface-raised/80 py-2 transition-colors hover:border-gold-border/50"
               >
-                <span className="font-serif text-[11px] font-semibold uppercase tracking-wide text-muted">
+                <span className="heading-small-caps text-[11px] font-semibold">
                   <Explain k={ability} className="no-underline decoration-transparent">
                     {ability}
                   </Explain>

@@ -172,7 +172,7 @@ export function TutorialRunner() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex flex-col gap-4">
           {resolution !== null && (
-            <p className="rounded-card border-l-2 border-amber-torch/60 bg-surface/60 p-4 text-sm leading-relaxed text-parchment italic">
+            <p className="rounded-card text-book border-l-2 border-amber-torch/60 bg-surface/60 p-4 text-base text-parchment italic">
               {resolution}
             </p>
           )}

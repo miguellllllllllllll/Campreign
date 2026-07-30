@@ -1,5 +1,11 @@
 import type { Metadata } from 'next'
-import { Cinzel, Cinzel_Decorative, Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google'
+import {
+  Alegreya,
+  Cinzel,
+  Cinzel_Decorative,
+  Geist_Mono,
+  Plus_Jakarta_Sans,
+} from 'next/font/google'
 import { PrintOverlay } from '../components/character/PrintOverlay.tsx'
 import { CharacterHudModal } from '../components/nav/CharacterHudModal.tsx'
 import { SoundToggle } from '../components/ui/sound-toggle.tsx'
@@ -19,6 +25,18 @@ const cinzel = Cinzel({
 
 const jakarta = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
+  subsets: ['latin'],
+})
+
+/**
+ * The rulebook voice. A warm literary serif for narrative and rules prose —
+ * everything a player reads rather than scans. Italic is loaded because flavour
+ * text is set in it throughout.
+ */
+const alegreya = Alegreya({
+  variable: '--font-alegreya',
+  weight: ['400', '500', '700'],
+  style: ['normal', 'italic'],
   subsets: ['latin'],
 })
 
@@ -42,7 +60,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cinzelDecorative.variable} ${cinzel.variable} ${jakarta.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${cinzelDecorative.variable} ${cinzel.variable} ${jakarta.variable} ${alegreya.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="bg-torchlight relative flex min-h-full flex-col">
         {/*

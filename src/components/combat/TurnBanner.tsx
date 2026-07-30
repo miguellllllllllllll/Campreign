@@ -21,7 +21,7 @@ export interface TurnBannerProps {
 
 export function TurnBanner({ phase, title, guidance, refusal }: TurnBannerProps) {
   return (
-    <div className="border-gold-ornate rounded-card sticky top-0 z-10 p-4 shadow-torch">
+    <div className="card-dnd-filigree rounded-card sticky top-0 z-10 p-4 shadow-torch">
       <div className="flex flex-wrap items-center gap-2 font-serif text-xs tracking-wide">
         {PHASE_ORDER.map((candidate) => (
           <span

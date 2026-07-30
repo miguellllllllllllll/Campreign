@@ -1,36 +1,70 @@
 @import "tailwindcss";
 
 /*
- * "Arcane Parchment & Obsidian". Hero Step is deliberately single-theme: a
- * candlelit table in a cellar. One theme means one set of contrast decisions to
- * get right for a first-time player.
+ * "Crimson & Antique Gold". Hero Step is deliberately single-theme: a candlelit
+ * table in a cellar, now lit like the rulebook it is teaching. One theme means
+ * one set of contrast decisions to get right for a first-time player.
  *
  * Two tiers on purpose. The named palette below is the primitive layer; the
  * semantic names beneath it (surface, edge, muted) are what components spell.
- * Retuning the mood means editing six values here, not fifty files.
+ * Retuning the mood means editing six values here, not fifty files — which is
+ * exactly what turning this from blue-black to leather-brown cost.
+ *
+ * Every value here is checked against the darkest surface it is allowed to sit
+ * on and clears WCAG AA for normal text (4.5:1). Where the reference palette
+ * did not clear it, the nearest hue-preserving value that does is used instead;
+ * those three are marked.
  */
 @theme {
-  --color-obsidian: #0b0d12;
-  --color-dungeon-card: #141824;
+  /* Warm leather rather than cold obsidian: the name is kept because twenty
+     files spell it, but the mood underneath it is brown now. The page is a
+     shade deeper than the cards so panels lift off it instead of floating in
+     the same soup. */
+  --color-obsidian: #120e0c;
+  --color-dungeon-card: #1e1815;
   --color-amber-torch: #d4af37;
   --color-gold-border: #c5a059;
+  --color-gold-bright: #e5c178;
   --color-parchment: #f4e8c1;
   --color-parchment-muted: #a39b8b;
 
+  /*
+   * Rulebook crimson. Background only — at 2.06:1 on leather it is unreadable
+   * as text, so it fills banners and ribbons and never carries a letter. Text
+   * on top of it is parchment, which clears AA at 7.49:1.
+   */
+  --color-dnd-red: #8b1d1d;
+  --color-dnd-red-hover: #a72222;
+
   --color-ink: var(--color-obsidian);
   --color-surface: var(--color-dungeon-card);
-  --color-surface-raised: #1b2030;
-  --color-edge: #2a3040;
-  --color-edge-bright: #414a60;
+  --color-surface-raised: #29201a;
+  --color-edge: #33291f;
+  --color-edge-bright: #4a3c2d;
   --color-muted: var(--color-parchment-muted);
   --color-gold: var(--color-amber-torch);
   --color-gold-dim: var(--color-gold-border);
-  --color-blood: #c0463b;
+  /* Raised from #c0463b, which read at 3.77:1 on leather and failed AA. */
+  --color-blood: #d9534f;
   --color-moss: #7aa35f;
   --color-arcane: #8a9ae0;
 
+  /*
+   * Class accents, mixed as inks rather than UI colours — pewter, violet,
+   * old gold, verdigris, iron oxide. The saturated originals (#8b5cf6,
+   * #10b981, #ef4444) read as a modern dashboard against leather and pulled
+   * harder than the gold they sit beside. Every one clears AA on the card.
+   */
+  --color-class-fighter: #8e9aa8;
+  --color-class-wizard: #9b87d4;
+  --color-class-cleric: #d9a441;
+  --color-class-rogue: #5e9c78;
+  /* #c4574d would be the truer oxide but lands at 4.03:1, just under AA. */
+  --color-class-paladin: #d0655b;
+
   --font-display: var(--font-cinzel-decorative), ui-serif, Georgia, serif;
   --font-serif: var(--font-cinzel), ui-serif, Georgia, serif;
+  --font-book: var(--font-alegreya), ui-serif, Georgia, serif;
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
@@ -131,6 +165,70 @@
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
 }
 
+/* ---------------------------------------------------------------------------
+ * Rulebook furniture
+ *
+ * The four shapes the 5e books repeat: a crimson ribbon, a small-caps section
+ * rule, a filigreed leather panel, and the literary serif that rules prose is
+ * set in. Utilities rather than components because they are typographic
+ * treatments, not behaviour — anything with state stays a React component.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * The crimson ribbon. Crimson is a fill here and never a text colour; the copy
+ * on top is parchment, which is the only pairing that clears AA.
+ */
+@utility banner-dnd-red {
+  background-image: linear-gradient(180deg, var(--color-dnd-red) 0%, #6a1414 100%);
+  border-bottom: 1px solid var(--color-gold-border);
+  color: var(--color-parchment);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+}
+
+/**
+ * Section rules — STRENGTH, SAVING THROWS — in the books' own voice.
+ *
+ * Deliberately quiet. Gold used to mark both "this is a section" and "this is
+ * selected", which left nothing louder for the second job; structure steps back
+ * to bone so gold can mean interactive and crimson can mean structure.
+ */
+@utility heading-small-caps {
+  font-family: var(--font-serif);
+  font-variant-caps: small-caps;
+  letter-spacing: 0.05em;
+  color: var(--color-parchment-muted);
+}
+
+/**
+ * The tapered rule the rulebooks put under a section heading.
+ *
+ * Crimson alone is invisible here — 1.91:1 against a card — so the bar carries
+ * a gold hairline along the top. Gold supplies the visibility, crimson the
+ * identity, and together they read as one struck line.
+ */
+@utility rule-crimson {
+  border-bottom: 3px solid var(--color-dnd-red);
+  box-shadow: inset 0 -3px 0 -2px var(--color-gold-border);
+  padding-bottom: 0.35rem;
+}
+
+/** A leather panel with a gold hairline and ambient torchlight caught inside. */
+@utility card-dnd-filigree {
+  background-color: var(--color-dungeon-card);
+  border: 1px solid rgb(197 160 89 / 0.3);
+  box-shadow:
+    inset 0 0 15px rgb(197 160 89 / 0.08),
+    0 1px 0 rgb(244 232 193 / 0.04);
+}
+
+/** Narrative and rules prose. Reads like print, not like an interface. */
+@utility text-book {
+  font-family: var(--font-book);
+  line-height: 1.6;
+}
+
 @utility shadow-torch-lg {
   box-shadow:
     0 0 40px rgba(212, 175, 55, 0.18),
@@ -164,7 +262,8 @@
 @utility bg-torchlight {
   background-image:
     radial-gradient(ellipse 70% 50% at 50% -8%, rgb(212 175 55 / 0.16), transparent 72%),
-    radial-gradient(ellipse 50% 40% at 88% 8%, rgb(138 154 224 / 0.07), transparent 70%);
+    /* A second, redder light source — the cold blue cast belonged to obsidian. */
+    radial-gradient(ellipse 50% 40% at 88% 8%, rgb(139 29 29 / 0.14), transparent 70%);
   background-attachment: fixed;
   background-repeat: no-repeat;
 }

@@ -121,7 +121,7 @@ export function HeroPreview({ hero, draft }: HeroPreviewProps) {
             transition:
               'background-color 350ms, border-color 350ms, color 350ms, box-shadow 350ms',
             backgroundColor: aura === null ? 'rgb(26 30 43 / 0.8)' : `${aura.auraColor}26`,
-            borderColor: aura === null ? '#2a3040' : aura.tokenBorder,
+            borderColor: aura === null ? '#2a231e' : aura.tokenBorder,
             color: aura === null ? '#a39b8b' : aura.auraColor,
             boxShadow: aura === null ? 'none' : `0 0 22px ${aura.auraColor}59`,
           }}

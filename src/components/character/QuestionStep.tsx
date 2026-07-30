@@ -11,6 +11,11 @@ export interface Choice<T extends string> {
   tagline?: string
   detail?: string
   icon?: LucideIcon
+  /**
+   * A class-accent utility for the icon when the card is not selected. Selected
+   * cards stay gold, so the wax-seal treatment reads the same for every option.
+   */
+  accentClass?: string
   /** A colour to show instead of an icon, for purely cosmetic options. */
   swatch?: string
 }
@@ -35,11 +40,11 @@ export function QuestionStep<T extends string>({
 }: QuestionStepProps<T>) {
   return (
     <fieldset className="flex flex-col gap-5">
-      <legend className="flex flex-col gap-1">
-        <span className="font-serif text-xl font-semibold tracking-wide text-parchment">
+      <legend className="flex w-full flex-col gap-1">
+        <span className="rule-crimson font-serif text-xl font-semibold tracking-wide text-parchment">
           {question}
         </span>
-        <span className="text-sm text-muted">{helper}</span>
+        <span className="text-book mt-1 text-sm text-muted">{helper}</span>
       </legend>
 
       <div className={cn('grid gap-3.5', compact ? 'sm:grid-cols-4' : 'sm:grid-cols-2')}>
@@ -101,7 +106,10 @@ export function QuestionStep<T extends string>({
                       'grid size-9 shrink-0 place-items-center rounded-lg border transition-all duration-300',
                       isSelected
                         ? 'border-amber-torch/70 bg-amber-torch/15 text-amber-torch'
-                        : 'border-edge bg-ink/50 text-muted group-hover:border-gold-border/60 group-hover:text-amber-torch',
+                        : cn(
+                            'border-edge bg-ink/50 group-hover:border-gold-border/60',
+                            choice.accentClass ?? 'text-muted group-hover:text-amber-torch',
+                          ),
                     )}
                   >
                     <Icon size={17} aria-hidden />

@@ -24,7 +24,7 @@ const fantasyButtonVariants = cva(
           + 'active:shadow-[inset_0_2px_4px_rgb(0_0_0/0.4),0_0_14px_rgb(212_175_55/0.25)]',
         // Cold iron: the quieter sibling, for anything that is not the main path.
         iron:
-          'border border-edge bg-gradient-to-b from-surface-raised to-[#12161f] text-parchment '
+          'border border-edge bg-gradient-to-b from-surface-raised to-[#17120f] text-parchment '
           + 'shadow-[inset_0_1px_0_rgb(244_232_193/0.06),0_4px_10px_-6px_rgb(0_0_0/0.9)] '
           + 'hover:border-gold-border/70 hover:text-amber-torch hover:shadow-torch '
           + 'active:shadow-[inset_0_2px_4px_rgb(0_0_0/0.5)]',
@@ -35,6 +35,12 @@ const fantasyButtonVariants = cva(
           'border border-blood/60 bg-gradient-to-b from-[#d4564a] to-[#8e2f27] text-parchment '
           + 'shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_2px_0_#5e1f19,0_6px_14px_-6px_rgb(0_0_0/0.9)] '
           + 'hover:border-parchment/50 hover:shadow-[0_0_22px_rgb(192_70_59/0.4)]',
+        // Rulebook crimson, for the ribbon-and-seal look. Deeper and less
+        // orange than `blood`, which stays what damage and danger are drawn in.
+        crimson:
+          'border border-gold-border/50 bg-gradient-to-b from-dnd-red-hover to-dnd-red text-parchment '
+          + 'shadow-[inset_0_1px_0_rgb(255_255_255/0.15),0_2px_0_#5a1010,0_6px_14px_-6px_rgb(0_0_0/0.9)] '
+          + 'hover:border-gold-border hover:shadow-[0_0_22px_rgb(139_29_29/0.55)]',
       },
       size: {
         sm: 'h-8 px-3 text-xs',

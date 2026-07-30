@@ -15,7 +15,10 @@ const VERDICT_CLASS: Record<Verdict, string> = {
   great: 'border-amber-torch bg-amber-torch/15 text-amber-torch shadow-torch',
   good: 'border-moss bg-moss/15 text-moss',
   bad: 'border-edge-bright bg-surface-raised text-muted',
-  awful: 'border-blood bg-blood/15 text-blood',
+  // A solid crimson ribbon rather than a tint: a critical miss is the one
+  // verdict worth shouting, and filled crimson under parchment is the only way
+  // this red clears contrast — as text on the dark ground it reads at 2:1.
+  awful: 'banner-dnd-red border-dnd-red',
 }
 
 const CHIP = 'rounded-md border border-edge/80 bg-surface-raised/90 px-2 py-1 shadow-[inset_0_1px_0_rgb(244_232_193/0.06)]'
