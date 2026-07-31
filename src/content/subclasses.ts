@@ -33,6 +33,9 @@ export interface SubclassFeature {
  * adding a second kind forces every reader to handle it.
  */
 export type SubclassEffect =
+  | { kind: 'itemEconomy'; power: 'fastHands' }
+  | { kind: 'openingAdvantage'; power: 'ambush' }
+  | { kind: 'castHook'; power: 'discipleOfLife' | 'arcaneWard' }
   | { kind: 'reaction'; power: 'wardingFlare' }
   | { kind: 'critOn'; value: number }
   | { kind: 'superiorityDice'; count: number }
@@ -93,7 +96,14 @@ export const SUBCLASSES: readonly Subclass[] = [
       name: 'Sculpt Spells',
       description: 'Your allies automatically pass their saves against your area spells.',
       active: false,
-      pending: 'No spell in this build targets an area yet.',
+      /*
+       * Burning Hands now genuinely covers an area, and resolveAoeTargetSave
+       * has the sculpting branch written and wired. It cannot fire: every
+       * roster in this build is one hero and one monster, so the set of allies
+       * to shield is always empty. The blocker is a second party member, which
+       * README lists under "Not in this build" — not the spell or the engine.
+       */
+      pending: 'There is never anyone on your side of the board to shield.',
     },
   },
   {
@@ -105,10 +115,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You spend your magic on wards and shields, and outlast the people trying to interrupt you.',
     feature: {
       name: 'Arcane Ward',
-      description: 'Casting a spell wraps you in temporary hit points.',
-      active: false,
-      pending: 'Nothing hooks the moment a spell is cast yet.',
+      description:
+        'Casting an abjuration spell raises a ward that soaks damage before your hit points do.',
+      active: true,
     },
+    effect: { kind: 'castHook', power: 'arcaneWard' },
   },
 
   // --- Cleric ---------------------------------------------------------------
@@ -121,10 +132,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'Your healing goes further than it should. Where you are, people get back up.',
     feature: {
       name: 'Disciple of Life',
-      description: 'Your healing spells restore extra hit points on top of the roll.',
-      active: false,
-      pending: 'Healing is not resolved through the rules engine yet.',
+      description:
+        'Every spell you cast to heal restores 2 extra hit points, plus the spell\'s level.',
+      active: true,
     },
+    effect: { kind: 'castHook', power: 'discipleOfLife' },
   },
   {
     id: 'light',
@@ -152,10 +164,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You are quick with objects as well as knives — a potion drunk mid-fight, a lever pulled at the right moment.',
     feature: {
       name: 'Fast Hands',
-      description: 'Use an object as a bonus action instead of your whole turn.',
-      active: false,
-      pending: 'Bonus actions are not tracked separately yet.',
+      description:
+        'Drink a potion as a bonus action, so you can heal and still swing in the same turn.',
+      active: true,
     },
+    effect: { kind: 'itemEconomy', power: 'fastHands' },
   },
   {
     id: 'assassin',
@@ -166,10 +179,19 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You open fights, you do not join them. Anyone who has not moved yet is a target, not an opponent.',
     feature: {
       name: 'Ambush',
-      description: 'Advantage against any enemy that has not taken its turn yet.',
-      active: false,
-      pending: 'Turn-order awareness is not exposed to attack rolls yet.',
+      description:
+        'Your opening attack of a fight is made with advantage, however the initiative fell.',
+      active: true,
     },
+    /*
+     * A documented divergence. The SRD keys this off the *target* not having
+     * acted, which in a fight with one goblin means the feature does nothing at
+     * all whenever the goblin wins initiative — a subclass that silently does
+     * no work for a beginner half the time teaches worse than one that is
+     * slightly generous. Keyed off the assassin's own first turn instead, so it
+     * fires exactly once per encounter regardless of the roll.
+     */
+    effect: { kind: 'openingAdvantage', power: 'ambush' },
   },
 
   // --- Paladin --------------------------------------------------------------
@@ -238,6 +260,16 @@ export function critThresholdFor(id: string | undefined): number | undefined {
 export function superiorityDiceFor(id: string | undefined): number | undefined {
   const effect = subclassById(id)?.effect
   return effect?.kind === 'superiorityDice' ? effect.count : undefined
+}
+
+/** Whether this subclass uses items on a bonus action. */
+export function hasFastHandsFor(id: string | undefined): boolean {
+  return subclassById(id)?.effect?.kind === 'itemEconomy'
+}
+
+/** Whether this subclass opens a fight with advantage. */
+export function hasAmbushFor(id: string | undefined): boolean {
+  return subclassById(id)?.effect?.kind === 'openingAdvantage'
 }
 
 /** Whether this subclass fights on somebody else's turn. */

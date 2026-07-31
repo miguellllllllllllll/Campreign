@@ -9,6 +9,7 @@ import type {
 import type { Rng } from '../../types/dice.ts'
 import {
   applyDamage,
+  applyHealing,
   canAct,
   gridDistance,
   initiativeOrder,
@@ -21,6 +22,10 @@ import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
 import { canWardingFlare, resolveWardingFlare } from './reactions.ts'
+import { castAreaSpell, castSpell } from './casting.ts'
+import { SPELLS_BY_ID } from '../../content/spells.ts'
+import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
+import { roll } from './dice.ts'
 import { narrateAttackFully } from './narrate.ts'
 
 /** The tutorial board. Small enough to read at a glance on a phone. */
@@ -33,7 +38,11 @@ export interface Encounter {
   activeIndex: number
   combatants: Record<string, Combatant>
   movementRemaining: number
+  /** The turn's action. Kept under its original name — every existing action
+   * in the game costs one, so nothing about its meaning changed. */
   hasActed: boolean
+  /** The turn's bonus action, which only a Thief currently has a use for. */
+  bonusActionSpent: boolean
   /**
    * An attack rolled but not yet applied, waiting on the target's reaction.
    * Absent almost always — its presence is the whole of the paused state.
@@ -62,6 +71,7 @@ export function createEncounter(roster: readonly Combatant[], rng: Rng = Math.ra
     combatants,
     movementRemaining: first?.speedSquares ?? 0,
     hasActed: false,
+    bonusActionSpent: false,
     log: [
       `Initiative rolled. Turn order: ${order
         .map((id) => `${combatants[id]?.name} (${combatants[id]?.initiative})`)
@@ -296,6 +306,131 @@ export function attackWith(
   }
 }
 
+export interface DrinkResult {
+  encounter: Encounter
+  refusal: string | null
+}
+
+/**
+ * Drinks a potion, spending whichever budget it costs this combatant.
+ *
+ * The whole of Fast Hands lives in resolveItemUseCost: a Thief pays a bonus
+ * action and can still swing, everybody else pays the turn's action and
+ * chooses between drinking and attacking.
+ */
+export function drinkPotion(
+  encounter: Encounter,
+  rng: Rng = Math.random,
+): DrinkResult {
+  const drinker = activeCombatant(encounter)
+  if (drinker === undefined) return { encounter, refusal: "It is nobody's turn." }
+  if (!hasPotion(drinker)) return { encounter, refusal: 'You have nothing left to drink.' }
+
+  const cost = resolveItemUseCost(drinker)
+  if (cost === 'action' && encounter.hasActed) {
+    return { encounter, refusal: 'You have already taken your action this turn.' }
+  }
+  if (cost === 'bonusAction' && encounter.bonusActionSpent) {
+    return { encounter, refusal: 'You have already used your bonus action this turn.' }
+  }
+
+  const healed = roll(POTION_OF_HEALING, { rng })
+  const before = drinker.currentHp
+  const after = applyHealing(
+    { ...drinker, potions: (drinker.potions ?? 0) - 1 },
+    healed.total,
+  )
+  const restored = after.currentHp - before
+
+  return {
+    encounter: {
+      ...encounter,
+      combatants: { ...encounter.combatants, [after.id]: after },
+      ...(cost === 'action' ? { hasActed: true } : { bonusActionSpent: true }),
+      log: [
+        ...encounter.log,
+        `${drinker.name} drinks a ${POTION_LABEL} and recovers ${restored} hit `
+          + `${restored === 1 ? 'point' : 'points'}`
+          + (cost === 'bonusAction' ? ' — quick enough to still act.' : '.'),
+      ],
+    },
+    refusal: null,
+  }
+}
+
+export interface CastResultOnBoard {
+  encounter: Encounter
+  refusal: string | null
+}
+
+/**
+ * Casts a prepared spell from the active combatant.
+ *
+ * Spends the action like an attack does, so a turn is still one thing plus
+ * movement. Healing yourself is the common case at this level, and passing the
+ * caster as its own target is allowed rather than special-cased.
+ */
+export function castFromActive(
+  encounter: Encounter,
+  args: { spellId: string; targetId: string; subclassId?: string; rng?: Rng },
+): CastResultOnBoard {
+  const caster = activeCombatant(encounter)
+  const target = encounter.combatants[args.targetId]
+
+  if (caster === undefined || target === undefined) {
+    return { encounter, refusal: 'There is nobody there to aim at.' }
+  }
+  if (encounter.hasActed) {
+    return { encounter, refusal: 'You have already taken your action this turn.' }
+  }
+
+  const spell = SPELLS_BY_ID[args.spellId]
+  if (spell?.effect?.kind === 'aoeSave') {
+    const area = castAreaSpell({
+      caster,
+      candidates: turnOrder(encounter),
+      spellId: args.spellId,
+      ...(args.subclassId === undefined ? {} : { subclassId: args.subclassId }),
+      ...(args.rng === undefined ? {} : { rng: args.rng }),
+    })
+    if (area.refusal !== null) return { encounter, refusal: area.refusal }
+
+    const touched = Object.fromEntries(area.affected.map((c) => [c.id, c]))
+    return {
+      encounter: {
+        ...encounter,
+        combatants: { ...encounter.combatants, ...touched, [area.caster.id]: area.caster },
+        hasActed: true,
+        log: [...encounter.log, ...area.lines],
+      },
+      refusal: null,
+    }
+  }
+
+  const result = castSpell({
+    caster,
+    target,
+    spellId: args.spellId,
+    ...(args.subclassId === undefined ? {} : { subclassId: args.subclassId }),
+    ...(args.rng === undefined ? {} : { rng: args.rng }),
+  })
+  if (result.refusal !== null) return { encounter, refusal: result.refusal }
+
+  return {
+    encounter: {
+      ...encounter,
+      combatants: {
+        ...encounter.combatants,
+        [result.caster.id]: result.caster,
+        [result.target.id]: result.target,
+      },
+      hasActed: true,
+      log: [...encounter.log, ...result.lines],
+    },
+    refusal: null,
+  }
+}
+
 export interface ReactionResult {
   encounter: Encounter
   outcome: AttackOutcome | null
@@ -428,12 +563,30 @@ export function channelDivinity(
 }
 
 /** Advances to the next combatant still standing, ticking conditions on a new round. */
+/** Records that a combatant has now had a turn. Never goes back to false. */
+function markTurnCompleted(combatant: Combatant): Combatant {
+  return combatant.hasActedThisCombat === true
+    ? combatant
+    : { ...combatant, hasActedThisCombat: true }
+}
+
 export function endTurn(encounter: Encounter): Encounter {
   if (encounterWinner(encounter) !== null) return encounter
 
   let index = encounter.activeIndex
   let round = encounter.round
   let combatants = encounter.combatants
+
+  /*
+   * The combatant whose turn is ending has now taken one. Marked here rather
+   * than when they attack, because a turn spent walking is still a turn — an
+   * assassin does not keep their opening strike by declining to use it.
+   */
+  const outgoingId = encounter.order[encounter.activeIndex]
+  const outgoing = outgoingId === undefined ? undefined : combatants[outgoingId]
+  if (outgoing !== undefined) {
+    combatants = { ...combatants, [outgoing.id]: markTurnCompleted(outgoing) }
+  }
 
   // At most one full lap: someone on the board is always able to act here,
   // because encounterWinner already ruled out a wiped-out side.
@@ -465,6 +618,7 @@ export function endTurn(encounter: Encounter): Encounter {
         combatants,
         movementRemaining: next.speedSquares,
         hasActed: false,
+        bonusActionSpent: false,
         log:
           round === encounter.round
             ? encounter.log

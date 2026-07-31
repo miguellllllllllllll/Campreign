@@ -152,6 +152,14 @@ export interface Character {
   channelDivinityCharges?: number
   /** True when this hero has a feature that spends a reaction. */
   hasReaction?: boolean
+  /** First-level spell slots. One at level 1 for a full caster. */
+  spellSlots?: number
+  /** True when this hero opens a fight with advantage. */
+  hasAmbush?: boolean
+  /** Potions carried into the fight. */
+  potions?: number
+  /** True when this hero drinks with a bonus action rather than an action. */
+  hasFastHands?: boolean
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

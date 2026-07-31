@@ -11,6 +11,7 @@ import { roll, toCriticalNotation } from './dice.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
 import { attackRollMode, blocksActions, combineRollModes } from './conditions.ts'
 import { channelDivinityAttackBonus, hasVowAgainst } from './channelDivinity.ts'
+import { applyDamageWithWard } from './spellcasting.ts'
 import { damageNotation } from './characterBuilder.ts'
 
 /** Dexterity decides who acts first, plus whatever a feat is worth. */
@@ -76,7 +77,16 @@ export function resolveAttack(args: {
    * annihilate, which is the SRD's rule and the one players expect.
    */
   const vowMode: RollMode = hasVowAgainst(attacker, target.id) ? 'advantage' : 'normal'
-  const mode = args.mode ?? combineRollModes([conditionMode, vowMode])
+  /*
+   * Ambush is a third source of advantage, not an override. An assassin who
+   * opens a fight while prone is swinging at normal, because advantage and
+   * disadvantage annihilate — combining is the only way that stays true.
+   */
+  const ambushMode: RollMode =
+    attacker.hasAmbush === true && attacker.hasActedThisCombat !== true
+      ? 'advantage'
+      : 'normal'
+  const mode = args.mode ?? combineRollModes([conditionMode, vowMode, ambushMode])
 
   const bonus = attackBonusFor(attacker, attack)
   // The attacker's own crit range, so a Champion swinging is not the same roll
@@ -128,8 +138,20 @@ export function resolveAttack(args: {
 }
 
 export function applyDamage(combatant: Combatant, amount: number): Combatant {
-  const currentHp = Math.max(0, combatant.currentHp - Math.max(0, amount))
-  return { ...combatant, currentHp }
+  /*
+   * An Arcane Ward soaks what it can before hit points move. Everyone else has
+   * no ward, so applyDamageWithWard reduces to the same subtraction this always
+   * was — which is why every existing caller is untouched.
+   */
+  const { newHp, newWardHp } = applyDamageWithWard(amount, combatant.currentHp, combatant.arcaneWardHp)
+
+  return {
+    ...combatant,
+    currentHp: newHp,
+    // A depleted ward stays at 0 rather than vanishing: 0 means "broken and
+    // rechargeable", undefined means "never raised", and the hooks tell them apart.
+    ...(combatant.arcaneWardHp === undefined ? {} : { arcaneWardHp: newWardHp }),
+  }
 }
 
 export function applyHealing(combatant: Combatant, amount: number): Combatant {

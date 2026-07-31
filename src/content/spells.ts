@@ -1,4 +1,6 @@
 import type { AttackAction } from '../types/action.ts'
+import type { AbilityName } from '../types/character.ts'
+import type { DamageType } from '../types/items.ts'
 
 /**
  * The 5e SRD spell registry for 1st-level casters.
@@ -16,6 +18,37 @@ export type SpellSchool =
   | 'Necromancy'
   | 'Transmutation'
 
+/**
+ * What a spell does, in terms the engine can act on.
+ *
+ * `damageOrEffect` beside it is prose for the player and always has been —
+ * "1d8 + Wis Healing" is a label, not something to parse. A spell without an
+ * effect here simply cannot be cast yet, which is how Bless and Burning Hands
+ * stay honestly out of reach rather than half-working.
+ */
+export type SpellEffect =
+  | { kind: 'heal'; dice: string; addsAbility: boolean }
+  /**
+   * Everything within `radiusSquares` of the caster rolls a save.
+   *
+   * A burst rather than the SRD's cone: aiming one would need a facing step,
+   * and on a 5x5 board with a single enemy the two select the same squares.
+   * Documented here because it is a real simplification, not an oversight.
+   */
+  | {
+      kind: 'aoeSave'
+      dice: string
+      saveAbility: AbilityName
+      damageType: DamageType
+      radiusSquares: number
+      /** SRD: a successful save still takes half. */
+      halfOnSuccess: boolean
+    }
+  /** Replaces the AC formula outright, as Mage Armor does. */
+  | { kind: 'setAc'; base: number; addsDex: boolean }
+  /** Adds flat AC on top of whatever is already worn. */
+  | { kind: 'bonusAc'; amount: number }
+
 export interface Spell {
   id: string
   name: string
@@ -29,6 +62,8 @@ export interface Spell {
   /** One or two sentences, written for someone who has never cast a spell. */
   description: string
   isConcentration: boolean
+  /** Present when the engine can resolve this spell; absent means not yet. */
+  effect?: SpellEffect
   /**
    * Present only when the spell is aimed with an attack roll, so it can become a
    * real button in combat. Save-based spells (Burning Hands) and auto-hit spells
@@ -136,6 +171,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['wizard'],
     range: 'Touch',
     damageOrEffect: 'AC becomes 13 + Dex',
+    effect: { kind: 'setAc', base: 13, addsDex: true },
     description:
       'Invisible force sheathes you for eight hours. Wizards cannot wear real armour, so this is how you stop being so easy to hit.',
     isConcentration: false,
@@ -160,6 +196,14 @@ export const SPELLS: readonly Spell[] = [
     classes: ['wizard'],
     range: 'Self (15 ft cone)',
     damageOrEffect: '3d6 Fire, Dex save',
+    effect: {
+      kind: 'aoeSave',
+      dice: '3d6',
+      saveAbility: 'dex',
+      damageType: 'fire',
+      radiusSquares: 3,
+      halfOnSuccess: true,
+    },
     description:
       'Flame sheets from your fingertips across everything in front of you. There is no attack roll — enemies roll to dodge instead, and take half damage if they do.',
     isConcentration: false,
@@ -237,6 +281,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['cleric'],
     range: 'Touch',
     damageOrEffect: '1d8 + Wis Healing',
+    effect: { kind: 'heal', dice: '1d8', addsAbility: true },
     description:
       'Lay a hand on a wounded ally and knit them back together. The single most valuable thing a level 1 party can have.',
     isConcentration: false,
@@ -286,6 +331,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['cleric'],
     range: '60 ft (12 squares)',
     damageOrEffect: '+2 AC to one ally',
+    effect: { kind: 'bonusAc', amount: 2 },
     description:
       'A shimmering field follows an ally, making them harder to hit for ten minutes. Put it on whoever is standing at the front.',
     isConcentration: true,

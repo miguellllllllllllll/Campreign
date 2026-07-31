@@ -26,6 +26,15 @@ const WIZARD_PREPARED_AT_LEVEL_1 = 4
 const CANTRIPS_AT_LEVEL_1 = 3
 
 /**
+ * First-level spell slots a full caster has at 1st level.
+ *
+ * Lives here rather than in casting.ts because characterBuilder needs it and
+ * casting.ts reaches combat.ts, which reaches characterBuilder — importing it
+ * from there would close a cycle.
+ */
+export const FIRST_LEVEL_SLOTS = 1
+
+/**
  * `_intMod` is accepted for a symmetrical call signature but unused: the wizard's
  * prepared count is a flat number at 1st level, not derived from Intelligence.
  */

@@ -2,8 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
-import { attackWith, createEncounter, resolveReaction } from '../src/lib/dnd/encounter.ts'
+import { attackWith, createEncounter, endTurn, resolveReaction } from '../src/lib/dnd/encounter.ts'
 import { canWardingFlare, resolveWardingFlare } from '../src/lib/dnd/reactions.ts'
+import { resolveAttack } from '../src/lib/dnd/combat.ts'
 import { hasReactionFor } from '../src/content/subclasses.ts'
 import { critFor, DEFAULT_CRIT_ON } from '../src/lib/dnd/dice.ts'
 import type { Combatant } from '../src/types/combat.ts'
@@ -270,4 +271,112 @@ test('resolveWardingFlare never invents damage on a blow it turned aside', () =>
   assert.equal(flare.outcome.kind, 'miss')
   // A miss carries no damage field at all, which is the type doing the work.
   assert.ok(!('damage' in flare.outcome))
+})
+
+// --- Ambush ---------------------------------------------------------------
+
+test('only the Assassin opens a fight with advantage', () => {
+  const rogue = buildCharacter(
+    { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
+    'Knife',
+    { ...meta, id: 'rogue' },
+  )
+  assert.equal(rogue.hasAmbush, true)
+  assert.equal(
+    characterToCombatant(rogue, { position: { x: 0, y: 0 } }).hasAmbush,
+    true,
+  )
+
+  const thief = buildCharacter(
+    { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'thief' },
+    'Fingers',
+    { ...meta, id: 'thief' },
+  )
+  assert.equal('hasAmbush' in thief, false)
+})
+
+test('the opening strike has advantage and the next one does not', () => {
+  const rogue = buildCharacter(
+    { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
+    'Knife',
+    { ...meta, id: 'rogue' },
+  )
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const attacker = characterToCombatant(rogue, { position: { x: 0, y: 0 } })
+  const target = characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' })
+  const attack = attacker.attacks[0]!
+  const rng = sequenceRng([faceValue(4, 20), faceValue(17, 20), faceValue(3, 6)])
+
+  const opening = resolveAttack({ attacker, target, attack, rng })
+  assert.equal(opening.attackRoll.mode, 'advantage')
+
+  const later = resolveAttack({
+    attacker: { ...attacker, hasActedThisCombat: true },
+    target,
+    attack,
+    rng: sequenceRng([faceValue(4, 20), faceValue(3, 6)]),
+  })
+  assert.equal(later.attackRoll.mode, 'normal')
+})
+
+test('an ambush from the floor is normal, not advantage', () => {
+  // The whole reason this is a roll mode and not a boolean: prone gives the
+  // attacker disadvantage, and the two must annihilate rather than one winning.
+  const rogue = buildCharacter(
+    { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
+    'Knife',
+    { ...meta, id: 'rogue' },
+  )
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const attacker = {
+    ...characterToCombatant(rogue, { position: { x: 0, y: 0 } }),
+    conditions: [{ id: 'prone' as const, roundsRemaining: null }],
+  }
+  const target = characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' })
+
+  const outcome = resolveAttack({
+    attacker,
+    target,
+    attack: attacker.attacks[0]!,
+    rng: sequenceRng([faceValue(10, 20), faceValue(3, 6)]),
+  })
+  assert.equal(outcome.attackRoll.mode, 'normal')
+})
+
+test('ending a turn spends the opening strike, even a turn spent walking', () => {
+  const rogue = buildCharacter(
+    { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
+    'Knife',
+    { ...meta, id: 'rogue' },
+  )
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const base = createEncounter(
+    [
+      characterToCombatant(rogue, { position: { x: 0, y: 0 } }),
+      characterToCombatant(foe, { position: { x: 4, y: 4 }, team: 'foes' }),
+    ],
+    () => 0.99,
+  )
+  const encounter = { ...base, activeIndex: base.order.indexOf(rogue.id) }
+  assert.notEqual(encounter.combatants[rogue.id]?.hasActedThisCombat, true)
+
+  const after = endTurn(encounter)
+  assert.equal(after.combatants[rogue.id]?.hasActedThisCombat, true)
+})
+
+test('the flag never goes back to false once set', () => {
+  const marked = { hasActedThisCombat: true } as const
+  assert.equal(marked.hasActedThisCombat, true)
 })
