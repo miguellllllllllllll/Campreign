@@ -40,6 +40,7 @@ export function characterToCombatant(
     ...(character.superiorityDice === undefined
       ? {}
       : { superiorityDice: character.superiorityDice }),
+    ...(character.hasReaction === true ? { reactionAvailable: true } : {}),
     ...(character.channelDivinityCharges === undefined
       ? {}
       : {

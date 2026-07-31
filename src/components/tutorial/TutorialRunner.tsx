@@ -19,6 +19,7 @@ import { useTutorialStore } from '../../stores/tutorialStore.ts'
 import { ActionBar } from '../combat/ActionBar.tsx'
 import { CombatGrid } from '../combat/CombatGrid.tsx'
 import { InitiativeTrack } from '../combat/InitiativeTrack.tsx'
+import { ReactionBanner } from '../combat/ReactionBanner.tsx'
 import { TurnBanner } from '../combat/TurnBanner.tsx'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { ParchmentCard, ParchmentCardContent } from '../ui/parchment-card.tsx'
@@ -143,6 +144,8 @@ export function TutorialRunner() {
   // Absent for everyone without a paladin oath, which is what keeps the button off
   // the bar for every other hero.
   const oathPower = channelDivinityPowerFor(character.subclassId)
+  // A pause outranks everything: the board is frozen until it is answered.
+  const pending = encounter?.pendingReaction
 
   function move(to: GridPosition) {
     if (useCombatStore.getState().move(to)) dispatch({ type: 'moved' })
@@ -172,6 +175,10 @@ export function TutorialRunner() {
     })
   }
 
+  function react(choice: 'flare' | 'pass') {
+    useCombatStore.getState().dispatchReaction(choice)
+  }
+
   function endTurn() {
     useCombatStore.getState().finishTurn()
     dispatch({ type: 'turnEnded' })
@@ -193,6 +200,16 @@ export function TutorialRunner() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="flex flex-col gap-4">
+          {pending !== undefined && encounter !== null && (
+            <ReactionBanner
+              pending={pending}
+              attacker={encounter.combatants[pending.attackerId]}
+              target={encounter.combatants[pending.targetId]}
+              onFlare={() => react('flare')}
+              onPass={() => react('pass')}
+            />
+          )}
+
           {resolution !== null && (
             <p className="rounded-card text-book border-l-2 border-amber-torch/60 bg-surface/60 p-4 text-base text-parchment italic">
               {resolution}

@@ -15,6 +15,7 @@ import { bonusInitiative, bonusMaxHp, featById, grantedCantripId } from '../../c
 import {
   channelDivinityFor,
   critThresholdFor,
+  hasReactionFor,
   subclassById,
   superiorityDiceFor,
 } from '../../content/subclasses.ts'
@@ -171,6 +172,7 @@ export function buildCharacter(
   const critOn = critThresholdFor(answers.subclassId)
   const superiorityDice = superiorityDiceFor(answers.subclassId)
   const channelDivinityCharges = channelDivinityFor(answers.subclassId)
+  const hasReaction = hasReactionFor(answers.subclassId)
   const trimmedName = name.trim()
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)
   const selection = resolveSpellSelection(answers)
@@ -228,6 +230,7 @@ export function buildCharacter(
     ...(critOn === undefined ? {} : { critOn }),
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),
+    ...(hasReaction ? { hasReaction } : {}),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }
 }

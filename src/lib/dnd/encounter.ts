@@ -1,5 +1,11 @@
 import type { AttackAction } from '../../types/action.ts'
-import type { AttackOutcome, Combatant, GridPosition, Team } from '../../types/combat.ts'
+import type {
+  AttackOutcome,
+  Combatant,
+  GridPosition,
+  PendingReaction,
+  Team,
+} from '../../types/combat.ts'
 import type { Rng } from '../../types/dice.ts'
 import {
   applyDamage,
@@ -14,6 +20,7 @@ import {
 import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
+import { canWardingFlare, resolveWardingFlare } from './reactions.ts'
 import { narrateAttackFully } from './narrate.ts'
 
 /** The tutorial board. Small enough to read at a glance on a phone. */
@@ -27,6 +34,11 @@ export interface Encounter {
   combatants: Record<string, Combatant>
   movementRemaining: number
   hasActed: boolean
+  /**
+   * An attack rolled but not yet applied, waiting on the target's reaction.
+   * Absent almost always — its presence is the whole of the paused state.
+   */
+  pendingReaction?: PendingReaction
   log: string[]
 }
 
@@ -215,6 +227,35 @@ export function attackWith(
       ? undefined
       : resolveTripAttack({ attacker, target, attack, rng: args.rng })
 
+  /*
+   * The seam. A blow that is about to land on somebody holding an unspent
+   * reaction stops here: the attack is rolled and the action is spent, but no
+   * hit points move until they have chosen. Everyone else — which is almost
+   * everyone — falls straight through to the commit below exactly as before.
+   */
+  if (landed && maneuver === undefined && canWardingFlare(target)) {
+    return {
+      encounter: {
+        ...encounter,
+        hasActed: true,
+        pendingReaction: {
+          kind: 'wardingFlare',
+          attackerId: attacker.id,
+          targetId: target.id,
+          attackId: attack.id,
+          outcome,
+        },
+        log: [
+          ...encounter.log,
+          `${attacker.name} attacks with ${attack.name} and is about to connect. `
+            + `${target.name} may flare.`,
+        ],
+      },
+      outcome,
+      refusal: null,
+    }
+  }
+
   const totalDamage = landed ? outcome.damage + (maneuver?.bonusDamage.total ?? 0) : 0
   let damaged = landed ? applyDamage(target, totalDamage) : target
   if (maneuver?.knockedProne === true && !isDefeated(damaged)) {
@@ -252,6 +293,77 @@ export function attackWith(
     outcome,
     refusal: null,
     ...(maneuver === undefined ? {} : { maneuver }),
+  }
+}
+
+export interface ReactionResult {
+  encounter: Encounter
+  outcome: AttackOutcome | null
+  refusal: string | null
+}
+
+/**
+ * Commits a paused attack, with or without the reaction.
+ *
+ * Both branches end in the same place — damage applied, pause cleared — so a
+ * player who passes is not walking a different code path from one who flares.
+ * That symmetry is what stops "pass" quietly becoming the untested case.
+ */
+export function resolveReaction(
+  encounter: Encounter,
+  choice: 'flare' | 'pass',
+  rng: Rng = Math.random,
+): ReactionResult {
+  const pending = encounter.pendingReaction
+  if (pending === undefined) {
+    return { encounter, outcome: null, refusal: 'Nothing is waiting on you.' }
+  }
+
+  const attacker = encounter.combatants[pending.attackerId]
+  const target = encounter.combatants[pending.targetId]
+  if (attacker === undefined || target === undefined) {
+    // The board moved under a pause; drop it rather than apply a stale blow.
+    const { pendingReaction: _dropped, ...rest } = encounter
+    return { encounter: rest, outcome: null, refusal: 'That attack no longer has anyone in it.' }
+  }
+
+  const attack = attacker.attacks.find((candidate) => candidate.id === pending.attackId)
+  const flared = choice === 'flare' && attack !== undefined && canWardingFlare(target)
+
+  const flare = flared
+    ? resolveWardingFlare({ attacker, target, attack, outcome: pending.outcome, rng })
+    : undefined
+  const outcome = flare?.outcome ?? pending.outcome
+
+  const landed = outcome.kind === 'hit' || outcome.kind === 'crit'
+  const hurt = landed ? applyDamage(target, outcome.damage) : target
+  // The reaction is spent whether or not it changed the verdict — a flare that
+  // fails to save you is still a flare you used.
+  const settled = flared ? { ...hurt, reactionAvailable: false } : hurt
+
+  const log = [...encounter.log]
+  if (flare !== undefined) {
+    log.push(
+      `${target.name} flares. ${attacker.name} rolls again — ${flare.flareRoll} against the `
+        + `original ${pending.outcome.breakdown.natural}, and the lower counts. `
+        + narrateAttackFully(outcome, target.name, attack?.damageType ?? 'radiant'),
+    )
+  } else {
+    log.push(`${target.name} lets it land.`)
+  }
+  if (isDefeated(settled) && !isDefeated(target)) {
+    log.push(`${settled.name} drops to 0 hit points and is out of the fight.`)
+  }
+
+  const { pendingReaction: _cleared, ...rest } = encounter
+  return {
+    encounter: {
+      ...rest,
+      combatants: { ...encounter.combatants, [settled.id]: settled },
+      log,
+    },
+    outcome,
+    refusal: null,
   }
 }
 
@@ -333,7 +445,13 @@ export function endTurn(encounter: Encounter): Encounter {
       combatants = Object.fromEntries(
         Object.entries(combatants).map(([id, combatant]) => [
           id,
-          { ...combatant, conditions: tickConditions(combatant.conditions) },
+          {
+            ...combatant,
+            conditions: tickConditions(combatant.conditions),
+            // A reaction comes back with the new round, but only for somebody
+            // who had one to begin with — undefined must stay undefined.
+            ...(combatant.reactionAvailable === undefined ? {} : { reactionAvailable: true }),
+          },
         ]),
       )
     }

@@ -33,6 +33,7 @@ export interface SubclassFeature {
  * adding a second kind forces every reader to handle it.
  */
 export type SubclassEffect =
+  | { kind: 'reaction'; power: 'wardingFlare' }
   | { kind: 'critOn'; value: number }
   | { kind: 'superiorityDice'; count: number }
   | { kind: 'channelDivinity'; charges: number; power: ChannelDivinityType }
@@ -134,10 +135,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'Your faith burns rather than soothes. You blind, you scorch, and you make yourself hard to hit back.',
     feature: {
       name: 'Warding Flare',
-      description: 'Flare light at an attacker to give their attack disadvantage.',
-      active: false,
-      pending: 'Reactions do not exist in combat yet.',
+      description:
+        'When a blow is about to land, flare light at the attacker and make them roll again with disadvantage.',
+      active: true,
     },
+    effect: { kind: 'reaction', power: 'wardingFlare' },
   },
 
   // --- Rogue ----------------------------------------------------------------
@@ -236,6 +238,11 @@ export function critThresholdFor(id: string | undefined): number | undefined {
 export function superiorityDiceFor(id: string | undefined): number | undefined {
   const effect = subclassById(id)?.effect
   return effect?.kind === 'superiorityDice' ? effect.count : undefined
+}
+
+/** Whether this subclass fights on somebody else's turn. */
+export function hasReactionFor(id: string | undefined): boolean {
+  return subclassById(id)?.effect?.kind === 'reaction'
 }
 
 /** The Channel Divinity charges this subclass grants, or undefined for none. */
