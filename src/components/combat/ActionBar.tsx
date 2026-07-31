@@ -1,6 +1,12 @@
 'use client'
 
-import { Hourglass, Sparkles, Swords } from 'lucide-react'
+import { Hourglass, Swords } from 'lucide-react'
+import {
+  ChannelDivinityIcon,
+  SpellFlareIcon,
+  SuperiorityDieIcon,
+  TripAttackIcon,
+} from '../ui/custom-icons.tsx'
 import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
@@ -83,7 +89,11 @@ export function ActionBar({
               }}
               title={attack.description}
             >
-              <Swords aria-hidden />
+              {attack.kind === 'spell' ? (
+                <SpellFlareIcon size={16} className="text-gold-bright" />
+              ) : (
+                <Swords aria-hidden />
+              )}
               {attack.name}
               {target !== undefined && !reachable && (
                 <span className="text-xs font-normal">— too far, move closer</span>
@@ -100,10 +110,11 @@ export function ActionBar({
             onClick={() => setTripArmed((armed) => !armed)}
             title="Spend a superiority die: extra damage, and the target falls over unless it saves."
           >
-            <Swords aria-hidden />
+            <TripAttackIcon size={16} className="text-amber-torch" />
             Trip Attack
-            <span className="font-mono text-xs font-normal">
-              {dice}d6 left
+            <span className="flex items-center gap-1 font-mono text-xs font-normal">
+              <SuperiorityDieIcon size={12} />
+              {dice} left
             </span>
           </FantasyButton>
         )}
@@ -114,7 +125,7 @@ export function ActionBar({
             onClick={() => onChannel(oathPower)}
             title="Call on your oath. It costs no action, and lasts the rest of the fight."
           >
-            <Sparkles aria-hidden />
+            <ChannelDivinityIcon size={16} />
             {oathPower === 'sacredWeapon' ? 'Sacred Weapon' : 'Vow of Enmity'}
             <span className="font-mono text-xs font-normal">{charges} left</span>
           </FantasyButton>
@@ -128,7 +139,7 @@ export function ActionBar({
 
       {oath !== undefined && (
         <p className="mt-3 font-serif text-xs text-amber-torch">
-          <Sparkles size={12} aria-hidden className="mr-1 inline" />
+          <ChannelDivinityIcon size={12} className="mr-1 inline text-amber-torch" />
           {oath.type === 'sacredWeapon'
             ? 'Sacred Weapon is burning — your Charisma is added to every attack roll.'
             : 'Your vow is sworn — you strike that foe with '}
