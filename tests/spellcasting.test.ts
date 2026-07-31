@@ -272,22 +272,15 @@ test('a magic style never lists the same spell twice', () => {
   }
 })
 
-test('every preset fills exactly the allocation its class is allowed', () => {
-  // The standard array gives a wizard Int 15 and a cleric Wis 15, so +2 each.
-  for (const preset of MAGIC_STYLE_PRESETS) {
-    const limits = getSpellcastingLimits(preset.classId, 2, 2)
-    assert.equal(
-      preset.cantripIds.length,
-      limits.cantripsCount,
-      `${preset.id} picks the wrong number of cantrips`,
-    )
-    assert.equal(
-      preset.preparedSpellIds.length,
-      limits.preparedSpellsCount,
-      `${preset.id} prepares the wrong number of spells`,
-    )
-  }
-})
+/*
+ * Replaced by tests/spellPresets.test.ts, which walks real built characters.
+ *
+ * The version here passed a hard-coded +2 for both modifiers — the class array
+ * before any racial bonus, which is a character nobody can create. It went
+ * green for months while every cleric in the app was one spell short of the cap
+ * and could not leave the magic step. An invariant checked against a
+ * hypothetical is not checked.
+ */
 
 test('a style can be found by id and is unknown otherwise', () => {
   assert.equal(magicStyleById('pyromancer')?.classId, 'wizard')

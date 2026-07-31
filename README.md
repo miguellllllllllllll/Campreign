@@ -134,6 +134,11 @@ Flagged rather than hidden, all of them in service of a first-time player:
 - **Mage Armor lasts the fight rather than eight hours.** It is not a
   concentration spell in the SRD either; it simply runs longer than any board
   here, so setting an Armour Class and leaving it set is the whole of it.
+- **A magic style is trimmed to fit whoever picked it.** A cleric prepares
+  1 + their Wisdom modifier, which racial bonuses move between three and four,
+  so no single written-down list fits every cleric. Styles are written at the
+  larger size and cut to the cap in `resolveSpellSelection`, leading with the
+  spells that make them that style. A hand-picked list is never trimmed.
 - **A monster at 0 hit points is dead; a hero at 0 is dying.** The SRD says the
   same, and the difference is the single most important thing a beginner can
   learn about dropping. Death saves are the real ones — a flat d20 at the start

@@ -22,7 +22,11 @@ import {
   superiorityDiceFor,
 } from '../../content/subclasses.ts'
 import { STARTING_POTIONS } from './items.ts'
-import { FIRST_LEVEL_SLOTS } from './spellcasting.ts'
+import {
+  FIRST_LEVEL_SLOTS,
+  getSpellcastingLimits,
+  type SpellcastingLimits,
+} from './spellcasting.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
   ARMORS,
@@ -120,16 +124,49 @@ function uniqueSkills(...groups: readonly SkillName[][]): SkillName[] {
  * Explicit lists win, because they only exist when the player hand-picked them;
  * otherwise the chosen style supplies them. Reads spell data from content, which
  * is pure data like the presets beside it — no side effects cross the boundary.
+ *
+ * A style's list is trimmed to what the character can actually hold. A cleric
+ * prepares 1 + their Wisdom modifier, and racial bonuses move that between three
+ * and four — so no single written-down list fits every cleric, and a preset that
+ * misses the number in either direction leaves creation with no way forward.
+ * Presets are therefore written at the largest size and cut down here, which is
+ * why each one leads with the spells that make it that style.
  */
 export function resolveSpellSelection(answers: CreationDraft): {
   cantripIds: readonly string[]
   preparedSpellIds: readonly string[]
 } {
   const style = answers.magicStyleId === undefined ? undefined : magicStyleById(answers.magicStyleId)
+  const limits = spellLimitsFor(answers)
   return {
-    cantripIds: answers.cantripIds ?? style?.cantripIds ?? [],
-    preparedSpellIds: answers.preparedSpellIds ?? style?.preparedSpellIds ?? [],
+    cantripIds: answers.cantripIds ?? trim(style?.cantripIds, limits?.cantripsCount),
+    preparedSpellIds:
+      answers.preparedSpellIds ?? trim(style?.preparedSpellIds, limits?.preparedSpellsCount),
   }
+}
+
+function trim(ids: readonly string[] | undefined, cap: number | undefined): readonly string[] {
+  if (ids === undefined) return []
+  return cap === undefined ? ids : ids.slice(0, cap)
+}
+
+/**
+ * What a half-finished draft is allowed to know, or undefined while it is still
+ * too early to say. Needs a class and a race, because the modifier that decides
+ * it is the class's array plus the race's bonus.
+ */
+function spellLimitsFor(answers: CreationDraft): SpellcastingLimits | undefined {
+  if (answers.classId === undefined || answers.raceId === undefined) return undefined
+  const klass = CLASS_PRESETS[answers.classId]
+  const race = RACE_PRESETS[answers.raceId]
+  if (klass === undefined || race === undefined) return undefined
+
+  const scores = applyRacialBonuses(klass.scores, race.bonuses)
+  return getSpellcastingLimits(
+    answers.classId,
+    abilityModifier(scores.wis),
+    abilityModifier(scores.int),
+  )
 }
 
 /**
