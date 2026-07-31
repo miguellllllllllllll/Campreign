@@ -1,5 +1,8 @@
 import { attackBonus, damageNotation } from '../../lib/dnd/characterBuilder.ts'
 import { BACKGROUND_PRESETS, CLASS_PRESETS, RACE_PRESETS } from '../../lib/dnd/presets.ts'
+import { featById } from '../../content/feats.ts'
+import { spellsByIds } from '../../content/spells.ts'
+import { subclassById } from '../../content/subclasses.ts'
 import {
   ABILITY_LABELS,
   ABILITY_NAMES,
@@ -75,6 +78,8 @@ export function PrintableCharacterSheet({ character }: { character: Character })
   const race = RACE_PRESETS[character.raceId]
   const background = BACKGROUND_PRESETS[character.backgroundId]
 
+  const subclass = subclassById(character.subclassId)
+  const feat = featById(character.featId)
   const prof = proficiencyBonus(character.level)
   const perception = passiveScore(
     skillBonus(character.scores, 'perception', character.level, character.skillProficiencies),
@@ -215,6 +220,50 @@ export function PrintableCharacterSheet({ character }: { character: Character })
             </table>
           </div>
 
+          {(character.cantrips !== undefined || character.preparedSpells !== undefined) && (
+            <div>
+              <SectionTitle>
+                Spells
+                {character.spellSlots !== undefined &&
+                  ` — ${character.spellSlots} first-level slot${character.spellSlots === 1 ? '' : 's'} per long rest`}
+              </SectionTitle>
+              <table className="w-full border-collapse text-[8pt]">
+                <thead>
+                  <tr style={{ color: RULE }} className="text-left text-[6.5pt] uppercase">
+                    <th className="pb-0.5">Spell</th>
+                    <th className="pb-0.5">Level</th>
+                    <th className="pb-0.5">Effect</th>
+                    <th className="pb-0.5">Range</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {spellsByIds([
+                    ...(character.cantrips ?? []),
+                    ...(character.preparedSpells ?? []),
+                  ]).map((spell) => (
+                    <tr key={spell.id} style={{ borderTop: `1px solid ${RULE_SOFT}` }}>
+                      <td className="py-0.5 font-bold">
+                        {spell.name}
+                        {spell.isConcentration && (
+                          <span style={{ color: RULE }} className="text-[6pt] uppercase"> · conc</span>
+                        )}
+                      </td>
+                      <td className="py-0.5">{spell.level === 0 ? 'Cantrip' : '1st'}</td>
+                      <td className="py-0.5">
+                        {spell.damageOrEffect}
+                        {/* The screen says this at pick time; paper says it at the table. */}
+                        {spell.effect === undefined && spell.attack === undefined && (
+                          <span className="italic opacity-70"> — story magic</span>
+                        )}
+                      </td>
+                      <td className="py-0.5">{spell.range}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           <div>
             <SectionTitle>Skills</SectionTitle>
             <div className="grid grid-cols-2 gap-x-3">
@@ -255,6 +304,22 @@ export function PrintableCharacterSheet({ character }: { character: Character })
                 <span className="font-bold">{klass.label}. </span>
                 {klass.description}
               </p>
+              {/* Advanced-mode picks earned their ink: a Champion who prints
+                  this sheet needs "crits on 19" at the table, not in the app. */}
+              {subclass !== undefined && (
+                <p className="mt-1">
+                  <span className="font-bold">
+                    {subclass.label} — {subclass.feature.name}.{' '}
+                  </span>
+                  {subclass.feature.description}
+                </p>
+              )}
+              {feat !== undefined && (
+                <p className="mt-1">
+                  <span className="font-bold">{feat.label}. </span>
+                  {feat.effectLabel}
+                </p>
+              )}
             </div>
           </div>
 
@@ -284,6 +349,9 @@ export function PrintableCharacterSheet({ character }: { character: Character })
                   character.loadoutName,
                   ...(character.armorName === character.loadoutName ? [] : [character.armorName]),
                   ...character.attacks.map((attack) => attack.name),
+                  ...(character.potions !== undefined && character.potions > 0
+                    ? [`Potion of Healing × ${character.potions}`]
+                    : []),
                 ].map((item, index) => (
                   <li key={`${item}-${index}`}>· {item}</li>
                 ))}

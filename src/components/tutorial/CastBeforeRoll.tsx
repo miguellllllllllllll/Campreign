@@ -3,6 +3,7 @@
 import { Sparkles } from 'lucide-react'
 import { castableOutOfCombat } from '../../lib/dnd/casting.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
+import { HintTooltip } from '../ui/rules-tooltip.tsx'
 import { useTutorialStore } from '../../stores/tutorialStore.ts'
 import { playSound } from '../../lib/sound.ts'
 import type { Character } from '../../types/character.ts'
@@ -49,19 +50,19 @@ export function CastBeforeRoll({ character, hidden = false }: CastBeforeRollProp
   return (
     <div className="flex flex-wrap gap-2">
       {available.map((spell) => (
-        <FantasyButton
-          key={spell.id}
-          variant="iron"
-          size="sm"
-          onClick={() => {
-            const refusal = cast(spell.id)
-            if (refusal === null) playSound('roll')
-          }}
-          title={spell.description}
-        >
-          <Sparkles aria-hidden />
-          Cast {spell.name}
-        </FantasyButton>
+        <HintTooltip key={spell.id} title={spell.name} body={spell.description}>
+          <FantasyButton
+            variant="iron"
+            size="sm"
+            onClick={() => {
+              const refusal = cast(spell.id)
+              if (refusal === null) playSound('roll')
+            }}
+          >
+            <Sparkles aria-hidden />
+            Cast {spell.name}
+          </FantasyButton>
+        </HintTooltip>
       ))}
     </div>
   )

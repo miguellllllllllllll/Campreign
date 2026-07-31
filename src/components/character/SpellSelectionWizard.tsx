@@ -100,6 +100,15 @@ function SpellCard({
       <span className="flex flex-wrap gap-2 text-[10px] text-muted/80">
         <span>Range: {spell.range}</span>
         {spell.isConcentration && <span className="text-amber-torch/80">Concentration</span>}
+        {/*
+          Honesty at pick time. A spell with no effect and no attack is scenery
+          in this build — the codebase's own line is "utility magic stays off
+          the bar" — and the card is the last moment to say so before somebody
+          spends a cantrip slot expecting a button.
+        */}
+        {spell.effect === undefined && spell.attack === undefined && (
+          <span className="text-moss/90 italic">Story magic — never a button in a fight</span>
+        )}
       </span>
     </button>
   )
