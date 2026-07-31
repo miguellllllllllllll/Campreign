@@ -105,13 +105,23 @@ const SHAPES: Record<TokenId, ReactNode> = {
     </>
   ),
 
-  /** A plain kettle helm, brim and all — a soldier, not a knight. */
+  /**
+   * The banner, which is the thing a squire is actually for.
+   *
+   * Drawn three times before this. Twice as a helm — wrong, because the fighter
+   * owns that shape and the two of them stand on the same board — and once as
+   * spear and buckler, which failed for a reason worth writing down: a diagonal
+   * shaft with a point on the end reads as an arrow at forty pixels, and no
+   * amount of shield behind it argues otherwise.
+   *
+   * A standard is the one silhouette nothing else here occupies, and the
+   * swallowtail matters — a plain right-pointing pennant is the play button.
+   */
   squire: (
     <>
-      <path d="M12 4.2c3.7 0 6.7 2.8 7 6.5H5c.3-3.7 3.3-6.5 7-6.5Z" />
-      <path d="M3 11.6h18c.6 0 1.1.5 1.1 1.1s-.5 1.1-1.1 1.1H3c-.6 0-1.1-.5-1.1-1.1S2.4 11.6 3 11.6Z" />
-      {/* A squared jaw, not a taper — a point below the brim read as a stem. */}
-      <path d="M8.6 14.9h6.8v3.3c0 2-1.4 3.2-3.4 3.8-2-.6-3.4-1.8-3.4-3.8v-3.3Z" />
+      <circle cx="6.1" cy="2.2" r="1.5" />
+      <path d="M5.2 3.4h1.9v18.8H5.2V3.4Z" />
+      <path d="M7.1 4.6h12.7l-3.6 4.2 3.6 4.2H7.1V4.6Z" />
     </>
   ),
 }
