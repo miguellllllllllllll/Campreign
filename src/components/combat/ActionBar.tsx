@@ -27,6 +27,11 @@ export interface ActionBarProps {
   onAttack: (attackId: string, maneuverId?: 'trip') => void
   /** Undefined when this hero prepares no spells at all. */
   onCast?: (spellId: string) => void
+  /**
+   * Everyone on the board, so a spell that needs a particular kind of target
+   * can grey out with a reason instead of being pressed into nothing.
+   */
+  board?: readonly Combatant[]
   /** Whether the turn's bonus action is still available. */
   bonusActionSpent?: boolean
   onDrink?: () => void
@@ -47,6 +52,7 @@ export function ActionBar({
   stranded = false,
   onAttack,
   onCast,
+  board = [],
   bonusActionSpent = false,
   onDrink,
   oathPower,
@@ -65,7 +71,7 @@ export function ActionBar({
 
   const charges = active.channelDivinityCharges ?? 0
   const oath = active.activeChannelDivinity
-  const spells = onCast === undefined ? [] : castableSpells(active)
+  const spells = onCast === undefined ? [] : castableSpells(active, board)
   const potions = active.potions ?? 0
   const drinkCost = resolveItemUseCost(active)
   const drinkBlocked = drinkCost === 'action' ? hasActed : bonusActionSpent

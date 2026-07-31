@@ -3,6 +3,7 @@
 import { motion } from 'motion/react'
 import { CreatureToken } from '../ui/creature-icons.tsx'
 import { GRID_SIZE } from '../../lib/dnd/encounter.ts'
+import { isDead, isDown, isStable } from '../../lib/dnd/dying.ts'
 import { cn } from '../../lib/utils.ts'
 import type { Combatant, GridPosition } from '../../types/combat.ts'
 
@@ -19,6 +20,12 @@ function key(position: GridPosition): string {
   return `${position.x},${position.y}`
 }
 
+/** Everyone on their feet reads as nothing; the fallen say which kind. */
+function describeFallen(combatant: Combatant): string {
+  if (!isDown(combatant)) return ''
+  return isStable(combatant) ? ', down but stable' : ', down and dying'
+}
+
 export function CombatGrid({
   combatants,
   activeId,
@@ -27,7 +34,13 @@ export function CombatGrid({
   movementEnabled,
 }: CombatGridProps) {
   const reachableKeys = new Set(reachable.map(key))
-  const standing = combatants.filter((combatant) => combatant.currentHp > 0)
+  /*
+   * The dead leave the board; the dying stay on it, lying where they fell.
+   * Filtering on hit points alone made a downed hero vanish, which read as
+   * "gone" when the whole point of the new rule is that they are still there
+   * and can still be reached.
+   */
+  const present = combatants.filter((combatant) => !isDead(combatant))
 
   return (
     <div
@@ -38,7 +51,7 @@ export function CombatGrid({
     >
       {Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, index) => {
         const position = { x: index % GRID_SIZE, y: Math.floor(index / GRID_SIZE) }
-        const occupant = standing.find(
+        const occupant = present.find(
           (combatant) =>
             combatant.position.x === position.x && combatant.position.y === position.y,
         )
@@ -53,7 +66,8 @@ export function CombatGrid({
             onClick={() => onMove(position)}
             aria-label={
               occupant !== undefined
-                ? `${occupant.name}, row ${position.y + 1} column ${position.x + 1}`
+                ? `${occupant.name}${describeFallen(occupant)}, row ${position.y + 1} `
+                  + `column ${position.x + 1}`
                 : canStepHere
                   ? `Move to row ${position.y + 1} column ${position.x + 1}`
                   : `Empty square, row ${position.y + 1} column ${position.x + 1}`
@@ -86,6 +100,9 @@ export function CombatGrid({
                       ? 'bg-gradient-to-b from-arcane/35 to-arcane/10 text-arcane'
                       : 'bg-gradient-to-b from-blood/35 to-blood/10 text-blood'),
                   occupant.id === activeId && 'ring-2 ring-amber-torch shadow-torch',
+                  // Face down and drained of colour. Legible at a glance as
+                  // "still here, not up", which is the whole state.
+                  isDown(occupant) && 'rotate-90 opacity-45 grayscale',
                 )}
                 style={
                   occupant.cosmetics === undefined

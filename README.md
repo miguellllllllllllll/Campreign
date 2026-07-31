@@ -134,6 +134,17 @@ Flagged rather than hidden, all of them in service of a first-time player:
 - **Mage Armor lasts the fight rather than eight hours.** It is not a
   concentration spell in the SRD either; it simply runs longer than any board
   here, so setting an Armour Class and leaving it set is the whole of it.
+- **A monster at 0 hit points is dead; a hero at 0 is dying.** The SRD says the
+  same, and the difference is the single most important thing a beginner can
+  learn about dropping. Death saves are the real ones — a flat d20 at the start
+  of each of your turns, three either way, a natural 20 putting you back up at 1
+  and a natural 1 costing two.
+- **Damage taken while down does not count as a failed death save.** It does in
+  the SRD. Here nothing can hit a downed creature: attacks refuse them by name
+  and area spells skip anyone at 0, so the rule has no case to apply to.
+- **A fight already decided rolls no more death saves.** If the whole party is
+  down the encounter is lost, and three failures confirming it in silence is a
+  wait, not a lesson.
 - **Foe turns are played out inside `combatStore`.** The goblin frequently wins
   initiative; if control were handed over mid-round the player would be staring at a
   board with nothing to press.
@@ -150,6 +161,11 @@ Any monster beyond the goblin and the practice dummy.
 
 Every 1st-level spell in the registry now does something. Shield is castable, but never on your own turn: it appears in the reaction
 prompt when a blow is about to land, alongside Warding Flare if you have both.
+
+Guidance, Light and Thaumaturgy still do nothing. Light and Thaumaturgy have no
+combat effect to have; Guidance is waiting on casting outside a fight, which
+does not exist yet. They are deliberately kept off the action bar rather than
+shown greyed out — a button that will never work teaches nothing.
 
 Magic Missile hits one target with all three darts. Splitting them between
 creatures is a real choice in the SRD and a click with no decision in it here,

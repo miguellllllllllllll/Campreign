@@ -101,6 +101,11 @@ export interface Combatant {
   spellSlots?: number
   /** Prepared spell ids this combatant may still cast from. */
   preparedSpells?: string[]
+  /**
+   * Cantrip ids. Damage cantrips already arrive as attacks; this carries the
+   * ones that do something other than hit, which had no way onto the board.
+   */
+  cantrips?: string[]
   /** The ability that powers this combatant's magic, for healing maths. */
   castingAbility?: AbilityName
   /** Arcane Ward buffer. Absent means the ward has never been raised. */

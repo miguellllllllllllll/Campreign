@@ -58,6 +58,7 @@ export function characterToCombatant(
     ...(character.preparedSpells === undefined
       ? {}
       : { preparedSpells: [...character.preparedSpells] }),
+    ...(character.cantrips === undefined ? {} : { cantrips: [...character.cantrips] }),
     ...(character.spellcasting === undefined
       ? {}
       : { castingAbility: character.spellcasting.ability }),
