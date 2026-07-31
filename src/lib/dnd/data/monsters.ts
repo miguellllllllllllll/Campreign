@@ -26,6 +26,7 @@ export const GOBLIN: MonsterPreset = {
   id: 'goblin',
   name: 'Goblin',
   blurb: 'A wiry goblin in scavenged leather, gripping a notched scimitar.',
+  tokenId: 'goblin',
   level: 1,
   scores: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
   maxHp: 7,
@@ -57,6 +58,7 @@ export const TRAINING_DUMMY: MonsterPreset = {
   id: 'trainingDummy',
   name: 'Practice Dummy',
   blurb: 'A straw-stuffed dummy on a post, patient and unkillable.',
+  tokenId: 'dummy',
   level: 1,
   scores: { str: 10, dex: 10, con: 10, int: 1, wis: 1, cha: 1 },
   maxHp: 999,
@@ -87,6 +89,7 @@ export function spawnMonster(
     position: args.position,
     attacks: preset.attacks.map((attack) => ({ ...attack })),
     conditions: [],
+    tokenId: preset.tokenId,
     initiative: args.initiative ?? 0,
   }
 }

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    The tab mark: a d20, because the whole app is about making one roll legible.
+    Filled rather than the line-drawn D20Icon in the component set — at sixteen
+    pixels a 1.5px stroke is a grey smudge, so the die is solid gold and the top
+    facet is punched out of it in the background colour.
+  -->
+  <defs>
+    <linearGradient id="gold" x1="16" y1="2.8" x2="16" y2="29.2" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f4d97a" />
+      <stop offset="1" stop-color="#c08b1f" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#14100c" />
+  <path d="M16 2.8 28 9.6v12.8L16 29.2 4 22.4V9.6z" fill="url(#gold)" />
+  <path d="M16 9.4 23.2 22H8.8z" fill="#14100c" />
+</svg>

@@ -1,5 +1,5 @@
 import type { AttackAction } from '../../../types/action.ts'
-import type { Combatant, GridPosition } from '../../../types/combat.ts'
+import type { Combatant, GridPosition, TokenId } from '../../../types/combat.ts'
 
 /**
  * A second body on the player's side of the board.
@@ -36,6 +36,8 @@ export interface CompanionPreset {
   speedSquares: number
   scores: Combatant['scores']
   attacks: readonly AttackAction[]
+  /** Which silhouette stands in the square when this one is spawned. */
+  tokenId: TokenId
 }
 
 /**
@@ -50,6 +52,7 @@ export const LOYAL_SQUIRE: CompanionPreset = {
   speedSquares: 3,
   scores: { str: 14, dex: 12, con: 13, int: 9, wis: 10, cha: 10 },
   attacks: [SQUIRE_SPEAR],
+  tokenId: 'squire',
 }
 
 export function spawnCompanion(
@@ -69,6 +72,7 @@ export function spawnCompanion(
     position: args.position,
     attacks: preset.attacks.map((attack) => ({ ...attack })),
     conditions: [],
+    tokenId: preset.tokenId,
     initiative: args.initiative ?? 0,
   }
 }

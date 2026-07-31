@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { CreatureToken } from '../ui/creature-icons.tsx'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { ParchmentCard, ParchmentCardContent } from '../ui/parchment-card.tsx'
 import { CharacterCard } from './CharacterCard.tsx'
@@ -33,13 +34,23 @@ export function PracticeArena() {
 
       {hydrated && hero === null && (
         <ParchmentCard>
-          <ParchmentCardContent className="flex flex-col items-start gap-3 pt-6">
-            <p className="text-sm leading-relaxed text-muted">
-              You have no hero yet, and the dummy needs someone to hit it.
-            </p>
-            <FantasyButton asChild>
-              <Link href="/create">Build a hero first</Link>
-            </FantasyButton>
+          <ParchmentCardContent className="flex flex-col items-start gap-4 pt-6 sm:flex-row sm:items-center">
+            {/* The dummy is standing there either way — showing it makes the
+                empty state a scene rather than a notice. */}
+            <span
+              aria-hidden
+              className="grid size-24 shrink-0 place-items-center rounded-card border border-edge bg-ink/50 text-muted/60 shadow-[inset_0_0_24px_rgb(0_0_0/0.6)]"
+            >
+              <CreatureToken token="dummy" size={58} />
+            </span>
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-sm leading-relaxed text-muted">
+                You have no hero yet, and the dummy needs someone to hit it.
+              </p>
+              <FantasyButton asChild>
+                <Link href="/create">Build a hero first</Link>
+              </FantasyButton>
+            </div>
           </ParchmentCardContent>
         </ParchmentCard>
       )}

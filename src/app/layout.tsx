@@ -47,9 +47,21 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  // Required for the generated social card to resolve to an absolute URL —
+  // without it every share renders as a bare link.
+  metadataBase: new URL('https://hero-step.vercel.app'),
   title: 'Hero Step — learn D&D by playing it',
   description:
     'Build a Dungeons & Dragons character in three plain-English questions, then fight your first goblin with every rule explained as you go.',
+  openGraph: {
+    type: 'website',
+    siteName: 'Hero Step',
+    title: 'Hero Step — learn D&D by playing it',
+    description:
+      'Build a Dungeons & Dragons character in three plain-English questions, then fight your first goblin with every rule explained as you go.',
+  },
+  // Images are inherited from openGraph, which opengraph-image.tsx supplies.
+  twitter: { card: 'summary_large_image' },
 }
 
 export default function RootLayout({

@@ -3,6 +3,7 @@
 import { Swords } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
+import { MonsterPlate } from '../combat/MonsterPlate.tsx'
 import { Explain } from '../Explain.tsx'
 import { RollBreakdown, type Verdict } from '../dice/RollBreakdown.tsx'
 import { playSound } from '../../lib/sound.ts'
@@ -55,6 +56,8 @@ export function AttackPractice({ character }: { character: Character }) {
       <p className="font-serif text-xs font-semibold tracking-wide text-muted uppercase">
         Try an <Explain k="action">Action</Explain> against a practice dummy
       </p>
+
+      <MonsterPlate monster={TRAINING_DUMMY} />
 
       <div className="flex flex-wrap gap-2">
         {character.attacks.map((attack) => (

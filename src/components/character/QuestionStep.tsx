@@ -2,8 +2,10 @@
 
 import { Check } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { CreatureToken } from '../ui/creature-icons.tsx'
 import { playSound } from '../../lib/sound.ts'
 import { cn } from '../../lib/utils.ts'
+import type { TokenId } from '../../types/combat.ts'
 
 export interface Choice<T extends string> {
   id: T
@@ -11,6 +13,13 @@ export interface Choice<T extends string> {
   tagline?: string
   detail?: string
   icon?: LucideIcon
+  /**
+   * The battle-map silhouette, shown instead of an icon. Only the class cards
+   * carry one, and deliberately: the shape on the card is the shape the player
+   * will be standing on the grid, so the first choice they make is already a
+   * picture of themselves rather than a label.
+   */
+  emblem?: TokenId
   /**
    * A class-accent utility for the icon when the card is not selected. Selected
    * cards stay gold, so the wax-seal treatment reads the same for every option.
@@ -100,10 +109,13 @@ export function QuestionStep<T extends string>({
                     }}
                   />
                 )}
-                {choice.swatch === undefined && Icon !== undefined && (
+                {choice.swatch === undefined && (choice.emblem !== undefined || Icon !== undefined) && (
                   <span
                     className={cn(
-                      'grid size-9 shrink-0 place-items-center rounded-lg border transition-all duration-300',
+                      'grid shrink-0 place-items-center rounded-lg border transition-all duration-300',
+                      // Emblems get the larger frame: they are the silhouette
+                      // the player is about to become, not a category marker.
+                      choice.emblem === undefined ? 'size-9' : 'size-11',
                       isSelected
                         ? 'border-amber-torch/70 bg-amber-torch/15 text-amber-torch'
                         : cn(
@@ -112,7 +124,12 @@ export function QuestionStep<T extends string>({
                           ),
                     )}
                   >
-                    <Icon size={17} aria-hidden />
+                    {choice.emblem !== undefined && (
+                      <CreatureToken token={choice.emblem} size={26} />
+                    )}
+                    {choice.emblem === undefined && Icon !== undefined && (
+                      <Icon size={17} aria-hidden />
+                    )}
                   </span>
                 )}
                 {isSelected && (

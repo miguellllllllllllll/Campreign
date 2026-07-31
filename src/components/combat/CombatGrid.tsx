@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { CreatureToken } from '../ui/creature-icons.tsx'
 import { GRID_SIZE } from '../../lib/dnd/encounter.ts'
 import { cn } from '../../lib/utils.ts'
 import type { Combatant, GridPosition } from '../../types/combat.ts'
@@ -77,13 +78,30 @@ export function CombatGrid({
                 aria-hidden
                 className={cn(
                   'flex size-full items-center justify-center rounded font-display',
-                  occupant.team === 'party'
-                    ? 'bg-gradient-to-b from-arcane/35 to-arcane/10 text-arcane'
-                    : 'bg-gradient-to-b from-blood/35 to-blood/10 text-blood',
+                  // Only the unpainted fall back to team colour. A hero brings
+                  // the aura they chose in creation, which is what the loadout
+                  // step promised when it asked what colour they burn on the map.
+                  occupant.cosmetics === undefined &&
+                    (occupant.team === 'party'
+                      ? 'bg-gradient-to-b from-arcane/35 to-arcane/10 text-arcane'
+                      : 'bg-gradient-to-b from-blood/35 to-blood/10 text-blood'),
                   occupant.id === activeId && 'ring-2 ring-amber-torch shadow-torch',
                 )}
+                style={
+                  occupant.cosmetics === undefined
+                    ? undefined
+                    : {
+                        backgroundColor: `${occupant.cosmetics.auraColor}2e`,
+                        color: occupant.cosmetics.auraColor,
+                        boxShadow: `inset 0 0 14px ${occupant.cosmetics.auraColor}47`,
+                      }
+                }
               >
-                {occupant.name.slice(0, 1).toUpperCase()}
+                {occupant.tokenId === undefined ? (
+                  occupant.name.slice(0, 1).toUpperCase()
+                ) : (
+                  <CreatureToken token={occupant.tokenId} className="size-[68%]" />
+                )}
               </motion.span>
             )}
           </button>

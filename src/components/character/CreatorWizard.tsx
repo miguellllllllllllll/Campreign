@@ -10,19 +10,15 @@ import {
   Droplets,
   Feather,
   Flame,
-  Footprints,
   Hammer,
-  HeartHandshake,
   HeartPulse,
   KeyRound,
   Mountain,
   Shield,
-  ShieldCheck,
   Snowflake,
   Sparkles,
   Sun,
   Swords,
-  WandSparkles,
   Zap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -46,6 +42,7 @@ import { abilityModifier } from '../../lib/dnd/stats.ts'
 import { AURA_PRESETS } from '../../lib/dnd/presets.ts'
 import { useCharacterStore } from '../../stores/characterStore.ts'
 import type { Character, CreationAnswers, CreationDraft } from '../../types/character.ts'
+import type { TokenId } from '../../types/combat.ts'
 import { cn } from '../../lib/utils.ts'
 
 /**
@@ -66,13 +63,21 @@ const CLASS_ACCENTS: Record<string, string> = {
   paladin: 'text-class-paladin',
 }
 
-const OPTION_ICONS: Record<string, LucideIcon> = {
-  fighter: Swords,
-  wizard: WandSparkles,
-  rogue: Footprints,
-  cleric: HeartHandshake,
-  paladin: ShieldCheck,
+/**
+ * The classes are drawn as their battle-map silhouette rather than a sigil, so
+ * the card a player picks and the token they later move are the same shape.
+ * Every other option keeps its lucide glyph — a background is a category, not
+ * a body.
+ */
+const CLASS_EMBLEMS: Record<string, TokenId> = {
+  fighter: 'fighter',
+  wizard: 'wizard',
+  rogue: 'rogue',
+  cleric: 'cleric',
+  paladin: 'paladin',
+}
 
+const OPTION_ICONS: Record<string, LucideIcon> = {
   dwarf: Mountain,
   elf: Feather,
   human: Compass,
@@ -383,6 +388,7 @@ function FieldCard({
 
   const options: readonly Choice<string>[] = choices.map((choice) => {
     const icon = OPTION_ICONS[choice.id]
+    const emblem = CLASS_EMBLEMS[choice.id]
     const accentClass = CLASS_ACCENTS[choice.id]
     const swatch = AURA_PRESETS[choice.id as keyof typeof AURA_PRESETS]?.cosmetics.auraColor
     return {
@@ -391,6 +397,7 @@ function FieldCard({
       tagline: choice.tagline,
       ...(choice.detail === undefined ? {} : { detail: choice.detail }),
       ...(icon === undefined ? {} : { icon }),
+      ...(emblem === undefined ? {} : { emblem }),
       ...(accentClass === undefined ? {} : { accentClass }),
       ...(swatch === undefined ? {} : { swatch }),
     }
