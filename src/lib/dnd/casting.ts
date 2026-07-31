@@ -89,7 +89,7 @@ export function castableSpells(combatant: Combatant): CastableSpell[] {
  */
 export function spellTargetsEnemies(spellId: string): boolean {
   const kind = SPELLS_BY_ID[spellId]?.effect?.kind
-  return kind === 'spellAttack' || kind === 'aoeSave'
+  return kind === 'spellAttack' || kind === 'aoeSave' || kind === 'autoHit'
 }
 
 export interface CastResult {
@@ -196,6 +196,24 @@ export function castSpell(args: {
         ),
       }
       lines.push(`${target.name} is left glowing — the next blow lands easier.`)
+    }
+  } else if (effect.kind === 'autoHit') {
+    /*
+     * No roll to make and none to miss with. Each dart is thrown on its own so
+     * the log can show three small numbers rather than one large one, which is
+     * what the spell actually does and what makes it feel different from a
+     * beam.
+     */
+    const darts = Array.from({ length: effect.darts }, () => roll(effect.dice, { rng }))
+    const total = darts.reduce((sum, dart) => sum + dart.total, 0)
+    nextTarget = applyDamage(target, total)
+
+    lines.push(
+      `${effect.darts} darts strike ${target.name} without a roll to stop them — `
+        + `${darts.map((d) => d.total).join(' + ')} = ${total} ${effect.damageType} damage.`,
+    )
+    if (isDefeated(nextTarget) && !isDefeated(target)) {
+      lines.push(`${target.name} drops to 0 hit points and is out of the fight.`)
     }
   } else if (effect.kind === 'reactionSpell') {
     return { caster, target, lines: [], refusal: `${spell.name} is cast in reaction, not on your turn.` }

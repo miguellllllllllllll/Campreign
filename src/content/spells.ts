@@ -38,6 +38,13 @@ export type SpellEffect =
   /** Cast in reaction to something, never on your own turn. */
   | { kind: 'reactionSpell' }
   /**
+   * Hits without an attack roll. Each dart is rolled separately, because the
+   * SRD rolls them separately and three 1d4+1 is a different distribution from
+   * one 3d4+3 — narrower, and a beginner watching the numbers should see the
+   * shape the rules actually produce.
+   */
+  | { kind: 'autoHit'; darts: number; dice: string; damageType: DamageType }
+  /**
    * Everything within `radiusSquares` of the caster rolls a save.
    *
    * A burst rather than the SRD's cone: aiming one would need a facing step,
@@ -168,6 +175,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['wizard'],
     range: '120 ft (24 squares)',
     damageOrEffect: '3 darts, 1d4+1 Force each',
+    effect: { kind: 'autoHit', darts: 3, dice: '1d4+1', damageType: 'force' },
     description:
       'Three darts of light streak out and hit automatically — there is no attack roll to miss with. The safest way to finish something off.',
     isConcentration: false,

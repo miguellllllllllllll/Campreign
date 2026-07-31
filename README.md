@@ -133,15 +133,16 @@ starts with. Everything above that is out of scope, not merely unwritten.
 
 Any monster beyond the goblin and the practice dummy.
 
-Two 1st-level spells are known but not yet castable, and say so on the button
-rather than failing quietly:
-
-- **Magic Missile** — darts that hit automatically, with no attack roll to
-  resolve them through.
-- **Bless** — needs concentration and a buff that lands on several targets.
+One 1st-level spell is known but not yet castable, and says so on the button
+rather than failing quietly: **Bless**, which needs concentration and a buff
+that lands on several targets at once.
 
 Shield is castable, but never on your own turn: it appears in the reaction
 prompt when a blow is about to land, alongside Warding Flare if you have both.
+
+Magic Missile hits one target with all three darts. Splitting them between
+creatures is a real choice in the SRD and a click with no decision in it here,
+where there is one enemy on the board.
 
 ## Licence
 

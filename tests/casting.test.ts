@@ -331,3 +331,109 @@ test('the glow fades rather than lasting the fight', () => {
   const faded = tickConditions([{ id: 'dazzled', roundsRemaining: 1 }])
   assert.deepEqual(faded, [], 'one round, then gone')
 })
+
+// --- Magic Missile --------------------------------------------------------
+
+function evoker() {
+  const hero = buildCharacter(
+    answers({ classId: 'wizard', magicStyleId: 'pyromancer' }),
+    'Evoker',
+    meta,
+  )
+  return { hero, combatant: characterToCombatant(hero, { position: { x: 0, y: 0 } }) }
+}
+
+function target(maxHp = 40) {
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  return {
+    ...characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' }),
+    maxHp,
+    currentHp: maxHp,
+  }
+}
+
+test('Magic Missile is castable and aimed outward', () => {
+  const { combatant } = evoker()
+  const listed = castableSpells(combatant).find((e) => e.spell.id === 'magicMissile')
+  assert.ok(listed !== undefined, 'a pyromancer prepares it')
+  assert.equal(listed.castable, true)
+  assert.equal(spellTargetsEnemies('magicMissile'), true)
+})
+
+test('three darts land without any roll to stop them', () => {
+  const { combatant } = evoker()
+  const goblin = target()
+
+  // Three separate 1d4+1, all maximum: (4+1) x 3 = 15.
+  const result = castSpell({
+    caster: combatant,
+    target: goblin,
+    spellId: 'magicMissile',
+    rng: () => faceValue(4, 4),
+  })
+
+  assert.equal(result.refusal, null)
+  assert.equal(result.target.currentHp, 40 - 15, 'each dart is 1d4+1, thrown three times')
+  assert.equal(result.caster.spellSlots, 0)
+})
+
+test('the darts are rolled separately, not as one lump', () => {
+  /*
+   * Three 1d4+1 is a narrower spread than one 3d4+3, and the log shows three
+   * numbers because that is what the spell does. A sequence proves each dart
+   * drew its own die rather than one being multiplied.
+   */
+  const { combatant } = evoker()
+  const result = castSpell({
+    caster: combatant,
+    target: target(),
+    spellId: 'magicMissile',
+    rng: sequenceRng([faceValue(1, 4), faceValue(2, 4), faceValue(3, 4)]),
+  })
+
+  // (1+1) + (2+1) + (3+1) = 9
+  assert.equal(result.target.currentHp, 40 - 9)
+  assert.ok(result.lines.some((l) => /2 \+ 3 \+ 4 = 9/.test(l)), 'each dart shown')
+})
+
+test('a missile has no attack roll to miss with, however low the dice fall', () => {
+  const { combatant } = evoker()
+  const goblin = target()
+  // Minimum on every dart still connects: 1+1 three times.
+  const result = castSpell({
+    caster: combatant,
+    target: goblin,
+    spellId: 'magicMissile',
+    rng: () => faceValue(1, 4),
+  })
+  assert.ok(result.target.currentHp < goblin.currentHp, 'it always lands')
+  // Word boundary on purpose: a loose /miss/i matches "Magic Missile" itself.
+  assert.equal(result.lines.some((l) => /\bMISS\b/.test(l)), false, 'no miss verdict')
+})
+
+test('darts that drop a target say so, like any other killing blow', () => {
+  const { combatant } = evoker()
+  const frail = target(4)
+  const result = castSpell({
+    caster: combatant,
+    target: frail,
+    spellId: 'magicMissile',
+    rng: () => faceValue(4, 4),
+  })
+  assert.equal(result.target.currentHp, 0)
+  assert.ok(result.lines.some((l) => /out of the fight/.test(l)))
+})
+
+test('Magic Missile with no slot left is refused', () => {
+  const { combatant } = evoker()
+  const result = castSpell({
+    caster: { ...combatant, spellSlots: 0 },
+    target: target(),
+    spellId: 'magicMissile',
+  })
+  assert.match(result.refusal ?? '', /slot/i)
+})

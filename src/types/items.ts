@@ -20,6 +20,8 @@ export type DamageType =
   | 'cold'
   | 'lightning'
   | 'acid'
+  /** Raw magical impact — Magic Missile's darts, and nothing else yet. */
+  | 'force'
 
 export interface Weapon {
   id: string
