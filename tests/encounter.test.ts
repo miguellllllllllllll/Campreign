@@ -357,3 +357,62 @@ test('a hero can win the fight inside two rounds', () => {
   assert.equal(swing.outcome?.kind, 'hit')
   assert.equal(encounterWinner(state), 'party', '5 + 3 beats the goblin’s 7 hit points')
 })
+
+test('a lead combatant opens the round whatever the dice said', () => {
+  const state = encounter()
+  const roster = Object.values(state.combatants)
+
+  // Pinned so the goblin genuinely wins the roll: it must still not go first.
+  const rolled = createEncounter(roster, sequenceRng([faceValue(1, 20), faceValue(20, 20)]), {
+    leadId: 'hero',
+  })
+
+  assert.equal(rolled.order[0], 'hero', 'the lead opens regardless of initiative')
+  assert.ok(rolled.order.includes('goblin'), 'and nobody is dropped from the order')
+  assert.equal(rolled.order.length, 2)
+})
+
+test('leading reorders without changing what anyone rolled', () => {
+  const state = encounter()
+  const roster = Object.values(state.combatants)
+  const rng = () => faceValue(11, 20)
+
+  const plain = createEncounter(roster, rng)
+  const led = createEncounter(roster, rng, { leadId: 'goblin' })
+
+  assert.equal(led.order[0], 'goblin')
+  assert.deepEqual(
+    [...led.order].sort(),
+    [...plain.order].sort(),
+    'the same combatants, in a different order',
+  )
+  assert.equal(
+    led.combatants['hero']?.initiative,
+    plain.combatants['hero']?.initiative,
+    'the dice are untouched',
+  )
+})
+
+test('an unknown lead id is ignored rather than throwing', () => {
+  const state = encounter()
+  const roster = Object.values(state.combatants)
+  const led = createEncounter(roster, () => faceValue(11, 20), { leadId: 'nobody' })
+  assert.equal(led.order.length, 2)
+  assert.ok(led.order.includes('hero') && led.order.includes('goblin'))
+})
+
+test('the opening reorder is announced, and only when it changed something', () => {
+  const state = encounter()
+  const roster = Object.values(state.combatants)
+
+  const moved = createEncounter(roster, sequenceRng([faceValue(1, 20), faceValue(20, 20)]), {
+    leadId: 'hero',
+  })
+  assert.ok(moved.log.some((line) => /takes the first turn/.test(line)))
+
+  // When the lead already rolled highest there is nothing to explain.
+  const unchanged = createEncounter(roster, sequenceRng([faceValue(20, 20), faceValue(1, 20)]), {
+    leadId: 'hero',
+  })
+  assert.equal(unchanged.log.some((line) => /takes the first turn/.test(line)), false)
+})

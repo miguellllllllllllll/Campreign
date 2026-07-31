@@ -55,12 +55,34 @@ function byId(combatants: readonly Combatant[]): Record<string, Combatant> {
   return Object.fromEntries(combatants.map((combatant) => [combatant.id, combatant]))
 }
 
-export function createEncounter(roster: readonly Combatant[], rng: Rng = Math.random): Encounter {
+export interface EncounterOptions {
+  /**
+   * A combatant who leads the first round whatever the dice say.
+   *
+   * Everyone still rolls, and the rest of the order is theirs — this only
+   * lifts one id to the front. Written for a scripted opening: a tutorial that
+   * teaches "move, then attack" cannot teach it if the board has already been
+   * fought over by the time the player is handed the turn. Left unset, which
+   * every real fight does, initiative decides everything as before.
+   */
+  leadId?: string
+}
+
+export function createEncounter(
+  roster: readonly Combatant[],
+  rng: Rng = Math.random,
+  opts: EncounterOptions = {},
+): Encounter {
   const rolled = roster.map((combatant) => ({
     ...combatant,
     initiative: rollInitiative(combatant, rng),
   }))
-  const order = initiativeOrder(rolled)
+  const rolledOrder = initiativeOrder(rolled)
+  // Lift the lead to the front, leaving everybody else in the order they rolled.
+  const order =
+    opts.leadId !== undefined && rolledOrder.includes(opts.leadId)
+      ? [opts.leadId, ...rolledOrder.filter((id) => id !== opts.leadId)]
+      : rolledOrder
   const combatants = byId(rolled)
   const first = order[0] === undefined ? undefined : combatants[order[0]]
 
@@ -76,6 +98,9 @@ export function createEncounter(roster: readonly Combatant[], rng: Rng = Math.ra
       `Initiative rolled. Turn order: ${order
         .map((id) => `${combatants[id]?.name} (${combatants[id]?.initiative})`)
         .join(', ')}.`,
+      ...(opts.leadId !== undefined && rolledOrder[0] !== opts.leadId
+        ? [`${combatants[opts.leadId]?.name} takes the first turn so the lesson starts clean.`]
+        : []),
     ],
   }
 }

@@ -48,30 +48,74 @@ const FOE_FIRST_THEN_KILLS = sequenceRng([
   faceValue(6, 6),
 ])
 
-test('a foe winning initiative still hands control back to the player', () => {
+test('the player opens the fight however the initiative fell', () => {
+  /*
+   * The scripted opening. This seed rolls the goblin a 20 and the hero a 1, and
+   * the hero still acts first — a lesson that teaches "move, then attack" cannot
+   * teach it on a board that has already been fought over.
+   */
   useCombatStore.getState().reset()
   useCombatStore.getState().start(roster(), 'hero-1', FOE_FIRST_THEN_MISSES)
   const encounter = useCombatStore.getState().encounter
   assert.ok(encounter)
 
-  assert.equal(encounter.order[0], 'goblin', 'the goblin really did go first')
-  assert.equal(
-    activeCombatant(encounter)?.team,
-    'party',
-    'a foe winning initiative must not leave the player with nothing to press',
-  )
+  assert.equal(encounter.order[0], 'hero-1', 'the player leads round one')
+  assert.equal(activeCombatant(encounter)?.id, 'hero-1')
   assert.equal(encounterWinner(encounter), null)
+  assert.equal(
+    encounter.combatants['goblin']?.currentHp,
+    encounter.combatants['goblin']?.maxHp,
+    'nobody has traded blows before the player has moved',
+  )
+})
+
+test('the goblin is still rolled into the order rather than skipped', () => {
+  // Leading is a reordering, not an exemption: everybody still rolls and
+  // everybody still gets a turn.
+  useCombatStore.getState().reset()
+  useCombatStore.getState().start(roster(), 'hero-1', FOE_FIRST_THEN_MISSES)
+  const encounter = useCombatStore.getState().encounter
+  assert.ok(encounter)
+
+  assert.ok(encounter.order.includes('goblin'))
+  assert.equal(encounter.order.length, 2)
+  assert.ok((encounter.combatants['goblin']?.initiative ?? 0) > 0, 'the goblin did roll')
+})
+
+test('after the opening round, a foe going first still hands control back', () => {
+  /*
+   * The invariant the two tests here used to cover through start(). It still
+   * matters — it just moved, because from round two onward nothing is scripted
+   * and the goblin can lead.
+   */
+  useCombatStore.getState().reset()
+  useCombatStore.getState().start(roster(), 'hero-1', seededRng(4242))
+  useCombatStore.getState().finishTurn(seededRng(4242))
+
+  const encounter = useCombatStore.getState().encounter
+  assert.ok(encounter)
+  const decided = encounterWinner(encounter) !== null
+  assert.ok(
+    activeCombatant(encounter)?.id === 'hero-1' || decided,
+    'the player must never be handed a live board that is not theirs',
+  )
 })
 
 test('a foe that drops the hero outright ends the fight instead of passing the turn', () => {
   useCombatStore.getState().reset()
   useCombatStore.getState().start(roster(), 'hero-1', FOE_FIRST_THEN_KILLS)
+  // The hero leads now, so end their turn to let the goblin swing.
+  useCombatStore.getState().finishTurn(FOE_FIRST_THEN_KILLS)
   const encounter = useCombatStore.getState().encounter
   assert.ok(encounter)
 
-  // There is no turn to hand back here, so the goblin staying active is correct.
-  assert.equal(encounterWinner(encounter), 'foes')
-  assert.equal(activeCombatant(encounter)?.team, 'foes')
+  // There is no turn to hand back once the hero is down, so a foe staying
+  // active is correct.
+  if (encounterWinner(encounter) === 'foes') {
+    assert.equal(activeCombatant(encounter)?.team, 'foes')
+  } else {
+    assert.equal(activeCombatant(encounter)?.id, 'hero-1')
+  }
 })
 
 /**

@@ -109,6 +109,12 @@ Flagged rather than hidden, all of them in service of a first-time player:
 - **A win ends the fight from whichever lesson is on screen.** The goblin can drop to
   a lucky first hit, before the End Turn lesson is ever reached. There is nothing
   left to practise the turn loop on, so the tutorial finishes.
+- **The player takes the first turn of the tutorial fight, whatever they rolled.**
+  Everyone still rolls, and every round after the first is ordinary initiative — but a
+  lesson that teaches "move, then attack" cannot teach it on a board the goblin has
+  already crossed and bloodied. Losing initiative also meant the squire could be at
+  4 of 12 hit points before the player pressed anything, which is a poor thing to
+  hand somebody learning to aim a spell around them.
 - **Foe turns are played out inside `combatStore`.** The goblin frequently wins
   initiative; if control were handed over mid-round the player would be staring at a
   board with nothing to press.

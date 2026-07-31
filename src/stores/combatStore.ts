@@ -51,7 +51,17 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   start: (roster, playerId, rng = Math.random) => {
     // The goblin can win initiative, so hand control back to the player before
     // the board is ever shown — otherwise there is nothing they can press.
-    const played = playUntilPlayerTurn(createEncounter(roster, rng), playerId, rng)
+    /*
+     * The player leads the opening round. Only the tutorial drives this store,
+     * and a scripted lesson cannot teach "move, then attack" if the goblin has
+     * already crossed the room and bloodied the squire before the board is
+     * handed over. Every later round is ordinary initiative.
+     */
+    const played = playUntilPlayerTurn(
+      createEncounter(roster, rng, { leadId: playerId }),
+      playerId,
+      rng,
+    )
     set({ encounter: played.encounter, lastOutcome: played.outcome, refusal: null, playerId })
   },
 
