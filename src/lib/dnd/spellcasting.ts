@@ -186,3 +186,134 @@ export const PALADIN_LEVEL_2_PREVIEW: readonly PaladinSpellPreview[] = [
     isConcentration: true,
   },
 ]
+
+
+/* ---------------------------------------------------------------------------
+ * Spell-cast hooks
+ *
+ * The two subclass features that key off the moment a spell is cast rather than
+ * off an attack roll: a Life cleric's healing landing heavier, and an Abjurer's
+ * ward topping itself back up.
+ *
+ * These are pure and correct and currently have NO CALLER. Nothing in this
+ * build can cast a levelled spell: only cantrips carrying an `attack` become
+ * buttons, `applyHealing` is defined and never invoked, and Mage Armor, Shield,
+ * Shield of Faith and Cure Wounds all sit on the sheet unpressable. So `life`
+ * and `abjuration` stay marked inactive in the subclass data — "active" there
+ * means the engine genuinely applies it today, and it does not. The missing
+ * piece is a cast action, not this file.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Schools as this hook spells them: lowercase, and its own vocabulary rather
+ * than the registry's capitalised `SpellSchool`. Worth collapsing into one
+ * union when a caster exists to produce these events.
+ */
+export type CastSchool =
+  | 'abjuration'
+  | 'evocation'
+  | 'enchantment'
+  | 'necromancy'
+  | 'transmutation'
+  | 'conjuration'
+  | 'divination'
+  | 'illusion'
+
+export interface SpellCastEvent {
+  casterId: string
+  targetId: string
+  spellId: string
+  school: CastSchool
+  /** 0 for cantrips, 1+ for levelled spells. */
+  level: number
+  isHealing: boolean
+  baseAmount: number
+}
+
+export interface SubclassFeatureCarrier {
+  level: number
+  intMod: number
+  currentWardHp?: number
+  hasFeature: (featureId: string) => boolean
+}
+
+export interface SpellCastOutcome {
+  finalAmount: number
+  /** The ward after this cast — unchanged rather than absent when nothing fired. */
+  updatedCasterWardHp?: number
+  triggeredFeatures: string[]
+}
+
+const DISCIPLE_OF_LIFE = 'life_domain_disciple_of_life'
+const ARCANE_WARD = 'abjuration_arcane_ward'
+
+/**
+ * Twice the caster's level plus Intelligence.
+ *
+ * Floored at 1: the SRD would hand a wizard with a negative Intelligence
+ * modifier a ward of zero, which is a feature that does nothing. Unreachable
+ * with the scores this build deals out, but stated rather than left to chance.
+ */
+export function maxArcaneWardHp(caster: SubclassFeatureCarrier): number {
+  return Math.max(1, 2 * caster.level + caster.intMod)
+}
+
+export function resolveSpellCastHook(
+  event: SpellCastEvent,
+  caster: SubclassFeatureCarrier,
+): SpellCastOutcome {
+  let finalAmount = event.baseAmount
+  let updatedCasterWardHp = caster.currentWardHp
+  const triggeredFeatures: string[] = []
+
+  // A cantrip is not a spell slot. Both features key off levelled casting, and
+  // checking it once here keeps the rule in one place rather than in each arm.
+  if (event.level < 1) {
+    return { finalAmount, updatedCasterWardHp, triggeredFeatures }
+  }
+
+  if (event.isHealing && caster.hasFeature(DISCIPLE_OF_LIFE)) {
+    finalAmount += 2 + event.level
+    triggeredFeatures.push(DISCIPLE_OF_LIFE)
+  }
+
+  if (event.school === 'abjuration' && caster.hasFeature(ARCANE_WARD)) {
+    const max = maxArcaneWardHp(caster)
+    /*
+     * `undefined` is the only thing that means "no ward yet". A ward sitting at
+     * 0 still exists — the SRD says you simply take damage normally while it is
+     * empty — so it recharges by twice the spell level like any other. Treating
+     * 0 as absent would hand a wizard a full ward back for one 1st-level spell,
+     * which is the difference between regaining 2 and regaining all 5.
+     */
+    updatedCasterWardHp =
+      updatedCasterWardHp === undefined
+        ? max
+        : Math.min(max, updatedCasterWardHp + 2 * event.level)
+    triggeredFeatures.push(ARCANE_WARD)
+  }
+
+  return { finalAmount, updatedCasterWardHp, triggeredFeatures }
+}
+
+/**
+ * Resolves incoming damage against an optional ward before hit points.
+ *
+ * Hit points clamp at zero, matching applyDamage in combat.ts — a combatant
+ * with no ward passes through this with identical arithmetic.
+ */
+export function applyDamageWithWard(
+  incomingDamage: number,
+  currentHp: number,
+  currentWardHp = 0,
+): { newHp: number; newWardHp: number; damageAbsorbed: number } {
+  const ward = Math.max(0, currentWardHp)
+  const damage = Math.max(0, incomingDamage)
+  const damageAbsorbed = Math.min(ward, damage)
+
+  return {
+    newHp: Math.max(0, currentHp - (damage - damageAbsorbed)),
+    newWardHp: ward - damageAbsorbed,
+    damageAbsorbed,
+  }
+}
