@@ -109,6 +109,7 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     guidance:
       'Click one of the highlighted squares to walk there. Aim to finish next to the goblin. Moving does not use up your action, so you can still attack afterwards.',
     completion: { when: 'moved' },
+    victory: 'aftermath',
     next: 'attack',
   },
   {
@@ -120,6 +121,7 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     guidance:
       'Press your weapon button to attack the goblin. If you are still too far away, move closer first — the button will tell you.',
     completion: { when: 'attackResolved' },
+    victory: 'aftermath',
     next: 'endTurn',
   },
   {
@@ -131,10 +133,11 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     guidance:
       'Press End Turn. The goblin will act straight away, and then it comes back round to you.',
     completion: { when: 'turnEnded' },
-    next: 'finish',
+    victory: 'aftermath',
+    next: 'rout',
   },
   {
-    id: 'finish',
+    id: 'rout',
     phase: 'combat',
     title: 'Finish the fight',
     narration:
@@ -142,6 +145,54 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     guidance:
       'Keep moving, attacking and ending your turn until the goblin is down. Every roll is explained in the log underneath the map.',
     completion: { when: 'enemyDefeated' },
+    victory: 'aftermath',
+    next: 'aftermath',
+  },
+  {
+    id: 'aftermath',
+    phase: 'combat',
+    title: 'You levelled up',
+    narration:
+      'The goblin stops moving. You catch your breath, bind what needs binding, and something settles — you are better at this than you were an hour ago.',
+    guidance:
+      'Read what changed, then press Continue. Levelling up in D&D is exactly this: your numbers go up, and you get something new to do with them.',
+    completion: { when: 'acknowledged' },
+    onEnter: [{ kind: 'levelUp' }, { kind: 'shortRest' }],
+    next: 'deeper',
+  },
+  {
+    id: 'deeper',
+    phase: 'combat',
+    title: 'Something else is down here',
+    narration:
+      'The drain the innkeeper mentioned is a hole in the far wall, and it is bigger than a drain. Something comes through it fast and low, and something else follows on foot, unhurried, rattling.',
+    guidance:
+      'Two of them this time. Press Continue to roll initiative — then look at the turn order before you decide who to hit.',
+    completion: { when: 'acknowledged' },
+    onEnter: [{ kind: 'startCombat', encounterId: 'deeper' }],
+    next: 'swarm',
+  },
+  {
+    id: 'swarm',
+    phase: 'combat',
+    title: 'Two at once',
+    narration:
+      'Two enemies is not twice one enemy. The bat is fast and fragile; the skeleton is slow and keeps coming. Dropping one of them halves what is being thrown at you, so most of the time the answer is to finish one rather than wound both.',
+    guidance:
+      'Fight them the same way — move, act, end turn — but choose a target each round. Your spells and your new hit points are both worth spending here.',
+    completion: { when: 'enemyDefeated' },
+    victory: 'finish',
+    next: 'finish',
+  },
+  {
+    id: 'finish',
+    phase: 'combat',
+    title: 'The cellar is clear',
+    narration:
+      'That is the whole game: explore, talk, fight, and get better at it. Everything above this is the same three things with bigger numbers.',
+    guidance:
+      'Nothing left down here. Play it again with a different class to see how much of this changes, or build another hero and start over.',
+    completion: { when: 'acknowledged' },
     next: null,
   },
 ]

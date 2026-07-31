@@ -95,7 +95,17 @@ export const GIANT_BAT: MonsterPreset = {
   tokenId: 'bat',
   level: 1,
   scores: { str: 15, dex: 16, con: 11, int: 2, wis: 12, cha: 6 },
-  maxHp: 22,
+  /*
+   * The SRD gives this 22, which would make it the toughest thing on the board
+   * — tougher than the skeleton beside it and three times the goblin. Two
+   * things break at that number. The tutorial's own narration calls the bat
+   * fragile, and the second encounter has to be winnable by somebody who has
+   * had exactly one fight; at 22 it was a coin toss that killed a level-2
+   * cleric and their squire outright.
+   *
+   * Halved, so "fast and fragile" is what the numbers say as well as the prose.
+   */
+  maxHp: 11,
   ac: 13,
   // Four rather than the goblin's three: the one thing a bat is, is faster
   // than you. Twelve squares would be the honest conversion and would let it

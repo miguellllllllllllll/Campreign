@@ -117,3 +117,28 @@ test('the practice dummy stays the one thing that cannot be killed', () => {
   assert.ok(TRAINING_DUMMY.maxHp > GIANT_SPIDER.maxHp * 10)
   assert.equal(TRAINING_DUMMY.attacks.length, 0, 'it does not hit back')
 })
+
+test('a creature the tutorial calls fragile is not the toughest thing on the board', () => {
+  /*
+   * The SRD gives the giant bat 22 hit points, which made it sturdier than the
+   * skeleton standing beside it in the second encounter — while the narration
+   * on that step calls it fragile. Prose and data have to agree, and the
+   * encounter has to be survivable by somebody one fight into the game.
+   */
+  assert.ok(GIANT_BAT.maxHp < SKELETON.maxHp, 'the bat is the fragile one')
+  assert.ok(GIANT_BAT.speedSquares > SKELETON.speedSquares, 'and the fast one')
+})
+
+test('the second encounter is survivable by the party that meets it', () => {
+  /*
+   * A blunt sanity bound rather than a simulation: two foes whose combined hit
+   * points exceed a rested level-2 hero and their squire is a fight the tutorial
+   * loses more often than it wins, and it did exactly that before the bat was
+   * softened. Party at level 2 is roughly 17 + 12.
+   */
+  const partyHp = 17 + 12
+  assert.ok(
+    GIANT_BAT.maxHp + SKELETON.maxHp < partyHp,
+    'the second fight outweighs the party that has to win it',
+  )
+})

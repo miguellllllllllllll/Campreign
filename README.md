@@ -11,7 +11,9 @@ Three things to do:
   character. Every number on the card explains itself on hover or keyboard focus.
 - **`/tutorial`** — *The Goblin in the Cellar*. Exploration (a Perception check),
   conversation (Persuasion / Intimidation / draw steel), then combat on a 5×5 grid
-  that teaches movement, then action, then ending the turn.
+  that teaches movement, then action, then ending the turn. Winning levels you to
+  2 and opens a second fight against two foes at once, which is where choosing a
+  target becomes a decision.
 
 ## Running it
 
@@ -148,6 +150,18 @@ Flagged rather than hidden, all of them in service of a first-time player:
   so no single written-down list fits every cleric. Styles are written at the
   larger size and cut to the cap in `resolveSpellSelection`, leading with the
   spells that make them that style. A hand-picked list is never trimmed.
+- **The giant bat has 11 hit points, not the SRD's 22.** At 22 it was sturdier
+  than the skeleton standing next to it, while the step's own narration called
+  it fragile — and the second encounter became a coin toss that wiped a level-2
+  hero and their squire. Halved, so the numbers say what the prose does.
+- **A short rest between the two fights restores everything.** Hit points and
+  spell slots both. A player who finished the goblin at 2 hit points would
+  otherwise meet the second encounter with no way to win it, which teaches
+  nothing except that the tutorial is unfair.
+- **The hero dying ends the lesson even if their side wins.** The squire can
+  finish the last enemy while you are on the floor; if you were only *dying*
+  the rest brings you back, and that is a good story. If you are dead, the
+  tutorial stops rather than marching a corpse into a harder fight.
 - **A monster at 0 hit points is dead; a hero at 0 is dying.** The SRD says the
   same, and the difference is the single most important thing a beginner can
   learn about dropping. Death saves are the real ones — a flat d20 at the start
@@ -175,15 +189,14 @@ slots. A level-3 wizard here would be missing half their magic. The slot table
 is written out past the cap because the rules are correct further than the app
 can play them — lifting it means giving slots a table, then one constant.
 
-**Nothing reaches the levelling rules yet.** There is no screen that levels
-anybody up. It is a tested foundation and honestly nothing more.
-
 The bestiary is the goblin, the practice dummy, a giant bat, a skeleton and a
-giant spider. The three new ones carry their SRD numbers rather than the
-goblin's softened ones — the goblin is AC 12 instead of 15 because it is the
-first fight anybody has, and that reason does not generalise. **Only the goblin
-and the dummy currently appear anywhere**; the rest are data waiting on a second
-encounter.
+giant spider. The giant spider is the only one that does not appear yet — it is
+the hardest thing written and there is nothing hard enough to need it.
+
+Levelling is milestone-based and lives in the tutorial only: beating the goblin
+takes you to 2, and it is scoped to that run. `characterStore` is persisted, and
+a level that survived a replay would stack every time somebody pressed "Play it
+again" — a level-6 hero after six runs of one goblin fight.
 
 Every 1st-level spell in the registry now does something. Shield is castable, but never on your own turn: it appears in the reaction
 prompt when a blow is about to land, alongside Warding Flare if you have both.
