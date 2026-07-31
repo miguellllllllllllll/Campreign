@@ -12,6 +12,7 @@ import {
 import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
+import { HintTooltip } from '../ui/rules-tooltip.tsx'
 import { Explain } from '../Explain.tsx'
 import type { Combatant } from '../../types/combat.ts'
 
@@ -116,15 +117,14 @@ export function ActionBar({
           const usable = attackEnabled && !hasActed && target !== undefined && reachable
 
           return (
+            <HintTooltip key={attack.id} title={attack.name} body={attack.description}>
             <FantasyButton
-              key={attack.id}
               variant="brass"
               aria-disabled={!usable}
               onClick={() => {
                 onAttack(attack.id, tripArmed && attack.kind === 'weapon' ? 'trip' : undefined)
                 setTripArmed(false)
               }}
-              title={attack.description}
             >
               {attack.kind === 'spell' ? (
                 <SpellFlareIcon size={16} className="text-gold-bright" />
@@ -136,16 +136,20 @@ export function ActionBar({
                 <span className="text-xs font-normal">— too far, move closer</span>
               )}
             </FantasyButton>
+            </HintTooltip>
           )
         })}
 
         {canTrip && (
+          <HintTooltip
+            title="Trip Attack"
+            body="Spend a superiority die: extra damage, and the target falls over unless it saves."
+          >
           <FantasyButton
             variant={tripArmed ? 'crimson' : 'iron'}
             aria-disabled={hasActed}
             aria-pressed={tripArmed}
             onClick={() => setTripArmed((armed) => !armed)}
-            title="Spend a superiority die: extra damage, and the target falls over unless it saves."
           >
             <TripAttackIcon size={16} className="text-amber-torch" />
             Trip Attack
@@ -154,44 +158,51 @@ export function ActionBar({
               {dice} left
             </span>
           </FantasyButton>
+          </HintTooltip>
         )}
 
         {canChannel && (
-          <FantasyButton
-            variant="crimson"
-            onClick={() => onChannel(oathPower)}
-            title="Call on your oath. It costs no action, and lasts the rest of the fight."
+          <HintTooltip
+            title={oathPower === 'sacredWeapon' ? 'Sacred Weapon' : 'Vow of Enmity'}
+            body="Call on your oath. It costs no action, and lasts the rest of the fight."
           >
+          <FantasyButton variant="crimson" onClick={() => onChannel(oathPower)}>
             <ChannelDivinityIcon size={16} />
             {oathPower === 'sacredWeapon' ? 'Sacred Weapon' : 'Vow of Enmity'}
             <span className="font-mono text-xs font-normal">{charges} left</span>
           </FantasyButton>
+          </HintTooltip>
         )}
 
         {spells.map(({ spell, castable, reason }) => (
+          // The reason is already on the face of the button when it applies, so
+          // the scroll carries what the spell actually does either way.
+          <HintTooltip key={spell.id} title={spell.name} body={spell.description}>
           <FantasyButton
-            key={spell.id}
             variant="iron"
             aria-disabled={!castable || hasActed || !attackEnabled}
             onClick={() => onCast?.(spell.id)}
-            title={reason ?? spell.description}
           >
             <SpellFlareIcon size={16} className="text-gold-bright" />
             {spell.name}
             {!castable && <span className="text-xs font-normal">— {reason}</span>}
           </FantasyButton>
+          </HintTooltip>
         ))}
 
         {onDrink !== undefined && potions > 0 && (
-          <FantasyButton
-            variant="iron"
-            aria-disabled={!canDrink || !attackEnabled}
-            onClick={onDrink}
-            title={
+          <HintTooltip
+            title={POTION_LABEL}
+            body={
               drinkCost === 'bonusAction'
                 ? 'Fast Hands: drinking costs only a bonus action, so you can still attack.'
                 : 'Drinking takes your whole action for the turn.'
             }
+          >
+          <FantasyButton
+            variant="iron"
+            aria-disabled={!canDrink || !attackEnabled}
+            onClick={onDrink}
           >
             <Heart aria-hidden />
             Drink {POTION_LABEL}
@@ -199,6 +210,7 @@ export function ActionBar({
               {potions} left{drinkCost === 'bonusAction' ? ' · bonus' : ''}
             </span>
           </FantasyButton>
+          </HintTooltip>
         )}
 
         <FantasyButton variant="iron" aria-disabled={!endTurnEnabled} onClick={onEndTurn}>

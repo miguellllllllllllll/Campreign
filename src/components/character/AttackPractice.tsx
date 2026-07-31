@@ -3,6 +3,7 @@
 import { Swords } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
+import { HintTooltip } from '../ui/rules-tooltip.tsx'
 import { MonsterPlate } from '../combat/MonsterPlate.tsx'
 import { Explain } from '../Explain.tsx'
 import { RollBreakdown, type Verdict } from '../dice/RollBreakdown.tsx'
@@ -61,12 +62,8 @@ export function AttackPractice({ character }: { character: Character }) {
 
       <div className="flex flex-wrap gap-2">
         {character.attacks.map((attack) => (
-          <FantasyButton
-            key={attack.id}
-            variant="iron"
-            onClick={() => swing(attack)}
-            title={attack.description}
-          >
+          <HintTooltip key={attack.id} title={attack.name} body={attack.description}>
+          <FantasyButton variant="iron" onClick={() => swing(attack)}>
             <Swords aria-hidden />
             {attack.name}
             <span className="font-mono text-xs text-amber-torch">
@@ -74,6 +71,7 @@ export function AttackPractice({ character }: { character: Character }) {
               {damageNotation(attack, character.scores)} dmg
             </span>
           </FantasyButton>
+          </HintTooltip>
         ))}
       </div>
 

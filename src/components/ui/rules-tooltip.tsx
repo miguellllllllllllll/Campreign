@@ -54,6 +54,43 @@ function Scroll({ title, body }: { title: string; body: ReactNode }) {
   )
 }
 
+export interface HintTooltipProps {
+  /** The control being explained, e.g. "Quarterstaff". */
+  title: string
+  /** One or two sentences of plain English. */
+  body: ReactNode
+  /** A single focusable control. Rendered as the trigger itself, not wrapped. */
+  children: ReactNode
+}
+
+/**
+ * The same scroll, hung on a control that already does something.
+ *
+ * Deliberately not the popover half of `RulesTooltip`: that opens on tap, and
+ * on a button whose tap is supposed to swing a sword, opening a panel instead
+ * would eat the action. Touch keeps its plain press and loses the gloss, which
+ * is what `title` gave it anyway — which is to say, nothing.
+ *
+ * The point of this over `title` is focus. A title attribute appears on hover
+ * and only on hover, so the description of every attack in the bar was
+ * invisible to anyone driving the game from the keyboard.
+ */
+export function HintTooltip({ title, body, children }: HintTooltipProps) {
+  return (
+    <Tooltip.Provider delayDuration={150}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content className={PANEL_CLASS} sideOffset={6} collisionPadding={12}>
+            <Scroll title={title} body={body} />
+            <Tooltip.Arrow className="fill-gold-border/60" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  )
+}
+
 export interface RulesTooltipProps {
   /** The term being defined, e.g. "Armour Class". */
   title: string
