@@ -36,12 +36,16 @@ export const FIRST_LEVEL_SLOTS = 1
 
 /**
  * `_intMod` is accepted for a symmetrical call signature but unused: the wizard's
- * prepared count is a flat number at 1st level, not derived from Intelligence.
+ * prepared count is a flat number here, not derived from Intelligence.
+ *
+ * `level` is optional and defaults to 1, so every caller written before levels
+ * existed keeps asking the same question and getting the same answer.
  */
 export function getSpellcastingLimits(
   classId: ClassId,
   wisdomMod: number,
   _intMod: number,
+  level = 1,
 ): SpellcastingLimits {
   switch (classId) {
     case 'wizard':
@@ -52,12 +56,24 @@ export function getSpellcastingLimits(
     case 'cleric':
       return {
         cantripsCount: CANTRIPS_AT_LEVEL_1,
-        // A negative Wisdom modifier must not leave a cleric with no magic at all.
-        preparedSpellsCount: Math.max(1, 1 + wisdomMod),
+        /*
+         * The SRD's "Wisdom modifier + cleric level", which at level 1 is the
+         * `1 + wisdomMod` this used to say — the generalisation is the same
+         * number where it already worked.
+         *
+         * A negative Wisdom modifier must not leave a cleric with no magic.
+         */
+        preparedSpellsCount: Math.max(1, level + wisdomMod),
       }
     case 'paladin':
-      // SRD paladins are not spellcasters until 2nd level — no slots, no cantrips.
-      return { cantripsCount: 0, preparedSpellsCount: 0, unlocksAtLevel: 2 }
+      /*
+       * SRD paladins are not spellcasters until 2nd level. `unlocksAtLevel` has
+       * been here since before levels were, so the picker could say "at level 2"
+       * rather than show an empty list — this is that promise being kept.
+       */
+      return level >= 2
+        ? { cantripsCount: 0, preparedSpellsCount: Math.max(1, Math.floor(level / 2)) }
+        : { cantripsCount: 0, preparedSpellsCount: 0, unlocksAtLevel: 2 }
     case 'fighter':
     case 'rogue':
       return { cantripsCount: 0, preparedSpellsCount: 0 }
