@@ -1,4 +1,5 @@
 import { critFor, roll, toCriticalNotation } from './dice.ts'
+import { effectiveAc } from './combat.ts'
 import { damageNotation } from './characterBuilder.ts'
 import type { AttackAction } from '../../types/action.ts'
 import type { AttackOutcome, Combatant, ReactionKind } from '../../types/combat.ts'
@@ -83,7 +84,7 @@ export function resolveShield(args: {
   outcome: AttackOutcome
 }): ShieldResult {
   const { target, outcome } = args
-  const raisedAc = target.ac + SHIELD_AC_BONUS
+  const raisedAc = effectiveAc(target) + SHIELD_AC_BONUS
 
   if (outcome.kind === 'crit') return { outcome, raisedAc }
   if (outcome.kind !== 'hit') return { outcome, raisedAc }
@@ -146,7 +147,7 @@ export function resolveWardingFlare(args: {
     return { outcome: { kind: 'fumble', breakdown, attackRoll: outcome.attackRoll }, flareRoll, keptNatural }
   }
 
-  const landed = crit === 'hit' || total >= target.ac
+  const landed = crit === 'hit' || total >= effectiveAc(target)
   if (!landed) {
     return { outcome: { kind: 'miss', breakdown, attackRoll: outcome.attackRoll }, flareRoll, keptNatural }
   }

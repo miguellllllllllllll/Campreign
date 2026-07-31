@@ -64,8 +64,11 @@ export type SpellEffect =
     }
   /** Replaces the AC formula outright, as Mage Armor does. */
   | { kind: 'setAc'; base: number; addsDex: boolean }
-  /** Adds flat AC on top of whatever is already worn. */
-  | { kind: 'bonusAc'; amount: number }
+  /**
+   * Lays a condition on one target and concentrates to keep it there.
+   * The condition carries the effect, so losing the spell takes it back.
+   */
+  | { kind: 'wardTarget'; condition: ConditionId }
 
 export interface Spell {
   id: string
@@ -354,7 +357,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['cleric'],
     range: '60 ft (12 squares)',
     damageOrEffect: '+2 AC to one ally',
-    effect: { kind: 'bonusAc', amount: 2 },
+    effect: { kind: 'wardTarget', condition: 'warded' },
     description:
       'A shimmering field follows an ally, making them harder to hit for ten minutes. Put it on whoever is standing at the front.',
     isConcentration: true,

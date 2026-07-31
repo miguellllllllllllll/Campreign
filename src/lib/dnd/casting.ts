@@ -5,6 +5,7 @@ import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
 import {
   applyDamage,
   applyHealing,
+  effectiveAc,
   gridDistance,
   isDefeated,
   isInRange,
@@ -141,6 +142,8 @@ export function castSpell(args: {
   const effect = spell.effect
   const lines: string[] = []
   let nextTarget = target
+  /** Set when the spell has to be held together to keep working. */
+  let concentrating: string | undefined
 
   // The base number before any subclass gets a say.
   const healRoll = effect.kind === 'heal' ? roll(effect.dice, { rng }) : undefined
@@ -197,6 +200,16 @@ export function castSpell(args: {
       }
       lines.push(`${target.name} is left glowing — the next blow lands easier.`)
     }
+  } else if (effect.kind === 'wardTarget') {
+    nextTarget = {
+      ...target,
+      conditions: addCondition(target.conditions, effect.condition, null, caster.id),
+    }
+    concentrating = spellId
+    lines.push(
+      `${target.name} is warded — Armour Class ${effectiveAc(nextTarget)} `
+        + `for as long as ${caster.name} holds the spell.`,
+    )
   } else if (effect.kind === 'blessAllies') {
     // Lands on a side, not a target — castBlessing has the whole party.
     return { caster, target, lines: [], refusal: `${spell.name} blesses your side — cast it with castBlessing.` }
@@ -224,10 +237,13 @@ export function castSpell(args: {
     // Areas go through castAreaSpell, which has more than one target to return.
     return { caster, target, lines: [], refusal: `${spell.name} covers an area — aim it with castAreaSpell.` }
   } else {
-    const ac =
-      effect.kind === 'setAc'
-        ? effect.base + (effect.addsDex ? abilityModifier(target.scores.dex) : 0)
-        : target.ac + effect.amount
+    /*
+     * Mage Armor replaces the armour outright rather than lending a bonus, and
+     * it is not a concentration spell — eight hours in the SRD, which outlasts
+     * anything that happens here. Writing to `ac` is correct for it in a way it
+     * was never correct for Shield of Faith.
+     */
+    const ac = effect.base + (effect.addsDex ? abilityModifier(target.scores.dex) : 0)
     nextTarget = { ...target, ac }
     lines.push(`${target.name}'s Armour Class is now ${ac}.`)
   }
@@ -245,6 +261,7 @@ export function castSpell(args: {
   const spent = spell.level >= 1 ? (caster.spellSlots ?? 0) - 1 : (caster.spellSlots ?? 0)
   let nextCaster: Combatant = {
     ...caster,
+    ...(concentrating === undefined ? {} : { concentratingOn: concentrating }),
     ...(caster.spellSlots === undefined ? {} : { spellSlots: Math.max(0, spent) }),
     ...(warded === undefined ? {} : { arcaneWardHp: warded }),
   }

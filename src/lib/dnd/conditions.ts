@@ -11,9 +11,27 @@ export interface ConditionInfo {
   /** How it changes attacks made against them. */
   incomingAttacks: RollMode
   preventsActions: boolean
+  /**
+   * Armour this condition lends while it lasts.
+   *
+   * Carried here rather than written into `ac` so that removing the condition
+   * removes the armour with it. A spell that overwrote `ac` had no way back —
+   * which is exactly why Shield of Faith could not be put under concentration
+   * until now.
+   */
+  acBonus?: number
 }
 
 export const CONDITIONS: Record<ConditionId, ConditionInfo> = {
+  warded: {
+    id: 'warded',
+    label: 'Warded',
+    plain: 'A field of faith hangs between you and the next blow. Your Armour Class is 2 higher.',
+    ownAttacks: 'normal',
+    incomingAttacks: 'normal',
+    preventsActions: false,
+    acBonus: 2,
+  },
   blessed: {
     id: 'blessed',
     label: 'Blessed',
@@ -93,13 +111,19 @@ export function addCondition(
   return [...others, { id, roundsRemaining, ...(source === undefined ? {} : { source }) }]
 }
 
-/** Drops every condition a particular caster is responsible for. */
+/**
+ * Drops every condition a particular caster is responsible for.
+ *
+ * All of them, not one named kind. A concentration holds up whatever it
+ * granted — a blessing, a ward, or both — and losing it has to take the lot.
+ * Naming a single condition here meant a ward outliving the spell that made
+ * it, which a test caught rather than a player.
+ */
 export function removeConditionsFrom(
   existing: readonly ActiveCondition[],
-  id: ConditionId,
   source: string,
 ): ActiveCondition[] {
-  return existing.filter((c) => !(c.id === id && c.source === source))
+  return existing.filter((c) => c.source !== source)
 }
 
 export function removeCondition(

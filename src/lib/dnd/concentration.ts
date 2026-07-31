@@ -57,7 +57,8 @@ export function checkConcentration(args: {
  * Ends a caster's concentration and strips what it was holding up.
  *
  * Conditions carry the id of whoever applied them, so a second cleric's
- * blessing survives the first one's concentration breaking.
+ * blessing survives the first one's concentration breaking — and everything
+ * this caster was holding goes at once, blessing and ward alike.
  */
 export function dropConcentration(
   casterId: string,
@@ -68,7 +69,7 @@ export function dropConcentration(
       id,
       {
         ...combatant,
-        conditions: removeConditionsFrom(combatant.conditions, 'blessed', casterId),
+        conditions: removeConditionsFrom(combatant.conditions, casterId),
         ...(id === casterId ? { concentratingOn: undefined } : {}),
       },
     ]),

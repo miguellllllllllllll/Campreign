@@ -2,9 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
-import { resolveAttack } from '../src/lib/dnd/combat.ts'
+import { effectiveAc, resolveAttack } from '../src/lib/dnd/combat.ts'
 import { attackWith, castFromActive, createEncounter } from '../src/lib/dnd/encounter.ts'
-import { castBlessing } from '../src/lib/dnd/casting.ts'
+import { castBlessing, castSpell } from '../src/lib/dnd/casting.ts'
 import {
   CONCENTRATION_BASE_DC,
   checkConcentration,
@@ -291,4 +291,124 @@ test('dying ends concentration outright, with no roll to make', () => {
     false,
     'a corpse does not roll to concentrate',
   )
+})
+
+// --- Shield of Faith ------------------------------------------------------
+
+test('a ward lends armour rather than overwriting it', () => {
+  const { combatant } = cleric()
+  const base = combatant.ac
+  const warded = {
+    ...combatant,
+    conditions: addCondition(combatant.conditions, 'warded', null, 'cleric'),
+  }
+
+  assert.equal(effectiveAc(warded), base + 2)
+  assert.equal(warded.ac, base, 'the armour they are wearing has not changed')
+})
+
+test('losing the ward takes the armour back with it', () => {
+  /*
+   * The whole reason Shield of Faith could not be a concentration spell until
+   * now: an AC written into the field had no way home. Derived from conditions,
+   * it leaves when they do, with nothing to undo.
+   */
+  const { combatant } = cleric()
+  const warded = {
+    ...combatant,
+    conditions: addCondition(combatant.conditions, 'warded', null, 'cleric'),
+    concentratingOn: 'shieldOfFaith',
+  }
+  const after = dropConcentration('cleric', { cleric: warded })
+  assert.equal(effectiveAc(after.cleric!), combatant.ac, 'straight back to the gear')
+})
+
+test('casting it wards the target and starts concentration', () => {
+  const { hero, combatant } = cleric()
+  const squire = ally('squire')
+
+  const result = castSpell({ caster: combatant, target: squire, spellId: 'shieldOfFaith' })
+  assert.equal(result.refusal, null)
+  assert.ok(hasCondition(result.target.conditions, 'warded'))
+  assert.equal(effectiveAc(result.target), squire.ac + 2)
+  assert.equal(result.caster.concentratingOn, 'shieldOfFaith')
+  assert.equal(result.caster.spellSlots, 0)
+  assert.equal(result.caster.id, hero.id)
+})
+
+test('the ward makes the target genuinely harder to hit', () => {
+  // Asserted through a real attack rather than by trusting the table: a roll
+  // that clears the base armour by one has to fall short of the ward.
+  const { combatant } = cleric()
+  const squire = ally('squire')
+  const warded = {
+    ...squire,
+    conditions: addCondition(squire.conditions, 'warded', null, combatant.id),
+  }
+  const foe = goblin()
+  const attack = foe.attacks[0]
+  assert.ok(attack !== undefined)
+
+  // Pin the d20 so the same roll meets both armour values.
+  const rng = () => faceValue(13, 20)
+  const plain = resolveAttack({ attacker: foe, target: squire, attack, rng })
+  const shielded = resolveAttack({ attacker: foe, target: warded, attack, rng })
+
+  assert.equal(plain.breakdown.targetAc + 2, shielded.breakdown.targetAc)
+  assert.ok(
+    plain.breakdown.total === shielded.breakdown.total,
+    'same roll, different wall',
+  )
+})
+
+test('Mage Armor still writes the armour, because it is not concentration', () => {
+  /*
+   * Deliberately unchanged. Mage Armor runs eight hours in the SRD, outlasting
+   * anything that happens on this board, so setting the value is correct for it
+   * in a way it was never correct for Shield of Faith.
+   */
+  const wizard = buildCharacter(
+    { ...answers({ classId: 'wizard', magicStyleId: 'guardianMage' }) },
+    'Warder',
+    { ...meta, id: 'wiz' },
+  )
+  const c = characterToCombatant(wizard, { position: { x: 0, y: 0 } })
+  const result = castSpell({ caster: c, target: c, spellId: 'mageArmor' })
+
+  assert.equal(result.refusal, null)
+  assert.equal(result.caster.concentratingOn, undefined, 'nothing to hold together')
+  assert.equal(hasCondition(result.caster.conditions, 'warded'), false)
+  assert.ok(result.caster.ac > 0)
+})
+
+test('a hit that breaks concentration also drops the ward it was holding', () => {
+  const { hero, combatant } = sturdyCleric()
+  const squire = ally('squire')
+  const foe = goblin()
+  const base = createEncounter([combatant, squire, foe], () => 0.99)
+
+  const cast = castFromActive(
+    { ...base, activeIndex: base.order.indexOf(hero.id) },
+    { spellId: 'shieldOfFaith', targetId: squire.id },
+  )
+  assert.equal(cast.refusal, null)
+  assert.ok(hasCondition(cast.encounter.combatants[squire.id]!.conditions, 'warded'))
+
+  const swung = attackWith(
+    { ...cast.encounter, activeIndex: base.order.indexOf(foe.id), hasActed: false },
+    {
+      targetId: hero.id,
+      attackId: foe.attacks[0]!.id,
+      rng: sequenceRng([faceValue(19, 20), faceValue(5, 6), faceValue(1, 20)]),
+    },
+  )
+
+  const stillWarded = swung.encounter.combatants[squire.id]
+  assert.ok(stillWarded !== undefined)
+  assert.equal(
+    hasCondition(stillWarded.conditions, 'warded'),
+    false,
+    'the ward goes out with the concentration that held it',
+  )
+  assert.equal(effectiveAc(stillWarded), squire.ac)
 })
