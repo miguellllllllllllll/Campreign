@@ -2,7 +2,7 @@
 
 import * as Popover from '@radix-ui/react-popover'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useSyncExternalStore, type ReactNode } from 'react'
 import { cn } from '../../lib/utils.ts'
 
 const TRIGGER_CLASS =
@@ -20,16 +20,24 @@ const PANEL_CLASS =
  * and on keyboard focus. A modal on hover would trap focus and fire on
  * accidental pointer passes, so it is deliberately not used here.
  */
+const HOVERLESS = '(hover: none)'
+
 function useIsTouch(): boolean {
-  const [isTouch, setIsTouch] = useState(false)
-  useEffect(() => {
-    const query = window.matchMedia('(hover: none)')
-    setIsTouch(query.matches)
-    const onChange = (event: MediaQueryListEvent) => setIsTouch(event.matches)
-    query.addEventListener('change', onChange)
-    return () => query.removeEventListener('change', onChange)
-  }, [])
-  return isTouch
+  /*
+   * The server has no matchMedia, so the server snapshot is a flat `false`:
+   * render the hover tooltip, and correct to the popover on the client if the
+   * device turns out to be touch. Guessing the other way would show a tapped
+   * popover to every mouse user for one frame.
+   */
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const query = window.matchMedia(HOVERLESS)
+      query.addEventListener('change', onStoreChange)
+      return () => query.removeEventListener('change', onStoreChange)
+    },
+    () => window.matchMedia(HOVERLESS).matches,
+    () => false,
+  )
 }
 
 function Scroll({ title, body }: { title: string; body: ReactNode }) {
