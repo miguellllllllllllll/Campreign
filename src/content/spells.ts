@@ -35,6 +35,8 @@ export type SpellEffect =
    * already feed the roll mode and already expire on the round tick.
    */
   | { kind: 'spellAttack'; conditionOnHit?: ConditionId; conditionRounds?: number }
+  /** Cast in reaction to something, never on your own turn. */
+  | { kind: 'reactionSpell' }
   /**
    * Everything within `radiusSquares` of the caster rolls a save.
    *
@@ -191,6 +193,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['wizard'],
     range: 'Self',
     damageOrEffect: '+5 AC until your next turn',
+    effect: { kind: 'reactionSpell' },
     description:
       'Cast the instant an enemy swings at you, and their attack may suddenly miss. It is a reaction, so it does not use up your turn.',
     isConcentration: false,

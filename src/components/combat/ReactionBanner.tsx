@@ -3,13 +3,13 @@
 import { Explain } from '../Explain.tsx'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { WardingShieldIcon } from '../ui/custom-icons.tsx'
-import type { Combatant, PendingReaction } from '../../types/combat.ts'
+import type { Combatant, PendingReaction, ReactionKind } from '../../types/combat.ts'
 
 export interface ReactionBannerProps {
   pending: PendingReaction
   attacker: Combatant | undefined
   target: Combatant | undefined
-  onFlare: () => void
+  onReact: (choice: ReactionKind) => void
   onPass: () => void
 }
 
@@ -26,7 +26,7 @@ export function ReactionBanner({
   pending,
   attacker,
   target,
-  onFlare,
+  onReact,
   onPass,
 }: ReactionBannerProps) {
   const total = pending.outcome.breakdown.total
@@ -46,16 +46,28 @@ export function ReactionBanner({
 
       <p className="mt-1 text-sm leading-relaxed text-muted">
         Their attack totals <span className="font-mono text-parchment">{total}</span> against your{' '}
-        <Explain k="ac">AC</Explain> <span className="font-mono text-parchment">{ac}</span>. Flare
-        light at them and they must roll again with{' '}
-        <Explain k="disadvantage">disadvantage</Explain> — the lower roll counts.
+        <Explain k="ac">AC</Explain> <span className="font-mono text-parchment">{ac}</span>.
+        {pending.options.includes('wardingFlare') && (
+          <>
+            {' '}Flare light at them and they must roll again with{' '}
+            <Explain k="disadvantage">disadvantage</Explain> — the lower roll counts.
+          </>
+        )}
+        {pending.options.includes('shield') && (
+          <>
+            {' '}Shield raises your <Explain k="ac">AC</Explain> by 5 against this blow, and
+            costs a spell slot.
+          </>
+        )}
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <FantasyButton variant="brass" onClick={onFlare}>
-          <WardingShieldIcon size={16} />
-          Use Warding Flare
-        </FantasyButton>
+        {pending.options.map((option) => (
+          <FantasyButton key={option} variant="brass" onClick={() => onReact(option)}>
+            <WardingShieldIcon size={16} />
+            {option === 'wardingFlare' ? 'Use Warding Flare' : 'Cast Shield'}
+          </FantasyButton>
+        ))}
         <FantasyButton variant="iron" onClick={onPass}>
           Take the hit
         </FantasyButton>

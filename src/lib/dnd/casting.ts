@@ -69,6 +69,10 @@ export function castableSpells(combatant: Combatant): CastableSpell[] {
     if (spell.effect === undefined) {
       return [{ spell, castable: false, reason: 'This one is not ready to cast yet.' }]
     }
+    if (spell.effect.kind === 'reactionSpell') {
+      // Known and usable, just never from here — it fires when you are hit.
+      return [{ spell, castable: false, reason: 'Cast in reaction, when a blow is about to land.' }]
+    }
     if ((combatant.spellSlots ?? 0) <= 0) {
       return [{ spell, castable: false, reason: 'No spell slots left until you rest.' }]
     }
@@ -193,6 +197,8 @@ export function castSpell(args: {
       }
       lines.push(`${target.name} is left glowing — the next blow lands easier.`)
     }
+  } else if (effect.kind === 'reactionSpell') {
+    return { caster, target, lines: [], refusal: `${spell.name} is cast in reaction, not on your turn.` }
   } else if (effect.kind === 'aoeSave') {
     // Areas go through castAreaSpell, which has more than one target to return.
     return { caster, target, lines: [], refusal: `${spell.name} covers an area — aim it with castAreaSpell.` }

@@ -27,7 +27,7 @@ import { ParchmentCard, ParchmentCardContent } from '../ui/parchment-card.tsx'
 import { CheckPrompt } from './CheckPrompt.tsx'
 import { ChoicePrompt } from './ChoicePrompt.tsx'
 import type { Character } from '../../types/character.ts'
-import type { GridPosition } from '../../types/combat.ts'
+import type { GridPosition, ReactionKind } from '../../types/combat.ts'
 import type { GameEvent, TutorialStep } from '../../types/tutorial.ts'
 
 interface StepPromptProps {
@@ -211,7 +211,7 @@ export function TutorialRunner() {
     useCombatStore.getState().drink()
   }
 
-  function react(choice: 'flare' | 'pass') {
+  function react(choice: ReactionKind | 'pass') {
     useCombatStore.getState().dispatchReaction(choice)
   }
 
@@ -241,7 +241,7 @@ export function TutorialRunner() {
               pending={pending}
               attacker={encounter.combatants[pending.attackerId]}
               target={encounter.combatants[pending.targetId]}
-              onFlare={() => react('flare')}
+              onReact={(choice) => react(choice)}
               onPass={() => react('pass')}
             />
           )}

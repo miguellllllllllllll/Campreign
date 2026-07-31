@@ -4,6 +4,7 @@ import type {
   Combatant,
   GridPosition,
   PendingReaction,
+  ReactionKind,
   Team,
 } from '../../types/combat.ts'
 import type { Rng } from '../../types/dice.ts'
@@ -21,7 +22,7 @@ import {
 import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
-import { canWardingFlare, resolveWardingFlare } from './reactions.ts'
+import { availableReactions, canShield, resolveShield, resolveWardingFlare } from './reactions.ts'
 import { castAreaSpell, castSpell } from './casting.ts'
 import { SPELLS_BY_ID } from '../../content/spells.ts'
 import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
@@ -268,13 +269,14 @@ export function attackWith(
    * hit points move until they have chosen. Everyone else — which is almost
    * everyone — falls straight through to the commit below exactly as before.
    */
-  if (landed && maneuver === undefined && canWardingFlare(target)) {
+  const reactions = landed && maneuver === undefined ? availableReactions(target) : []
+  if (reactions.length > 0) {
     return {
       encounter: {
         ...encounter,
         hasActed: true,
         pendingReaction: {
-          kind: 'wardingFlare',
+          options: reactions,
           attackerId: attacker.id,
           targetId: target.id,
           attackId: attack.id,
@@ -471,7 +473,7 @@ export interface ReactionResult {
  */
 export function resolveReaction(
   encounter: Encounter,
-  choice: 'flare' | 'pass',
+  choice: ReactionKind | 'pass',
   rng: Rng = Math.random,
 ): ReactionResult {
   const pending = encounter.pendingReaction
@@ -488,18 +490,37 @@ export function resolveReaction(
   }
 
   const attack = attacker.attacks.find((candidate) => candidate.id === pending.attackId)
-  const flared = choice === 'flare' && attack !== undefined && canWardingFlare(target)
-
-  const flare = flared
-    ? resolveWardingFlare({ attacker, target, attack, outcome: pending.outcome, rng })
+  // A choice nobody offered is treated as passing rather than as an error: the
+  // board must never be left holding an attack because a click went astray.
+  const taken = pending.options.includes(choice as ReactionKind)
+    ? (choice as ReactionKind)
     : undefined
-  const outcome = flare?.outcome ?? pending.outcome
+
+  const flare =
+    taken === 'wardingFlare' && attack !== undefined
+      ? resolveWardingFlare({ attacker, target, attack, outcome: pending.outcome, rng })
+      : undefined
+  const shield =
+    taken === 'shield' && canShield(target)
+      ? resolveShield({ target, outcome: pending.outcome })
+      : undefined
+
+  const outcome = flare?.outcome ?? shield?.outcome ?? pending.outcome
+  const spent = flare !== undefined || shield !== undefined
 
   const landed = outcome.kind === 'hit' || outcome.kind === 'crit'
   const hurt = landed ? applyDamage(target, outcome.damage) : target
   // The reaction is spent whether or not it changed the verdict — a flare that
-  // fails to save you is still a flare you used.
-  const settled = flared ? { ...hurt, reactionAvailable: false } : hurt
+  // fails to save you is still a flare you used. Shield takes the slot too.
+  const settled = spent
+    ? {
+        ...hurt,
+        reactionAvailable: false,
+        ...(shield === undefined
+          ? {}
+          : { spellSlots: Math.max(0, (target.spellSlots ?? 0) - 1) }),
+      }
+    : hurt
 
   const log = [...encounter.log]
   if (flare !== undefined) {
@@ -507,6 +528,12 @@ export function resolveReaction(
       `${target.name} flares. ${attacker.name} rolls again — ${flare.flareRoll} against the `
         + `original ${pending.outcome.breakdown.natural}, and the lower counts. `
         + narrateAttackFully(outcome, target.name, attack?.damageType ?? 'radiant'),
+    )
+  } else if (shield !== undefined) {
+    log.push(
+      `${target.name} throws up a Shield. The blow is measured against `
+        + `Armour Class ${shield.raisedAc} instead of ${target.ac}, and `
+        + (outcome.kind === 'miss' ? 'glances off.' : 'still finds a way through.'),
     )
   } else {
     log.push(`${target.name} lets it land.`)

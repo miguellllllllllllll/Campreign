@@ -3,10 +3,15 @@ import assert from 'node:assert/strict'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { attackWith, createEncounter, endTurn, resolveReaction } from '../src/lib/dnd/encounter.ts'
-import { canWardingFlare, resolveWardingFlare } from '../src/lib/dnd/reactions.ts'
+import {
+  availableReactions,
+  canShield,
+  resolveShield,
+  resolveWardingFlare,
+} from '../src/lib/dnd/reactions.ts'
 import { resolveAttack } from '../src/lib/dnd/combat.ts'
 import { hasReactionFor } from '../src/content/subclasses.ts'
-import { critFor, DEFAULT_CRIT_ON } from '../src/lib/dnd/dice.ts'
+import { critFor, DEFAULT_CRIT_ON, roll } from '../src/lib/dnd/dice.ts'
 import type { Combatant } from '../src/types/combat.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
@@ -70,12 +75,20 @@ test('the flag reaches the sheet and becomes an unspent reaction on the board', 
   )
 })
 
-test('a hero without the feature carries nothing at all', () => {
+test('everyone has a reaction; only some have something to spend it on', () => {
+  /*
+   * These used to be the same field, which worked only while a Light cleric was
+   * the sole holder. Shield needs the budget without the feature, so the two
+   * came apart: reactionAvailable is the turn's allowance, hasWardingFlare is
+   * the thing you learned.
+   */
   const plain = buildCharacter(answers({ subclassId: 'life' }), 'A', meta)
   assert.equal('hasReaction' in plain, false)
+
   const combatant = characterToCombatant(plain, { position: { x: 0, y: 0 } })
-  assert.equal(combatant.reactionAvailable, undefined)
-  assert.equal(canWardingFlare(combatant), false)
+  assert.equal(combatant.reactionAvailable, true, 'everybody gets one')
+  assert.equal(combatant.hasWardingFlare, undefined, 'but not this one')
+  assert.deepEqual(availableReactions(combatant), [], 'so nothing is offered')
 })
 
 // --- The pause ------------------------------------------------------------
@@ -93,7 +106,7 @@ test('a landing blow on someone who can react pauses instead of applying', () =>
 
   assert.equal(result.refusal, null)
   assert.ok(result.encounter.pendingReaction !== undefined, 'the attack should be held')
-  assert.equal(result.encounter.pendingReaction?.kind, 'wardingFlare')
+  assert.deepEqual(result.encounter.pendingReaction?.options, ['wardingFlare'])
   assert.equal(
     result.encounter.combatants[hero.id]?.currentHp,
     before,
@@ -165,7 +178,7 @@ test('flaring rolls again and the lower natural counts', () => {
   }).encounter
 
   // The flare die comes up 3, which is lower than the original 18.
-  const settled = resolveReaction(paused, 'flare', () => faceValue(3, 20))
+  const settled = resolveReaction(paused, 'wardingFlare', () => faceValue(3, 20))
   assert.equal(settled.encounter.pendingReaction, undefined)
   assert.equal(settled.outcome?.breakdown.natural, 3, 'the lower die must be the one kept')
 })
@@ -180,7 +193,7 @@ test('a flare that drops the roll below AC turns a hit into a miss', () => {
   }).encounter
   const before = paused.combatants[hero.id]!.currentHp
 
-  const settled = resolveReaction(paused, 'flare', () => faceValue(1, 20))
+  const settled = resolveReaction(paused, 'wardingFlare', () => faceValue(1, 20))
   assert.equal(settled.outcome?.kind, 'fumble', 'a natural 1 is a fumble however it got there')
   assert.equal(settled.encounter.combatants[hero.id]?.currentHp, before, 'no damage on a miss')
 })
@@ -195,7 +208,7 @@ test('a higher flare die changes nothing — the original still counts', () => {
   }).encounter
   assert.ok(paused.pendingReaction !== undefined, 'the setup must actually pause')
 
-  const settled = resolveReaction(paused, 'flare', () => faceValue(19, 20))
+  const settled = resolveReaction(paused, 'wardingFlare', () => faceValue(19, 20))
   assert.equal(settled.outcome?.breakdown.natural, 17, 'disadvantage cannot help the attacker')
 })
 
@@ -210,7 +223,7 @@ test('the reaction is spent whether or not the flare saved anybody', () => {
   assert.ok(paused.pendingReaction !== undefined, 'the setup must actually pause')
 
   // A useless flare: the second die is higher, so the blow lands anyway.
-  const settled = resolveReaction(paused, 'flare', () => faceValue(19, 20))
+  const settled = resolveReaction(paused, 'wardingFlare', () => faceValue(19, 20))
   assert.equal(settled.encounter.combatants[hero.id]?.reactionAvailable, false)
 })
 
@@ -236,7 +249,7 @@ test('a spent reaction stops the next blow pausing at all', () => {
 
 test('resolving nothing is refused rather than throwing', () => {
   const { encounter } = board()
-  const result = resolveReaction(encounter, 'flare')
+  const result = resolveReaction(encounter, 'wardingFlare')
   assert.match(result.refusal ?? '', /nothing is waiting/i)
 })
 
@@ -379,4 +392,142 @@ test('ending a turn spends the opening strike, even a turn spent walking', () =>
 test('the flag never goes back to false once set', () => {
   const marked = { hasActedThisCombat: true } as const
   assert.equal(marked.hasActedThisCombat, true)
+})
+
+// --- Shield ---------------------------------------------------------------
+
+function wizardWithShield() {
+  const hero = buildCharacter(
+    {
+      classId: 'wizard', raceId: 'human', backgroundId: 'noble', flawId: 'obeyed',
+      equipmentChoice: 'offensive', auraId: 'amber', magicStyleId: 'guardianMage',
+    },
+    'Warder',
+    { ...meta, id: 'warder' },
+  )
+  return { hero, combatant: characterToCombatant(hero, { position: { x: 0, y: 0 } }) }
+}
+
+test('Shield needs the slot as well as the reaction', () => {
+  const { combatant } = wizardWithShield()
+  assert.ok((combatant.preparedSpells ?? []).includes('shield'), 'the style prepares it')
+  assert.equal(canShield(combatant), true)
+
+  assert.equal(canShield({ ...combatant, spellSlots: 0 }), false, 'no slot, no barrier')
+  assert.equal(canShield({ ...combatant, reactionAvailable: false }), false, 'no reaction either')
+})
+
+test('a wizard is offered Shield and a Light cleric is offered both', () => {
+  const { combatant } = wizardWithShield()
+  assert.deepEqual(availableReactions(combatant), ['shield'])
+
+  const cleric = buildCharacter(answers({ subclassId: 'light' }), 'Flarelight', meta)
+  const withFlare = {
+    ...characterToCombatant(cleric, { position: { x: 0, y: 0 } }),
+    preparedSpells: ['shield'],
+    spellSlots: 1,
+  }
+  assert.deepEqual(availableReactions(withFlare), ['wardingFlare', 'shield'])
+})
+
+test('Shield turns a blow that just cleared your armour into a miss', () => {
+  const { combatant } = wizardWithShield()
+  const outcome = {
+    kind: 'hit' as const,
+    breakdown: { natural: 12, parts: [], total: combatant.ac + 1, targetAc: combatant.ac },
+    attackRoll: roll('1d20', { rng: () => faceValue(12, 20) }),
+    damageRoll: roll('1d6', { rng: () => faceValue(3, 6) }),
+    damage: 3,
+  }
+
+  const result = resolveShield({ target: combatant, outcome })
+  assert.equal(result.raisedAc, combatant.ac + 5)
+  assert.equal(result.outcome.kind, 'miss', 'one over is well under five over')
+})
+
+test('Shield does not save you from a blow that beats it anyway', () => {
+  const { combatant } = wizardWithShield()
+  const outcome = {
+    kind: 'hit' as const,
+    breakdown: { natural: 19, parts: [], total: combatant.ac + 9, targetAc: combatant.ac },
+    attackRoll: roll('1d20', { rng: () => faceValue(19, 20) }),
+    damageRoll: roll('1d6', { rng: () => faceValue(3, 6) }),
+    damage: 3,
+  }
+  assert.equal(resolveShield({ target: combatant, outcome }).outcome.kind, 'hit')
+})
+
+test('a critical still lands through a Shield', () => {
+  // A natural 20 hits whatever the armour says. A barrier that stopped crits
+  // would be better than the rules and would teach the wrong lesson about 20s.
+  const { combatant } = wizardWithShield()
+  const outcome = {
+    kind: 'crit' as const,
+    breakdown: { natural: 20, parts: [], total: 30, targetAc: combatant.ac },
+    attackRoll: roll('1d20', { rng: () => faceValue(20, 20) }),
+    damageRoll: roll('2d6', { rng: () => faceValue(3, 6) }),
+    damage: 6,
+  }
+  assert.equal(resolveShield({ target: combatant, outcome }).outcome.kind, 'crit')
+})
+
+test('casting Shield through the board spends the slot and the reaction', () => {
+  const { hero, combatant } = wizardWithShield()
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const attacker: Combatant = {
+    ...characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' }),
+    attacks: foe.attacks.map((a) => ({ ...a, proficient: true })),
+  }
+  const base = createEncounter([combatant, attacker], () => 0.99)
+  const encounter = { ...base, activeIndex: base.order.indexOf(foe.id) }
+
+  const paused = attackWith(encounter, {
+    targetId: hero.id,
+    attackId: attacker.attacks[0]!.id,
+    rng: sequenceRng([faceValue(18, 20), faceValue(4, 6)]),
+  }).encounter
+  assert.ok(paused.pendingReaction !== undefined, 'the blow should pause')
+  assert.ok(paused.pendingReaction.options.includes('shield'))
+
+  const settled = resolveReaction(paused, 'shield')
+  const after = settled.encounter.combatants[hero.id]
+  assert.equal(after?.reactionAvailable, false, 'the reaction is spent')
+  assert.equal(after?.spellSlots, 0, 'and so is the slot')
+  assert.equal(settled.encounter.pendingReaction, undefined)
+  assert.ok(settled.encounter.log.some((l) => /Shield/.test(l)))
+})
+
+test('choosing a reaction nobody offered is treated as passing', () => {
+  // The board must never be left holding an attack because a click went astray.
+  const { hero, combatant } = wizardWithShield()
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const attacker: Combatant = {
+    ...characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' }),
+    attacks: foe.attacks.map((a) => ({ ...a, proficient: true })),
+  }
+  const base = createEncounter([combatant, attacker], () => 0.99)
+  const encounter = { ...base, activeIndex: base.order.indexOf(foe.id) }
+  const paused = attackWith(encounter, {
+    targetId: hero.id,
+    attackId: attacker.attacks[0]!.id,
+    rng: sequenceRng([faceValue(18, 20), faceValue(4, 6)]),
+  }).encounter
+
+  // A wizard has no flare, so asking for one is not a thing they can do.
+  const settled = resolveReaction(paused, 'wardingFlare')
+  assert.equal(settled.refusal, null)
+  assert.equal(settled.encounter.pendingReaction, undefined, 'the pause still clears')
+  assert.equal(
+    settled.encounter.combatants[hero.id]?.reactionAvailable,
+    true,
+    'and nothing was spent',
+  )
 })

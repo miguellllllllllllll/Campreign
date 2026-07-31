@@ -115,6 +115,10 @@ Flagged rather than hidden, all of them in service of a first-time player:
   already crossed and bloodied. Losing initiative also meant the squire could be at
   4 of 12 hit points before the player pressed anything, which is a poor thing to
   hand somebody learning to aim a spell around them.
+- **Shield protects against the triggering blow rather than lasting a round.**
+  The SRD's +5 runs until the start of your next turn. The goblin swings once a
+  round, so on this board the two are the same, and carrying a timed armour
+  bonus would be machinery for a case that cannot arise here.
 - **Foe turns are played out inside `combatStore`.** The goblin frequently wins
   initiative; if control were handed over mid-round the player would be staring at a
   board with nothing to press.
@@ -129,14 +133,15 @@ starts with. Everything above that is out of scope, not merely unwritten.
 
 Any monster beyond the goblin and the practice dummy.
 
-Three 1st-level spells are known but not yet castable, and say so on the button
+Two 1st-level spells are known but not yet castable, and say so on the button
 rather than failing quietly:
 
 - **Magic Missile** — darts that hit automatically, with no attack roll to
   resolve them through.
 - **Bless** — needs concentration and a buff that lands on several targets.
-- **Shield** — needs to fire in reaction to an incoming attack. The interrupt
-  seam exists now, so this is the nearest of the three.
+
+Shield is castable, but never on your own turn: it appears in the reaction
+prompt when a blow is about to land, alongside Warding Flare if you have both.
 
 ## Licence
 

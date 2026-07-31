@@ -96,6 +96,12 @@ export interface Combatant {
   hasActedThisCombat?: boolean
   /** Whether this combatant strikes with advantage on their opening turn. */
   hasAmbush?: boolean
+  /**
+   * Whether this combatant has Warding Flare specifically. Distinct from
+   * reactionAvailable, which is only the budget — everyone has a reaction, and
+   * what they can spend it on is what differs.
+   */
+  hasWardingFlare?: boolean
   /** Potions still unopened. */
   potions?: number
   /** Whether using an item costs this combatant a bonus action instead. */
@@ -117,8 +123,15 @@ export interface Combatant {
  * pure value everything else is tested against. There is deliberately no `id`:
  * the engine never invents identity, and at most one attack is ever pending.
  */
+/** The reactions a combatant can spend when a blow is about to land. */
+export type ReactionKind = 'wardingFlare' | 'shield'
+
 export interface PendingReaction {
-  kind: 'wardingFlare'
+  /**
+   * Everything the target could spend here, which is usually one thing and
+   * occasionally two — a Light cleric holding Shield has both.
+   */
+  options: ReactionKind[]
   attackerId: string
   targetId: string
   attackId: string

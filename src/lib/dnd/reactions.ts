@@ -1,7 +1,7 @@
 import { critFor, roll, toCriticalNotation } from './dice.ts'
 import { damageNotation } from './characterBuilder.ts'
 import type { AttackAction } from '../../types/action.ts'
-import type { AttackOutcome, Combatant } from '../../types/combat.ts'
+import type { AttackOutcome, Combatant, ReactionKind } from '../../types/combat.ts'
 import type { Rng } from '../../types/dice.ts'
 
 /**
@@ -29,6 +29,75 @@ import type { Rng } from '../../types/dice.ts'
 /** Whether this combatant has Warding Flare and a reaction left to spend. */
 export function canWardingFlare(target: Combatant): boolean {
   return target.reactionAvailable === true
+}
+
+/**
+ * Whether this combatant is holding Shield and can pay for it.
+ *
+ * Unlike a flare, Shield is a spell: it needs the slot as well as the reaction,
+ * which is why a cleric who has already cast something cannot fall back on it.
+ */
+export function canShield(target: Combatant): boolean {
+  return (
+    target.reactionAvailable === true
+    && (target.preparedSpells ?? []).includes('shield')
+    && (target.spellSlots ?? 0) > 0
+  )
+}
+
+/** Everything this combatant could spend against an incoming blow. */
+export function availableReactions(target: Combatant): ReactionKind[] {
+  const options: ReactionKind[] = []
+  if (target.hasWardingFlare === true && canWardingFlare(target)) options.push('wardingFlare')
+  if (canShield(target)) options.push('shield')
+  return options
+}
+
+export interface ShieldResult {
+  outcome: AttackOutcome
+  /** The armour class the blow was re-measured against. */
+  raisedAc: number
+}
+
+/** Shield adds this much until the start of your next turn. */
+export const SHIELD_AC_BONUS = 5
+
+/**
+ * Re-measures an attack against armour that just got better.
+ *
+ * No dice are thrown: the attacker rolled what they rolled, and the barrier
+ * either covers it or does not. That is the whole difference from a flare,
+ * which spoils the roll instead of raising the wall.
+ *
+ * A critical still lands. A natural 20 hits whatever the armour says, and the
+ * SRD is explicit about it — a shield that stopped crits would be strictly
+ * better than the rules and would teach the wrong lesson about what a 20 means.
+ *
+ * Deliberate divergence: the SRD's +5 lasts until the start of your next turn,
+ * and here it applies to the triggering blow only. The goblin swings once a
+ * round, so the two are the same on this board, and carrying a timed armour
+ * bonus would be machinery for a case that cannot arise.
+ */
+export function resolveShield(args: {
+  target: Combatant
+  outcome: AttackOutcome
+}): ShieldResult {
+  const { target, outcome } = args
+  const raisedAc = target.ac + SHIELD_AC_BONUS
+
+  if (outcome.kind === 'crit') return { outcome, raisedAc }
+  if (outcome.kind !== 'hit') return { outcome, raisedAc }
+
+  return outcome.breakdown.total >= raisedAc
+    ? { outcome, raisedAc }
+    : {
+        outcome: {
+          kind: 'miss',
+          breakdown: { ...outcome.breakdown, targetAc: raisedAc },
+          attackRoll: outcome.attackRoll,
+        },
+        raisedAc,
+      }
 }
 
 export interface FlareResult {

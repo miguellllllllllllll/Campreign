@@ -44,7 +44,9 @@ export function characterToCombatant(
     ...(character.superiorityDice === undefined
       ? {}
       : { superiorityDice: character.superiorityDice }),
-    ...(character.hasReaction === true ? { reactionAvailable: true } : {}),
+    // Everyone gets a reaction; only some have something to spend it on.
+    reactionAvailable: true,
+    ...(character.hasReaction === true ? { hasWardingFlare: true } : {}),
     ...(character.hasAmbush === true ? { hasAmbush: true } : {}),
     ...(character.hasFastHands === true ? { hasFastHands: true } : {}),
     ...(character.potions === undefined ? {} : { potions: character.potions }),

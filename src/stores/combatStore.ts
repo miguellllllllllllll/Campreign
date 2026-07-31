@@ -14,7 +14,7 @@ import {
   takeAutomaticTurn,
   type Encounter,
 } from '../lib/dnd/encounter.ts'
-import type { AttackOutcome, Combatant, GridPosition } from '../types/combat.ts'
+import type { AttackOutcome, Combatant, GridPosition, ReactionKind } from '../types/combat.ts'
 import type { Rng } from '../types/dice.ts'
 
 interface CombatStore {
@@ -36,7 +36,7 @@ interface CombatStore {
   /** Drinks a potion, spending an action or a bonus action as the hero allows. */
   drink: () => void
   /** Commits a paused attack, with or without the reaction. */
-  dispatchReaction: (choice: 'flare' | 'pass', rng?: Rng) => void
+  dispatchReaction: (choice: ReactionKind | 'pass', rng?: Rng) => void
   /** Ends the player's turn and plays out every enemy turn until it is the player's again. */
   finishTurn: (rng?: Rng) => void
   reset: () => void
