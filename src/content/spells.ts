@@ -1,4 +1,6 @@
 import type { AttackAction } from '../types/action.ts'
+import type { AbilityName } from '../types/character.ts'
+import type { DamageType } from '../types/items.ts'
 
 /**
  * The 5e SRD spell registry for 1st-level casters.
@@ -26,6 +28,22 @@ export type SpellSchool =
  */
 export type SpellEffect =
   | { kind: 'heal'; dice: string; addsAbility: boolean }
+  /**
+   * Everything within `radiusSquares` of the caster rolls a save.
+   *
+   * A burst rather than the SRD's cone: aiming one would need a facing step,
+   * and on a 5x5 board with a single enemy the two select the same squares.
+   * Documented here because it is a real simplification, not an oversight.
+   */
+  | {
+      kind: 'aoeSave'
+      dice: string
+      saveAbility: AbilityName
+      damageType: DamageType
+      radiusSquares: number
+      /** SRD: a successful save still takes half. */
+      halfOnSuccess: boolean
+    }
   /** Replaces the AC formula outright, as Mage Armor does. */
   | { kind: 'setAc'; base: number; addsDex: boolean }
   /** Adds flat AC on top of whatever is already worn. */
@@ -178,6 +196,14 @@ export const SPELLS: readonly Spell[] = [
     classes: ['wizard'],
     range: 'Self (15 ft cone)',
     damageOrEffect: '3d6 Fire, Dex save',
+    effect: {
+      kind: 'aoeSave',
+      dice: '3d6',
+      saveAbility: 'dex',
+      damageType: 'fire',
+      radiusSquares: 3,
+      halfOnSuccess: true,
+    },
     description:
       'Flame sheets from your fingertips across everything in front of you. There is no attack roll — enemies roll to dodge instead, and take half damage if they do.',
     isConcentration: false,

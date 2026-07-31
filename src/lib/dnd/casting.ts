@@ -1,6 +1,6 @@
 import { roll } from './dice.ts'
-import { abilityModifier } from './stats.ts'
-import { applyHealing } from './combat.ts'
+import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
+import { applyDamage, applyHealing, gridDistance } from './combat.ts'
 import {
   FIRST_LEVEL_SLOTS,
   resolveSpellCastHook,
@@ -11,6 +11,7 @@ import {
 export { FIRST_LEVEL_SLOTS }
 import { SPELLS_BY_ID, type Spell } from '../../content/spells.ts'
 import type { Combatant } from '../../types/combat.ts'
+import type { AbilityName } from '../../types/character.ts'
 import type { Rng } from '../../types/dice.ts'
 
 /**
@@ -144,6 +145,9 @@ export function castSpell(args: {
     if (outcome.triggeredFeatures.includes('life_domain_disciple_of_life')) {
       lines.push(`Disciple of Life added ${2 + spell.level} on top.`)
     }
+  } else if (effect.kind === 'aoeSave') {
+    // Areas go through castAreaSpell, which has more than one target to return.
+    return { caster, target, lines: [], refusal: `${spell.name} covers an area — aim it with castAreaSpell.` }
   } else {
     const ac =
       effect.kind === 'setAc'
@@ -178,4 +182,156 @@ export function castSpell(args: {
   }
 
   return { caster: nextCaster, target: nextTarget, lines, refusal: null }
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Area spells
+ * ------------------------------------------------------------------------ */
+
+export interface AoeSaveOutcome {
+  targetId: string
+  saveTotal: number
+  saveSuccessful: boolean
+  /** True when a subclass waived the save rather than the die winning it. */
+  isSculpted: boolean
+  damageTaken: number
+}
+
+/**
+ * One target's saving throw against an area spell.
+ *
+ * The Sculpt Spells branch is written and wired, and cannot currently fire:
+ * every roster in this build is one hero and one monster, so the set of allies
+ * is always empty. The subclass stays inactive in the data for exactly that
+ * reason — the blocker is a second party member, not this function.
+ */
+export function resolveAoeTargetSave(args: {
+  caster: Combatant
+  target: Combatant
+  saveAbility: AbilityName
+  saveDc: number
+  rawDamage: number
+  halfOnSuccess: boolean
+  casterSculpts: boolean
+  rng?: Rng
+}): AoeSaveOutcome {
+  const { caster, target, saveDc, rawDamage, halfOnSuccess } = args
+  const rng = args.rng ?? Math.random
+
+  const isAlly = target.team === caster.team && target.id !== caster.id
+  if (args.casterSculpts && isAlly) {
+    return {
+      targetId: target.id,
+      saveTotal: saveDc,
+      saveSuccessful: true,
+      isSculpted: true,
+      damageTaken: 0,
+    }
+  }
+
+  const mod = abilityModifier(target.scores[args.saveAbility])
+  const save = roll(`1d20${formatModifier(mod)}`, { rng })
+  const saveSuccessful = save.total >= saveDc
+
+  return {
+    targetId: target.id,
+    saveTotal: save.total,
+    saveSuccessful,
+    isSculpted: false,
+    damageTaken: saveSuccessful ? (halfOnSuccess ? Math.floor(rawDamage / 2) : 0) : rawDamage,
+  }
+}
+
+export interface AreaCastResult {
+  caster: Combatant
+  /** Every combatant the blast touched, already damaged. */
+  affected: Combatant[]
+  lines: string[]
+  refusal: string | null
+}
+
+/** The spell save DC this combatant imposes. */
+export function spellSaveDcFor(caster: Combatant): number {
+  const ability = caster.castingAbility
+  const mod = ability === undefined ? 0 : abilityModifier(caster.scores[ability])
+  return 8 + proficiencyBonus(caster.level) + mod
+}
+
+/**
+ * Casts an area spell, rolling damage once and letting every caught combatant
+ * save against it separately — which is what the SRD does, and why a single
+ * bad save hurts more than a good one.
+ */
+export function castAreaSpell(args: {
+  caster: Combatant
+  candidates: readonly Combatant[]
+  spellId: string
+  subclassId?: string
+  rng?: Rng
+}): AreaCastResult {
+  const { caster, candidates, spellId } = args
+  const rng = args.rng ?? Math.random
+  const spell = SPELLS_BY_ID[spellId]
+
+  if (spell?.effect === undefined || spell.effect.kind !== 'aoeSave') {
+    return { caster, affected: [], lines: [], refusal: 'That spell does not cover an area.' }
+  }
+  if (spell.level >= 1 && (caster.spellSlots ?? 0) <= 0) {
+    return { caster, affected: [], lines: [], refusal: 'No spell slots left until you rest.' }
+  }
+
+  const effect = spell.effect
+  const caught = candidates.filter(
+    (c) =>
+      c.id !== caster.id
+      && c.currentHp > 0
+      && gridDistance(caster.position, c.position) <= effect.radiusSquares,
+  )
+  if (caught.length === 0) {
+    return { caster, affected: [], lines: [], refusal: 'Nothing is close enough to catch the blast.' }
+  }
+
+  // Rolled once for the whole blast, per the SRD.
+  const damageRoll = roll(effect.dice, { rng })
+  const saveDc = spellSaveDcFor(caster)
+  const sculpts = args.subclassId === 'evocation'
+
+  const lines = [
+    `${caster.name} casts ${spell.name}. `
+      + `${damageRoll.total} ${effect.damageType} damage, `
+      + `${effect.saveAbility.toUpperCase()} save against DC ${saveDc}.`,
+  ]
+
+  const affected = caught.map((target) => {
+    const outcome = resolveAoeTargetSave({
+      caster,
+      target,
+      saveAbility: effect.saveAbility,
+      saveDc,
+      rawDamage: damageRoll.total,
+      halfOnSuccess: effect.halfOnSuccess,
+      casterSculpts: sculpts,
+      rng,
+    })
+
+    lines.push(
+      outcome.isSculpted
+        ? `${target.name} is sculpted clear of the flames and takes nothing.`
+        : `${target.name} rolls ${outcome.saveTotal} and `
+          + `${outcome.saveSuccessful ? 'takes half' : 'is caught full'} — `
+          + `${outcome.damageTaken} damage.`,
+    )
+    return applyDamage(target, outcome.damageTaken)
+  })
+
+  return {
+    caster: {
+      ...caster,
+      ...(caster.spellSlots === undefined ? {} : { spellSlots: Math.max(0, caster.spellSlots - 1) }),
+    },
+    affected,
+    lines,
+    refusal: null,
+  }
 }

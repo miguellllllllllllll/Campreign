@@ -22,7 +22,8 @@ import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
 import { canWardingFlare, resolveWardingFlare } from './reactions.ts'
-import { castSpell } from './casting.ts'
+import { castAreaSpell, castSpell } from './casting.ts'
+import { SPELLS_BY_ID } from '../../content/spells.ts'
 import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
 import { roll } from './dice.ts'
 import { narrateAttackFully } from './narrate.ts'
@@ -381,6 +382,29 @@ export function castFromActive(
   }
   if (encounter.hasActed) {
     return { encounter, refusal: 'You have already taken your action this turn.' }
+  }
+
+  const spell = SPELLS_BY_ID[args.spellId]
+  if (spell?.effect?.kind === 'aoeSave') {
+    const area = castAreaSpell({
+      caster,
+      candidates: turnOrder(encounter),
+      spellId: args.spellId,
+      ...(args.subclassId === undefined ? {} : { subclassId: args.subclassId }),
+      ...(args.rng === undefined ? {} : { rng: args.rng }),
+    })
+    if (area.refusal !== null) return { encounter, refusal: area.refusal }
+
+    const touched = Object.fromEntries(area.affected.map((c) => [c.id, c]))
+    return {
+      encounter: {
+        ...encounter,
+        combatants: { ...encounter.combatants, ...touched, [area.caster.id]: area.caster },
+        hasActed: true,
+        log: [...encounter.log, ...area.lines],
+      },
+      refusal: null,
+    }
   }
 
   const result = castSpell({

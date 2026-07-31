@@ -96,7 +96,14 @@ export const SUBCLASSES: readonly Subclass[] = [
       name: 'Sculpt Spells',
       description: 'Your allies automatically pass their saves against your area spells.',
       active: false,
-      pending: 'No spell in this build targets an area yet.',
+      /*
+       * Burning Hands now genuinely covers an area, and resolveAoeTargetSave
+       * has the sculpting branch written and wired. It cannot fire: every
+       * roster in this build is one hero and one monster, so the set of allies
+       * to shield is always empty. The blocker is a second party member, which
+       * README lists under "Not in this build" — not the spell or the engine.
+       */
+      pending: 'There is never anyone on your side of the board to shield.',
     },
   },
   {
