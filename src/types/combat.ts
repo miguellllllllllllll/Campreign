@@ -11,6 +11,7 @@ export type TokenId = ClassId | 'goblin' | 'dummy' | 'squire'
 
 export type ConditionId =
   | 'blessed'
+  | 'warded'
   | 'dazzled'
   | 'poisoned'
   | 'prone'
@@ -28,6 +29,16 @@ export interface ActiveCondition {
    * a blessing ends when the caster's concentration does, and only theirs.
    */
   source?: string
+}
+
+/**
+ * How close a downed creature is to dying, or to holding on.
+ *
+ * Carried only by creatures that get the chance — see `lib/dnd/dying.ts`.
+ */
+export interface DeathSaves {
+  successes: number
+  failures: number
 }
 
 export type Team = 'party' | 'foes'
@@ -113,6 +124,11 @@ export interface Combatant {
    * it takes its effects with it.
    */
   concentratingOn?: string
+  /**
+   * Death saves rolled so far. Present means this combatant goes down dying
+   * rather than dead — absent is every monster, which simply drops.
+   */
+  deathSaves?: DeathSaves
   /** Potions still unopened. */
   potions?: number
   /** Whether using an item costs this combatant a bonus action instead. */

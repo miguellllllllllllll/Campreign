@@ -46,6 +46,10 @@ export function characterToCombatant(
       : { superiorityDice: character.superiorityDice }),
     // Everyone gets a reaction; only some have something to spend it on.
     reactionAvailable: true,
+    // A player character drops to dying, not to dead. Monsters carry no saves
+    // and so die outright, which is the SRD's default and the one that keeps
+    // the goblin's defeat a clean end to the fight.
+    deathSaves: { successes: 0, failures: 0 },
     ...(character.hasReaction === true ? { hasWardingFlare: true } : {}),
     ...(character.hasAmbush === true ? { hasAmbush: true } : {}),
     ...(character.hasFastHands === true ? { hasFastHands: true } : {}),

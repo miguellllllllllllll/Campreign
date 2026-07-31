@@ -72,6 +72,9 @@ export function spawnCompanion(
     position: args.position,
     attacks: preset.attacks.map((attack) => ({ ...attack })),
     conditions: [],
+    // On the player's side of the line in this too: the squire goes down
+    // dying, and can be picked back up.
+    deathSaves: { successes: 0, failures: 0 },
     tokenId: preset.tokenId,
     initiative: args.initiative ?? 0,
   }

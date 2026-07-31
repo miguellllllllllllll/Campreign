@@ -23,6 +23,7 @@ import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
 import { checkConcentration, dropConcentration } from './concentration.ts'
+import { isDead, isDying, narrateDeathSave, rollDeathSave } from './dying.ts'
 import { availableReactions, canShield, resolveShield, resolveWardingFlare } from './reactions.ts'
 import { castAreaSpell, castBlessing, castSpell } from './casting.ts'
 import { SPELLS_BY_ID } from '../../content/spells.ts'
@@ -244,6 +245,20 @@ function damageAndConcentration(
   return { combatants: next, lines }
 }
 
+/**
+ * What the log says when somebody hits 0.
+ *
+ * The distinction matters to a beginner more than almost anything else here:
+ * the goblin dropping is the end of the goblin, and the hero dropping is not
+ * the end of the hero. Saying both with the same sentence taught the wrong one.
+ */
+function narrateDrop(combatant: Combatant): string {
+  return isDead(combatant)
+    ? `${combatant.name} drops to 0 hit points and is out of the fight.`
+    : `${combatant.name} drops to 0 hit points — unconscious and dying, not dead. `
+      + 'They roll a death save at the start of each of their turns.'
+}
+
 export interface AttackResult {
   encounter: Encounter
   outcome: AttackOutcome | null
@@ -365,7 +380,7 @@ export function attackWith(
     )
   }
   if (isDefeated(damaged) && !isDefeated(target)) {
-    log.push(`${damaged.name} drops to 0 hit points and is out of the fight.`)
+    log.push(narrateDrop(damaged))
   }
 
   return {
@@ -616,7 +631,7 @@ export function resolveReaction(
     log.push(`${target.name} lets it land.`)
   }
   if (isDefeated(settled) && !isDefeated(target)) {
-    log.push(`${settled.name} drops to 0 hit points and is out of the fight.`)
+    log.push(narrateDrop(settled))
   }
 
   const { pendingReaction: _cleared, ...rest } = encounter
@@ -699,12 +714,25 @@ function markTurnCompleted(combatant: Combatant): Combatant {
     : { ...combatant, hasActedThisCombat: true }
 }
 
-export function endTurn(encounter: Encounter): Encounter {
+/**
+ * Advances to the next combatant still standing.
+ *
+ * `rng` is here for the death saves: the pointer passing a dying creature is
+ * exactly the moment the SRD asks them to roll, so the roll lives in the turn
+ * advance rather than in a step somebody could forget to call.
+ */
+export function endTurn(encounter: Encounter, rng: Rng = Math.random): Encounter {
+  /*
+   * A decided fight rolls nothing. If the whole party is down the encounter is
+   * already lost, and making the player watch three failed saves confirm it
+   * would be a cruelty with no lesson in it.
+   */
   if (encounterWinner(encounter) !== null) return encounter
 
   let index = encounter.activeIndex
   let round = encounter.round
   let combatants = encounter.combatants
+  const dyingLines: string[] = []
 
   /*
    * The combatant whose turn is ending has now taken one. Marked here rather
@@ -738,7 +766,21 @@ export function endTurn(encounter: Encounter): Encounter {
       )
     }
     const nextId = encounter.order[index]
-    const next = nextId === undefined ? undefined : combatants[nextId]
+    let next = nextId === undefined ? undefined : combatants[nextId]
+
+    /*
+     * Their turn begins whether or not they can take one. A natural 20 here
+     * puts them back up at 1 hit point, and the very next line finds them able
+     * to act — which is why the save is rolled before canAct is asked, not
+     * after being skipped.
+     */
+    if (next !== undefined && isDying(next)) {
+      const save = rollDeathSave({ combatant: next, rng })
+      combatants = { ...combatants, [save.combatant.id]: save.combatant }
+      dyingLines.push(narrateDeathSave(save.combatant.name, save))
+      next = save.combatant
+    }
+
     if (next !== undefined && canAct(next)) {
       return {
         ...encounter,
@@ -748,15 +790,16 @@ export function endTurn(encounter: Encounter): Encounter {
         movementRemaining: next.speedSquares,
         hasActed: false,
         bonusActionSpent: false,
-        log:
-          round === encounter.round
-            ? encounter.log
-            : [...encounter.log, `— Round ${round} —`],
+        log: [
+          ...encounter.log,
+          ...(round === encounter.round ? [] : [`— Round ${round} —`]),
+          ...dyingLines,
+        ],
       }
     }
   }
 
-  return { ...encounter, round, combatants }
+  return { ...encounter, round, combatants, log: [...encounter.log, ...dyingLines] }
 }
 
 function nearestEnemy(encounter: Encounter, actor: Combatant): Combatant | undefined {

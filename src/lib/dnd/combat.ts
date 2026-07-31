@@ -9,10 +9,32 @@ import type {
 import type { Rng, RollMode } from '../../types/dice.ts'
 import { roll, toCriticalNotation } from './dice.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
-import { attackRollMode, blocksActions, combineRollModes, hasCondition } from './conditions.ts'
+import {
+  CONDITIONS,
+  attackRollMode,
+  blocksActions,
+  combineRollModes,
+  hasCondition,
+} from './conditions.ts'
 import { channelDivinityAttackBonus, hasVowAgainst } from './channelDivinity.ts'
 import { applyDamageWithWard } from './spellcasting.ts'
 import { damageNotation } from './characterBuilder.ts'
+import { clearDeathSaves } from './dying.ts'
+
+/**
+ * The armour a combatant is actually wearing right now.
+ *
+ * `ac` is what their gear gives them; conditions lend the rest. Derived rather
+ * than written back, so a ward ending takes its bonus with it — the alternative
+ * is a spell overwriting `ac` with no record of what it was, which is the shape
+ * that kept Shield of Faith out of concentration.
+ */
+export function effectiveAc(combatant: Combatant): number {
+  return combatant.conditions.reduce(
+    (total, condition) => total + (CONDITIONS[condition.id].acBonus ?? 0),
+    combatant.ac,
+  )
+}
 
 /** The die a blessing lends to an attack roll. */
 export const BLESS_DIE = '1d4'
@@ -119,7 +141,7 @@ export function resolveAttack(args: {
     natural,
     parts,
     total,
-    targetAc: target.ac,
+    targetAc: effectiveAc(target),
   }
 
   // A natural 1 always misses and a natural 20 always hits, whatever the maths say.
@@ -140,7 +162,7 @@ export function resolveAttack(args: {
     }
   }
 
-  if (total >= target.ac) {
+  if (total >= effectiveAc(target)) {
     const damageRoll = roll(baseDamage, { rng })
     return {
       kind: 'hit',
@@ -173,7 +195,10 @@ export function applyDamage(combatant: Combatant, amount: number): Combatant {
 
 export function applyHealing(combatant: Combatant, amount: number): Combatant {
   const currentHp = Math.min(combatant.maxHp, combatant.currentHp + Math.max(0, amount))
-  return { ...combatant, currentHp }
+  const healed = { ...combatant, currentHp }
+  // Back above 0 means the dying is over and does not carry forward. A hero
+  // patched up at 1 hit point starts the next count from nothing.
+  return currentHp > 0 ? clearDeathSaves(healed) : healed
 }
 
 export function isDefeated(combatant: Combatant): boolean {

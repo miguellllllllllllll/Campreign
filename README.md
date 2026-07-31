@@ -56,6 +56,18 @@ Tests pin the dice with `sequenceRng([0.95, 0.05])` and assert exact outcomes. T
 is the only reason crits, fumbles, advantage keep-rules and AC boundaries are
 testable at all.
 
+### Armour is derived, never written back
+
+`combatant.ac` is the gear. Anything lending armour on top of it — Shield of
+Faith's ward today — is a condition, and `effectiveAc()` adds the two up at the
+moment of the roll. Nothing overwrites `ac`, so nothing has to remember how to
+put it back: the ward ends, the condition goes, and the number follows.
+
+This is what let Shield of Faith join concentration. Breaking a caster's
+concentration drops **every** condition they were sourcing, blessing and ward
+alike, and a second caster's blessing on the same target survives it — the
+condition carries who cast it.
+
 `encounter.ts` extends the same idea to the whole fight: turn order, movement,
 reachable squares, the enemy's turn and win detection are all pure functions over an
 `Encounter` value. The store is a thin wrapper, so the interesting logic is tested
@@ -119,12 +131,9 @@ Flagged rather than hidden, all of them in service of a first-time player:
   The SRD's +5 runs until the start of your next turn. The goblin swings once a
   round, so on this board the two are the same, and carrying a timed armour
   bonus would be machinery for a case that cannot arise here.
-- **Only Bless participates in concentration.** Shield of Faith and Mage Armor
-  are concentration and duration spells in the SRD, and here they set an Armour
-  Class and leave it set for the fight. They were written before concentration
-  existed, and undoing a changed AC is different work from removing a condition —
-  wiring them in without doing it would mean a broken concentration silently
-  failing to take back the armour it granted, which is worse than not claiming it.
+- **Mage Armor lasts the fight rather than eight hours.** It is not a
+  concentration spell in the SRD either; it simply runs longer than any board
+  here, so setting an Armour Class and leaving it set is the whole of it.
 - **Foe turns are played out inside `combatStore`.** The goblin frequently wins
   initiative; if control were handed over mid-round the player would be staring at a
   board with nothing to press.

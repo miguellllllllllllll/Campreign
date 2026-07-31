@@ -64,8 +64,16 @@ export type SpellEffect =
     }
   /** Replaces the AC formula outright, as Mage Armor does. */
   | { kind: 'setAc'; base: number; addsDex: boolean }
-  /** Adds flat AC on top of whatever is already worn. */
-  | { kind: 'bonusAc'; amount: number }
+  /**
+   * Stops a dying creature slipping away, restoring nothing. The only spell
+   * here whose whole worth is a number that stops changing.
+   */
+  | { kind: 'stabilise' }
+  /**
+   * Lays a condition on one target and concentrates to keep it there.
+   * The condition carries the effect, so losing the spell takes it back.
+   */
+  | { kind: 'wardTarget'; condition: ConditionId }
 
 export interface Spell {
   id: string
@@ -290,6 +298,7 @@ export const SPELLS: readonly Spell[] = [
     description:
       'Touch someone who has dropped to 0 hit points and they stop slipping away. It restores no hit points, but it stops them dying.',
     isConcentration: false,
+    effect: { kind: 'stabilise' },
   },
 
   // --- Cleric 1st-level ---------------------------------------------------
@@ -354,7 +363,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['cleric'],
     range: '60 ft (12 squares)',
     damageOrEffect: '+2 AC to one ally',
-    effect: { kind: 'bonusAc', amount: 2 },
+    effect: { kind: 'wardTarget', condition: 'warded' },
     description:
       'A shimmering field follows an ally, making them harder to hit for ten minutes. Put it on whoever is standing at the front.',
     isConcentration: true,
