@@ -70,6 +70,15 @@ export type SpellEffect =
    */
   | { kind: 'stabilise' }
   /**
+   * Lends a die to the next ability check, and is spent by it.
+   *
+   * The only effect here that happens entirely outside a fight. Ability checks
+   * live in exploration and conversation, so this one has no meaning on a board
+   * and no Combatant to hang off — which is why casting it needed a route that
+   * did not go through `castSpell`.
+   */
+  | { kind: 'guideCheck'; die: string }
+  /**
    * Lays a condition on one target and concentrates to keep it there.
    * The condition carries the effect, so losing the spell takes it back.
    */
@@ -274,6 +283,7 @@ export const SPELLS: readonly Spell[] = [
     description:
       'You bless an ally about to attempt something difficult, and they add 1d4 to the roll. Small, but it turns near-misses into successes.',
     isConcentration: true,
+    effect: { kind: 'guideCheck', die: '1d4' },
   },
   {
     id: 'thaumaturgy',

@@ -3,6 +3,9 @@
 import { Dices } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { resolveCheck, type CheckResult } from '../../lib/dnd/checks.ts'
+import { guidesChecks } from '../../lib/dnd/casting.ts'
+import { useTutorialStore } from '../../stores/tutorialStore.ts'
+import { CastBeforeRoll } from './CastBeforeRoll.tsx'
 import { narrateCheckFully } from '../../lib/dnd/narrate.ts'
 import { SKILL_LABELS } from '../../lib/dnd/stats.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
@@ -23,12 +26,16 @@ export function CheckPrompt({ character, check, onResolved }: CheckPromptProps) 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function rollIt() {
+    // Read at the moment of the roll, not at render: the player may have cast
+    // it a heartbeat ago and the die has to know.
+    const held = useTutorialStore.getState().concentratingOn
     const resolved = resolveCheck({
       scores: character.scores,
       skill: check.skill,
       level: character.level,
       proficientSkills: character.skillProficiencies,
       dc: check.dc,
+      guided: guidesChecks(held),
     })
     setResult(resolved)
     setRolling(true)
@@ -43,6 +50,8 @@ export function CheckPrompt({ character, check, onResolved }: CheckPromptProps) 
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-muted">{check.reason}</p>
+
+      <CastBeforeRoll character={character} hidden={result !== null} />
 
       {result === null ? (
         <FantasyButton size="lg" className="self-start" onClick={rollIt}>

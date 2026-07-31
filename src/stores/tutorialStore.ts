@@ -7,6 +7,7 @@ import { LOYAL_SQUIRE, spawnCompanion } from '../lib/dnd/data/companions.ts'
 import { GOBLIN, spawnMonster } from '../lib/dnd/data/monsters.ts'
 import type { Character } from '../types/character.ts'
 import type { Combatant } from '../types/combat.ts'
+import { SPELLS_BY_ID } from '../content/spells.ts'
 import type { EffectSpec, GameEvent, TutorialStep } from '../types/tutorial.ts'
 import { useCombatStore } from './combatStore.ts'
 
@@ -31,8 +32,19 @@ interface TutorialStore {
   roster: Combatant[] | null
   /** The combatant the player steers; everyone else on the board plays itself. */
   playerId: string | null
+  /**
+   * The spell being held together outside a fight, or null.
+   *
+   * Lives here rather than on `Character` deliberately. `characterStore` is
+   * persisted, and a spell you are concentrating on is not a property of who
+   * your hero is — it is a thing happening right now. Persisting it would mean
+   * reloading the page and finding you had been holding Guidance for a week.
+   */
+  concentratingOn: string | null
   begin: (character: Character) => void
   dispatch: (event: GameEvent) => void
+  /** Casts a cantrip outside combat. Refuses with a sentence, or returns null. */
+  castOutOfCombat: (spellId: string) => string | null
   restart: () => void
 }
 
@@ -55,6 +67,20 @@ function completes(step: TutorialStep, event: GameEvent): boolean {
   }
 }
 
+/**
+ * Whether this event actually rolled a die that a held spell could have helped.
+ *
+ * A dialogue option with no `check` is pure narration and cannot be failed, so
+ * it must not eat the Guidance the player is saving for the roll after it.
+ */
+function consumedConcentration(step: TutorialStep, event: GameEvent): boolean {
+  if (event.type === 'skillCheck') return true
+  if (event.type === 'choicePicked') {
+    return step.choices?.find((one) => one.id === event.choiceId)?.check !== undefined
+  }
+  return false
+}
+
 /** The prose to read out once this event resolves the step, if the step has any. */
 function resolutionFor(step: TutorialStep, event: GameEvent): string | null {
   if (event.type === 'skillCheck' && step.check !== undefined) {
@@ -74,6 +100,7 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
   resolution: null,
   roster: null,
   playerId: null,
+  concentratingOn: null,
 
   begin: (character) => {
     const roster = [
@@ -86,7 +113,26 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
       spawnCompanion(LOYAL_SQUIRE, { position: SQUIRE_START }),
       spawnMonster(GOBLIN, { id: GOBLIN_ID, position: GOBLIN_START }),
     ]
-    set({ stepId: FIRST_STEP_ID, finished: false, resolution: null, roster, playerId: character.id })
+    set({
+      stepId: FIRST_STEP_ID,
+      finished: false,
+      resolution: null,
+      roster,
+      playerId: character.id,
+      concentratingOn: null,
+    })
+  },
+
+  castOutOfCombat: (spellId) => {
+    const spell = SPELLS_BY_ID[spellId]
+    if (spell?.effect?.kind !== 'guideCheck') {
+      return 'That one does nothing out here.'
+    }
+    if (get().concentratingOn !== null) {
+      return 'You are already holding a spell together.'
+    }
+    set({ concentratingOn: spellId })
+    return null
   },
 
   dispatch: (event) => {
@@ -101,24 +147,43 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
       return
     }
 
-    if (!completes(step, event)) return
+    /*
+     * A held spell is spent by the roll it helped, whether or not that roll
+     * moved the tutorial on. Cleared before the advance rather than after, so
+     * no path can leave Guidance hanging around for a second check.
+     */
+    const spent = consumedConcentration(step, event)
+
+    if (!completes(step, event)) {
+      if (spent) set({ concentratingOn: null })
+      return
+    }
 
     const next = step.next
     set({
       stepId: next ?? step.id,
       finished: next === null,
       resolution: resolutionFor(step, event),
+      ...(spent ? { concentratingOn: null } : {}),
     })
 
     // Effects run after the state has settled, never inside the updater, so a
     // combat action can never see a half-advanced tutorial.
     const arrived = next === null ? undefined : stepById(next)
     for (const effect of arrived?.onEnter ?? []) {
+      /*
+       * Anything held outside a fight goes out when one starts. Guidance is
+       * spent on an ability check and there are none once initiative is rolled,
+       * so carrying it into combat would be carrying a number that can never
+       * be added to anything.
+       */
+      if (effect.kind === 'startCombat') set({ concentratingOn: null })
       applyEffect(effect, get().roster, get().playerId)
     }
   },
 
-  restart: () => set({ stepId: FIRST_STEP_ID, finished: false, resolution: null }),
+  restart: () =>
+    set({ stepId: FIRST_STEP_ID, finished: false, resolution: null, concentratingOn: null }),
 }))
 
 function applyEffect(

@@ -134,6 +134,15 @@ Flagged rather than hidden, all of them in service of a first-time player:
 - **Mage Armor lasts the fight rather than eight hours.** It is not a
   concentration spell in the SRD either; it simply runs longer than any board
   here, so setting an Armour Class and leaving it set is the whole of it.
+- **Concentration outside a fight is session state, not character state.**
+  It lives in `tutorialStore`, which is not persisted. A spell you are holding
+  is a thing happening right now rather than a property of who your hero is, and
+  putting it in the persisted `characterStore` would mean closing the tab and
+  coming back a week later still holding Guidance.
+- **Guidance is spent by the next skill check, and drawing steel puts it out.**
+  The SRD gives it a minute of concentration. Here there are no ability checks
+  once initiative is rolled, so carrying it onto the board would be carrying a
+  number with nothing left to add itself to.
 - **A magic style is trimmed to fit whoever picked it.** A cleric prepares
   1 + their Wisdom modifier, which racial bonuses move between three and four,
   so no single written-down list fits every cleric. Styles are written at the
@@ -167,10 +176,13 @@ Any monster beyond the goblin and the practice dummy.
 Every 1st-level spell in the registry now does something. Shield is castable, but never on your own turn: it appears in the reaction
 prompt when a blow is about to land, alongside Warding Flare if you have both.
 
-Guidance, Light and Thaumaturgy still do nothing. Light and Thaumaturgy have no
-combat effect to have; Guidance is waiting on casting outside a fight, which
-does not exist yet. They are deliberately kept off the action bar rather than
-shown greyed out — a button that will never work teaches nothing.
+Light and Thaumaturgy still do nothing — neither has a combat effect to have.
+They are deliberately kept off the action bar rather than shown greyed out; a
+button that will never work teaches nothing.
+
+Guidance works, and is the only spell cast outside a fight. It appears beside a
+skill check that has not been rolled yet, because that is the only moment it is
+worth anything — it lends 1d4 to the next check and is spent by it.
 
 Magic Missile hits one target with all three darts. Splitting them between
 creatures is a real choice in the SRD and a click with no decision in it here,

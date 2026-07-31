@@ -87,7 +87,13 @@ export function castableSpells(
      * Guidance is waiting on casting outside a fight — and a permanently greyed
      * button teaches a player nothing except that the bar is cluttered.
      */
-    return spell !== undefined && spell.attack === undefined && spell.effect !== undefined
+    return (
+      spell !== undefined
+      && spell.attack === undefined
+      && spell.effect !== undefined
+      // Out-of-combat spells are offered where they work, not here.
+      && spell.effect.kind !== 'guideCheck'
+    )
   })
 
   return [...(combatant.preparedSpells ?? []), ...utilityCantrips].flatMap(
@@ -117,6 +123,32 @@ export function castableSpells(
       return [{ spell, castable: true }]
     },
   )
+}
+
+/**
+ * The spells a character can cast when there is no encounter.
+ *
+ * Takes a Character rather than a Combatant on purpose: outside a fight there
+ * is no board and nothing has a position, hit points or a turn. That mismatch
+ * is exactly why Guidance sat inert — every casting path ran through a token
+ * that only exists once initiative has been rolled.
+ *
+ * Cantrips only, and only the ones whose effect means something here, which is
+ * Guidance alone today. Spending a levelled slot outside a fight is a decision
+ * worth having, and it is not this one.
+ */
+export function castableOutOfCombat(character: {
+  cantrips?: readonly string[]
+}): Spell[] {
+  return (character.cantrips ?? []).flatMap((id) => {
+    const spell = SPELLS_BY_ID[id]
+    return spell?.effect?.kind === 'guideCheck' ? [spell] : []
+  })
+}
+
+/** Whether the spell being held lends a die to an ability check. */
+export function guidesChecks(spellId: string | null): boolean {
+  return spellId !== null && SPELLS_BY_ID[spellId]?.effect?.kind === 'guideCheck'
 }
 
 /**
@@ -312,6 +344,18 @@ export function castSpell(args: {
   } else if (effect.kind === 'aoeSave') {
     // Areas go through castAreaSpell, which has more than one target to return.
     return { caster, target, lines: [], refusal: `${spell.name} covers an area — aim it with castAreaSpell.` }
+  } else if (effect.kind === 'guideCheck') {
+    /*
+     * There is nothing to guide in a fight. Ability checks belong to exploration
+     * and conversation, so this one is cast through the tutorial's own path and
+     * never from the action bar — see `castableOutOfCombat`.
+     */
+    return {
+      caster,
+      target,
+      lines: [],
+      refusal: `${spell.name} helps with a skill check, and there are none in a fight.`,
+    }
   } else {
     /*
      * Mage Armor replaces the armour outright rather than lending a bonus, and

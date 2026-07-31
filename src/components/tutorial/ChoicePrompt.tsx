@@ -2,6 +2,9 @@
 
 import { useRef, useState } from 'react'
 import { resolveCheck, type CheckResult } from '../../lib/dnd/checks.ts'
+import { guidesChecks } from '../../lib/dnd/casting.ts'
+import { useTutorialStore } from '../../stores/tutorialStore.ts'
+import { CastBeforeRoll } from './CastBeforeRoll.tsx'
 import { narrateCheckFully } from '../../lib/dnd/narrate.ts'
 import { SKILL_LABELS } from '../../lib/dnd/stats.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
@@ -29,12 +32,14 @@ export function ChoicePrompt({ character, choices, onResolved }: ChoicePromptPro
       return
     }
 
+    const held = useTutorialStore.getState().concentratingOn
     const result = resolveCheck({
       scores: character.scores,
       skill: choice.check.skill,
       level: character.level,
       proficientSkills: character.skillProficiencies,
       dc: choice.check.dc,
+      guided: guidesChecks(held),
     })
     setRolled({ choiceId: choice.id, result })
     setRolling(true)
@@ -77,6 +82,8 @@ export function ChoicePrompt({ character, choices, onResolved }: ChoicePromptPro
 
   return (
     <div className="flex flex-col gap-2">
+      <CastBeforeRoll character={character} />
+
       {choices.map((choice) => (
         <FantasyButton
           key={choice.id}
