@@ -117,3 +117,13 @@ Flagged rather than hidden, all of them in service of a first-time player:
 
 Supabase, accounts, multiplayer, levels past 1, spell slots beyond cantrips and
 level 1, and any monster other than the goblin (plus a practice dummy).
+
+## Licence
+
+The code is MIT — see [LICENSE](LICENSE).
+
+The rules are not the code. Spell text, the goblin, and the arithmetic all come
+from Wizards of the Coast's System Reference Document 5.1, used under CC BY 4.0,
+and that attribution travels with them wherever they go. It lives in
+[NOTICE](NOTICE) along with the licences for the icons and fonts. The
+divergences listed above are this project's, not the SRD's.

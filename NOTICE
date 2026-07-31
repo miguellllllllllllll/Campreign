@@ -1,0 +1,57 @@
+Third-party content in Hero Step
+================================
+
+The code is MIT licensed — see LICENSE. Two things it carries are not the
+author's to relicense, and both are named here.
+
+
+System Reference Document 5.1
+-----------------------------
+
+Hero Step's rules are derived from the SRD: spell names and descriptions, the
+goblin's stat block, ability-score modifiers, proficiency bonuses, the attack
+and saving-throw maths, and the condition list. The SRD is dual-licensed under
+OGL 1.0a and CC BY 4.0; this project uses the Creative Commons option, whose
+required attribution is:
+
+  This work includes material taken from the System Reference Document 5.1
+  ("SRD 5.1") by Wizards of the Coast LLC and available at
+  https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is
+  licensed under the Creative Commons Attribution 4.0 International License
+  available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+Hero Step diverges from the SRD deliberately in several places — the goblin's
+Armour Class, movement on the tutorial board, subclasses offered at 1st level
+rather than 3rd, and the duration of a paladin's oath powers. Those are the
+project's choices, not the SRD's, and README.md explains each one. Nothing here
+should be read as an official or endorsed representation of the rules.
+
+
+Icons
+-----
+
+Interface icons come from Lucide (https://lucide.dev), ISC licensed:
+
+  ISC License
+
+  Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part
+  of Feather (MIT). All other copyright (c) for Lucide are held by Lucide
+  Contributors 2022.
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+  LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+  OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+  PERFORMANCE OF THIS SOFTWARE.
+
+Fonts are served through next/font from Google Fonts: Cinzel and Cinzel
+Decorative (OFL), Alegreya (OFL), Plus Jakarta Sans (OFL), and Geist Mono (OFL).
+
+If icons from another source are ever added, their attribution belongs in this
+file in the same commit as the assets — not afterwards.
