@@ -168,10 +168,22 @@ Flagged rather than hidden, all of them in service of a first-time player:
 Supabase, accounts, and multiplayer — nobody else is at the table, though the
 tutorial does field one NPC ally so an area spell has somebody to spare.
 
-Levels past 1, and spell slots past the single 1st-level one a full caster
-starts with. Everything above that is out of scope, not merely unwritten.
+Levels past 2. The rules for taking a level live in `lib/dnd/leveling.ts` and
+stop there for a specific reason: at 3rd level a full caster gains **2nd-level
+spell slots**, and `Character.spellSlots` is a single number meaning first-level
+slots. A level-3 wizard here would be missing half their magic. The slot table
+is written out past the cap because the rules are correct further than the app
+can play them — lifting it means giving slots a table, then one constant.
 
-Any monster beyond the goblin and the practice dummy.
+**Nothing reaches the levelling rules yet.** There is no screen that levels
+anybody up. It is a tested foundation and honestly nothing more.
+
+The bestiary is the goblin, the practice dummy, a giant bat, a skeleton and a
+giant spider. The three new ones carry their SRD numbers rather than the
+goblin's softened ones — the goblin is AC 12 instead of 15 because it is the
+first fight anybody has, and that reason does not generalise. **Only the goblin
+and the dummy currently appear anywhere**; the rest are data waiting on a second
+encounter.
 
 Every 1st-level spell in the registry now does something. Shield is castable, but never on your own turn: it appears in the reaction
 prompt when a blow is about to land, alongside Warding Flare if you have both.

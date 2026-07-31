@@ -67,9 +67,126 @@ export const TRAINING_DUMMY: MonsterPreset = {
   attacks: [],
 }
 
+/*
+ * Everything below is met after the goblin, by a character who has already
+ * learned to hit things. So these carry their SRD numbers rather than the
+ * goblin's softened ones — the goblin is AC 12 instead of 15 because it is the
+ * first fight anybody has, and that reason does not generalise.
+ *
+ * Two shared divergences, both forced by the board rather than chosen:
+ *
+ * - **Speed is squares, not feet, and the board is five across.** A giant bat
+ *   flies 60 feet, which is twelve squares and further than the whole map. Speeds
+ *   here are relative to the goblin's three rather than converted.
+ * - **No riders on attacks.** `AttackAction` carries damage and reach and
+ *   nothing else, so the giant spider's poison save is simply absent. Noted
+ *   because it is a real omission, not an oversight — the spider hits for its
+ *   SRD damage and that is all it does.
+ */
+
+/**
+ * The weakest thing that could have come down the drain. Quick, fragile, and
+ * dangerous mostly in the sense that it is hard to corner.
+ */
+export const GIANT_BAT: MonsterPreset = {
+  id: 'giantBat',
+  name: 'Giant Bat',
+  blurb: 'A dog-sized bat, wings clattering off the low cellar ceiling.',
+  tokenId: 'bat',
+  level: 1,
+  scores: { str: 15, dex: 16, con: 11, int: 2, wis: 12, cha: 6 },
+  maxHp: 22,
+  ac: 13,
+  // Four rather than the goblin's three: the one thing a bat is, is faster
+  // than you. Twelve squares would be the honest conversion and would let it
+  // cross the map twice in a turn.
+  speedSquares: 4,
+  attacks: [
+    {
+      id: 'batBite',
+      name: 'Bite',
+      kind: 'weapon',
+      ability: 'str',
+      proficient: true,
+      damage: '1d6',
+      damageType: 'piercing',
+      addAbilityToDamage: true,
+      ranged: false,
+      rangeSquares: 1,
+      description: 'It drops onto you out of the dark and bites before you can look up.',
+    },
+  ],
+}
+
+/**
+ * The first thing here that was once a person, and the first that a cleric's
+ * Channel Divinity is actually for.
+ */
+export const SKELETON: MonsterPreset = {
+  id: 'skeleton',
+  name: 'Skeleton',
+  blurb: 'Bones held together by something that is not muscle, gripping a rusted shortsword.',
+  tokenId: 'skeleton',
+  level: 1,
+  scores: { str: 10, dex: 14, con: 15, int: 6, wis: 8, cha: 5 },
+  maxHp: 13,
+  ac: 13,
+  speedSquares: 3,
+  attacks: [
+    {
+      id: 'skeletonShortsword',
+      name: 'Shortsword',
+      kind: 'weapon',
+      ability: 'dex',
+      proficient: true,
+      damage: '1d6',
+      damageType: 'piercing',
+      addAbilityToDamage: true,
+      ranged: false,
+      rangeSquares: 1,
+      description: 'A flat, economical thrust. It does not feint and it does not tire.',
+    },
+  ],
+}
+
+/**
+ * The hardest thing in the bestiary, and deliberately a step up rather than a
+ * variation: twice the goblin's armour class to get through and nearly four
+ * times its hit points behind it.
+ */
+export const GIANT_SPIDER: MonsterPreset = {
+  id: 'giantSpider',
+  name: 'Giant Spider',
+  blurb: 'It comes down from the rafters on a line of silk, unhurried.',
+  tokenId: 'spider',
+  level: 1,
+  scores: { str: 14, dex: 16, con: 12, int: 2, wis: 11, cha: 4 },
+  maxHp: 26,
+  ac: 14,
+  speedSquares: 3,
+  attacks: [
+    {
+      id: 'spiderBite',
+      name: 'Bite',
+      kind: 'weapon',
+      ability: 'dex',
+      proficient: true,
+      damage: '1d8',
+      damageType: 'piercing',
+      addAbilityToDamage: true,
+      ranged: false,
+      rangeSquares: 1,
+      description: 'Fangs that go in further than you expect. In the SRD this one also poisons.',
+    },
+  ],
+}
+
 export const MONSTERS: Record<string, MonsterPreset> = {
   goblin: GOBLIN,
   trainingDummy: TRAINING_DUMMY,
+  giantBat: GIANT_BAT,
+  skeleton: SKELETON,
+  giantSpider: GIANT_SPIDER,
 }
 
 export function spawnMonster(
