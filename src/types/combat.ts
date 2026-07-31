@@ -10,6 +10,7 @@ import type { DiceRoll } from './dice.ts'
 export type TokenId = ClassId | 'goblin' | 'dummy' | 'squire'
 
 export type ConditionId =
+  | 'blessed'
   | 'dazzled'
   | 'poisoned'
   | 'prone'
@@ -22,6 +23,11 @@ export interface ActiveCondition {
   id: ConditionId
   /** Rounds left before it wears off. null means it lasts until removed. */
   roundsRemaining: number | null
+  /**
+   * Who put it there, when somebody has to be able to take it away again —
+   * a blessing ends when the caster's concentration does, and only theirs.
+   */
+  source?: string
 }
 
 export type Team = 'party' | 'foes'
@@ -102,6 +108,11 @@ export interface Combatant {
    * what they can spend it on is what differs.
    */
   hasWardingFlare?: boolean
+  /**
+   * The spell this combatant is holding together. One at a time, and losing
+   * it takes its effects with it.
+   */
+  concentratingOn?: string
   /** Potions still unopened. */
   potions?: number
   /** Whether using an item costs this combatant a bonus action instead. */

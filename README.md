@@ -119,6 +119,12 @@ Flagged rather than hidden, all of them in service of a first-time player:
   The SRD's +5 runs until the start of your next turn. The goblin swings once a
   round, so on this board the two are the same, and carrying a timed armour
   bonus would be machinery for a case that cannot arise here.
+- **Only Bless participates in concentration.** Shield of Faith and Mage Armor
+  are concentration and duration spells in the SRD, and here they set an Armour
+  Class and leave it set for the fight. They were written before concentration
+  existed, and undoing a changed AC is different work from removing a condition —
+  wiring them in without doing it would mean a broken concentration silently
+  failing to take back the armour it granted, which is worse than not claiming it.
 - **Foe turns are played out inside `combatStore`.** The goblin frequently wins
   initiative; if control were handed over mid-round the player would be staring at a
   board with nothing to press.
@@ -133,11 +139,7 @@ starts with. Everything above that is out of scope, not merely unwritten.
 
 Any monster beyond the goblin and the practice dummy.
 
-One 1st-level spell is known but not yet castable, and says so on the button
-rather than failing quietly: **Bless**, which needs concentration and a buff
-that lands on several targets at once.
-
-Shield is castable, but never on your own turn: it appears in the reaction
+Every 1st-level spell in the registry now does something. Shield is castable, but never on your own turn: it appears in the reaction
 prompt when a blow is about to land, alongside Warding Flare if you have both.
 
 Magic Missile hits one target with all three darts. Splitting them between

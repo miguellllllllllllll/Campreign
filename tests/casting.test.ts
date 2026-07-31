@@ -58,13 +58,40 @@ test('the slot and the prepared list reach the board', () => {
 
 // --- What can be cast -----------------------------------------------------
 
-test('a prepared spell with no engine support is offered but refused', () => {
+test('every prepared spell now either casts or says exactly why not', () => {
+  /*
+   * This used to assert Bless was unsupported. Nothing is any more, so it now
+   * pins the stronger property: a prepared spell is never simply inert. It
+   * casts, or it carries a reason a player can act on.
+   */
   const { combatant } = caster()
   const listed = castableSpells(combatant)
-  const bless = listed.find((entry) => entry.spell.id === 'bless')
-  assert.ok(bless !== undefined, 'Bless should still be visible on the bar')
-  assert.equal(bless.castable, false)
-  assert.match(bless.reason ?? '', /not ready/i)
+  assert.ok(listed.length > 0)
+
+  for (const entry of listed) {
+    if (entry.castable) {
+      assert.equal(entry.reason, undefined, `${entry.spell.id} is castable and needs no excuse`)
+    } else {
+      assert.ok((entry.reason ?? '').length > 0, `${entry.spell.id} refuses without saying why`)
+      assert.doesNotMatch(
+        entry.reason ?? '',
+        /not ready/i,
+        `${entry.spell.id} is still stubbed out`,
+      )
+    }
+  }
+})
+
+test('Shield is the only prepared spell that refuses on your own turn', () => {
+  const wizard = buildCharacter(
+    answers({ classId: 'wizard', magicStyleId: 'guardianMage' }),
+    'Warder',
+    meta,
+  )
+  const listed = castableSpells(characterToCombatant(wizard, { position: { x: 0, y: 0 } }))
+  const refused = listed.filter((e) => !e.castable).map((e) => e.spell.id)
+  assert.deepEqual(refused, ['shield'])
+  assert.match(listed.find((e) => e.spell.id === 'shield')?.reason ?? '', /reaction/i)
 })
 
 test('Cure Wounds is castable while a slot remains, and not after', () => {

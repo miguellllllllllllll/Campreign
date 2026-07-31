@@ -44,6 +44,8 @@ export type SpellEffect =
    * shape the rules actually produce.
    */
   | { kind: 'autoHit'; darts: number; dice: string; damageType: DamageType }
+  /** Lands on your own side and holds until concentration breaks. */
+  | { kind: 'blessAllies'; maxTargets: number }
   /**
    * Everything within `radiusSquares` of the caster rolls a save.
    *
@@ -312,6 +314,7 @@ export const SPELLS: readonly Spell[] = [
     classes: ['cleric'],
     range: '30 ft (6 squares)',
     damageOrEffect: '+1d4 to attacks and saves, 3 allies',
+    effect: { kind: 'blessAllies', maxTargets: 3 },
     description:
       'Three allies add 1d4 to every attack roll and saving throw for a minute. You must keep concentrating, so do not get hit hard.',
     isConcentration: true,

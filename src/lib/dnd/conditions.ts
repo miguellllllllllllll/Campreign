@@ -14,6 +14,15 @@ export interface ConditionInfo {
 }
 
 export const CONDITIONS: Record<ConditionId, ConditionInfo> = {
+  blessed: {
+    id: 'blessed',
+    label: 'Blessed',
+    plain:
+      'A little luck is riding with you. Add a d4 to every attack roll you make while it lasts.',
+    ownAttacks: 'normal',
+    incomingAttacks: 'normal',
+    preventsActions: false,
+  },
   dazzled: {
     id: 'dazzled',
     label: 'Dazzled',
@@ -78,9 +87,19 @@ export function addCondition(
   existing: readonly ActiveCondition[],
   id: ConditionId,
   roundsRemaining: number | null = null,
+  source?: string,
 ): ActiveCondition[] {
   const others = existing.filter((condition) => condition.id !== id)
-  return [...others, { id, roundsRemaining }]
+  return [...others, { id, roundsRemaining, ...(source === undefined ? {} : { source }) }]
+}
+
+/** Drops every condition a particular caster is responsible for. */
+export function removeConditionsFrom(
+  existing: readonly ActiveCondition[],
+  id: ConditionId,
+  source: string,
+): ActiveCondition[] {
+  return existing.filter((c) => !(c.id === id && c.source === source))
 }
 
 export function removeCondition(

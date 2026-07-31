@@ -9,10 +9,13 @@ import type {
 import type { Rng, RollMode } from '../../types/dice.ts'
 import { roll, toCriticalNotation } from './dice.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
-import { attackRollMode, blocksActions, combineRollModes } from './conditions.ts'
+import { attackRollMode, blocksActions, combineRollModes, hasCondition } from './conditions.ts'
 import { channelDivinityAttackBonus, hasVowAgainst } from './channelDivinity.ts'
 import { applyDamageWithWard } from './spellcasting.ts'
 import { damageNotation } from './characterBuilder.ts'
+
+/** The die a blessing lends to an attack roll. */
+export const BLESS_DIE = '1d4'
 
 /** Dexterity decides who acts first, plus whatever a feat is worth. */
 export function rollInitiative(combatant: Combatant, rng: Rng = Math.random): number {
@@ -98,10 +101,24 @@ export function resolveAttack(args: {
   })
   const natural = attackRoll.groups[0]?.kept[0] ?? 0
 
+  /*
+   * Bless is rolled on its own die rather than appended to the notation. Adding
+   * "+1d4" would give roll() two dice terms, and isSingleD20 would quietly stop
+   * applying advantage — a blessing that cancelled your advantage would be a
+   * strange sort of blessing.
+   */
+  const blessing = hasCondition(attacker.conditions, 'blessed')
+    ? roll(BLESS_DIE, { rng }).total
+    : 0
+  const parts = breakdownParts(attacker, attack)
+  if (blessing !== 0) parts.push({ label: 'Bless', value: blessing })
+
+  const total = attackRoll.total + blessing
+
   const breakdown: AttackBreakdown = {
     natural,
-    parts: breakdownParts(attacker, attack),
-    total: attackRoll.total,
+    parts,
+    total,
     targetAc: target.ac,
   }
 
@@ -123,7 +140,7 @@ export function resolveAttack(args: {
     }
   }
 
-  if (attackRoll.total >= target.ac) {
+  if (total >= target.ac) {
     const damageRoll = roll(baseDamage, { rng })
     return {
       kind: 'hit',

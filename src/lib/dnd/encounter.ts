@@ -22,8 +22,9 @@ import {
 import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
+import { checkConcentration, dropConcentration } from './concentration.ts'
 import { availableReactions, canShield, resolveShield, resolveWardingFlare } from './reactions.ts'
-import { castAreaSpell, castSpell } from './casting.ts'
+import { castAreaSpell, castBlessing, castSpell } from './casting.ts'
 import { SPELLS_BY_ID } from '../../content/spells.ts'
 import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
 import { roll } from './dice.ts'
@@ -202,6 +203,47 @@ export function moveActive(encounter: Encounter, to: GridPosition): Encounter {
   }
 }
 
+/**
+ * Applies damage, then asks whether whatever the victim was holding survives it.
+ *
+ * Both halves in one place so no damage path can quietly skip the save — that
+ * is exactly how a rule ends up applying on the goblin's swing and not on a
+ * fireball.
+ */
+function damageAndConcentration(
+  combatants: Record<string, Combatant>,
+  target: Combatant,
+  amount: number,
+  rng: Rng,
+): { combatants: Record<string, Combatant>; lines: string[] } {
+  const hurt = applyDamage(target, amount)
+  let next = { ...combatants, [hurt.id]: hurt }
+  const lines: string[] = []
+
+  const held = hurt.concentratingOn
+  if (held !== undefined && amount > 0 && !isDefeated(hurt)) {
+    const check = checkConcentration({ caster: hurt, damage: amount, rng })
+    if (check.held) {
+      lines.push(
+        `${hurt.name} rolls ${check.total} against DC ${check.dc} and keeps hold of the spell.`,
+      )
+    } else {
+      lines.push(
+        `${hurt.name} rolls ${check.total} against DC ${check.dc} and loses concentration — `
+          + 'the blessing goes out.',
+      )
+      next = dropConcentration(hurt.id, next)
+    }
+  }
+  // Going down ends it outright, without a roll.
+  if (held !== undefined && isDefeated(hurt)) {
+    lines.push(`${hurt.name} drops, and the spell they were holding goes with them.`)
+    next = dropConcentration(hurt.id, next)
+  }
+
+  return { combatants: next, lines }
+}
+
 export interface AttackResult {
   encounter: Encounter
   outcome: AttackOutcome | null
@@ -294,7 +336,13 @@ export function attackWith(
   }
 
   const totalDamage = landed ? outcome.damage + (maneuver?.bonusDamage.total ?? 0) : 0
-  let damaged = landed ? applyDamage(target, totalDamage) : target
+  const hit = damageAndConcentration(
+    encounter.combatants,
+    target,
+    totalDamage,
+    args.rng ?? Math.random,
+  )
+  let damaged = hit.combatants[target.id] ?? target
   if (maneuver?.knockedProne === true && !isDefeated(damaged)) {
     damaged = { ...damaged, conditions: addCondition(damaged.conditions, 'prone') }
   }
@@ -323,9 +371,9 @@ export function attackWith(
   return {
     encounter: {
       ...encounter,
-      combatants: { ...encounter.combatants, [spender.id]: spender, [damaged.id]: damaged },
+      combatants: { ...hit.combatants, [spender.id]: spender, [damaged.id]: damaged },
       hasActed: true,
-      log,
+      log: [...log, ...hit.lines],
     },
     outcome,
     refusal: null,
@@ -412,6 +460,35 @@ export function castFromActive(
   }
 
   const spell = SPELLS_BY_ID[args.spellId]
+  if (spell?.effect?.kind === 'blessAllies') {
+    const blessing = castBlessing({
+      caster,
+      party: combatantsOf(encounter, caster.team),
+      spellId: args.spellId,
+    })
+    if (blessing.refusal !== null) return { encounter, refusal: blessing.refusal }
+
+    const touched = Object.fromEntries(blessing.blessed.map((c) => [c.id, c]))
+    return {
+      encounter: {
+        ...encounter,
+        combatants: {
+          ...encounter.combatants,
+          ...touched,
+          // The caster's own copy wins: it carries the spent slot and the
+          // concentration, and may also be one of the blessed.
+          [blessing.caster.id]: {
+            ...(touched[blessing.caster.id] ?? blessing.caster),
+            spellSlots: blessing.caster.spellSlots,
+            concentratingOn: blessing.caster.concentratingOn,
+          },
+        },
+        hasActed: true,
+        log: [...encounter.log, ...blessing.lines],
+      },
+      refusal: null,
+    }
+  }
   if (spell?.effect?.kind === 'aoeSave') {
     const area = castAreaSpell({
       caster,

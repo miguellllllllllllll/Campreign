@@ -197,6 +197,9 @@ export function castSpell(args: {
       }
       lines.push(`${target.name} is left glowing — the next blow lands easier.`)
     }
+  } else if (effect.kind === 'blessAllies') {
+    // Lands on a side, not a target — castBlessing has the whole party.
+    return { caster, target, lines: [], refusal: `${spell.name} blesses your side — cast it with castBlessing.` }
   } else if (effect.kind === 'autoHit') {
     /*
      * No roll to make and none to miss with. Each dart is thrown on its own so
@@ -404,6 +407,62 @@ export function castAreaSpell(args: {
     },
     affected,
     lines,
+    refusal: null,
+  }
+}
+
+
+export interface BlessingResult {
+  caster: Combatant
+  blessed: Combatant[]
+  lines: string[]
+  refusal: string | null
+}
+
+/**
+ * Blesses your own side, and starts concentrating on it.
+ *
+ * Everyone on the party side up to the spell's limit, in turn order, because
+ * with a hero and a squire the limit of three has nobody to exclude — the same
+ * reason Sculpt Spells does not ask which ally to spare.
+ */
+export function castBlessing(args: {
+  caster: Combatant
+  party: readonly Combatant[]
+  spellId: string
+}): BlessingResult {
+  const { caster, party, spellId } = args
+  const spell = SPELLS_BY_ID[spellId]
+
+  if (spell?.effect === undefined || spell.effect.kind !== 'blessAllies') {
+    return { caster, blessed: [], lines: [], refusal: 'That spell does not bless anybody.' }
+  }
+  if (spell.level >= 1 && (caster.spellSlots ?? 0) <= 0) {
+    return { caster, blessed: [], lines: [], refusal: 'No spell slots left until you rest.' }
+  }
+
+  const chosen = party.filter((c) => c.currentHp > 0).slice(0, spell.effect.maxTargets)
+  if (chosen.length === 0) {
+    return { caster, blessed: [], lines: [], refusal: 'There is nobody left to bless.' }
+  }
+
+  const blessed = chosen.map((c) => ({
+    ...c,
+    conditions: addCondition(c.conditions, 'blessed', null, caster.id),
+  }))
+
+  return {
+    caster: {
+      ...caster,
+      ...(caster.spellSlots === undefined ? {} : { spellSlots: Math.max(0, caster.spellSlots - 1) }),
+      concentratingOn: spellId,
+    },
+    blessed,
+    lines: [
+      `${caster.name} casts ${spell.name}. `
+        + `${chosen.map((c) => c.name).join(' and ')} will add a d4 to every attack `
+        + 'for as long as the concentration holds.',
+    ],
     refusal: null,
   }
 }
