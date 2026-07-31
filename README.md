@@ -121,8 +121,24 @@ Flagged rather than hidden, all of them in service of a first-time player:
 
 ## Not in this build
 
-Supabase, accounts, multiplayer, levels past 1, spell slots beyond cantrips and
-level 1, and any monster other than the goblin (plus a practice dummy).
+Supabase, accounts, and multiplayer — nobody else is at the table, though the
+tutorial does field one NPC ally so an area spell has somebody to spare.
+
+Levels past 1, and spell slots past the single 1st-level one a full caster
+starts with. Everything above that is out of scope, not merely unwritten.
+
+Any monster beyond the goblin and the practice dummy.
+
+Four 1st-level spells are known but not yet castable, and say so on the button
+rather than failing quietly:
+
+- **Guiding Bolt** — has an attack roll, but only cantrips currently become
+  buttons, so nothing routes a prepared attack spell onto the bar.
+- **Magic Missile** — darts that hit automatically, with no attack roll to
+  resolve them through.
+- **Bless** — needs concentration and a buff that lands on several targets.
+- **Shield** — needs to fire in reaction to an incoming attack. The interrupt
+  seam exists now, so this is the nearest of the four.
 
 ## Licence
 
