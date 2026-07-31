@@ -32,6 +32,10 @@ export function characterToCombatant(
     position: args.position,
     attacks: character.attacks.map((attack) => ({ ...attack })),
     conditions: [],
+    // What the player answered in creation, made visible where they will
+    // actually look at it: their class as a shape, their aura as its colour.
+    tokenId: character.classId,
+    cosmetics: character.cosmetics,
     initiative: args.initiative ?? 0,
     ...(character.initiativeBonus === undefined
       ? {}

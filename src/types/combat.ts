@@ -1,6 +1,13 @@
 import type { AttackAction } from './action.ts'
-import type { AbilityName, AbilityScores } from './character.ts'
+import type { AbilityName, AbilityScores, ClassId, Cosmetics } from './character.ts'
 import type { DiceRoll } from './dice.ts'
+
+/**
+ * Which silhouette to draw in a square. The five classes plus everything that
+ * is not a hero — a union of its own rather than a reused `ClassId`, so a
+ * goblin never has to pretend to have a class in order to be visible.
+ */
+export type TokenId = ClassId | 'goblin' | 'dummy' | 'squire'
 
 export type ConditionId =
   | 'poisoned'
@@ -36,6 +43,17 @@ export interface Combatant {
   position: GridPosition
   attacks: AttackAction[]
   conditions: ActiveCondition[]
+  /**
+   * The silhouette this combatant is drawn as. Optional because the grid falls
+   * back to an initial, which keeps every hand-built test fixture legible
+   * without having to say what it looks like.
+   */
+  tokenId?: TokenId
+  /**
+   * The aura the player picked, carried onto the map. Absent for monsters, who
+   * are painted in their team's colour instead — nobody chose how they look.
+   */
+  cosmetics?: Cosmetics
   /**
    * Added to the initiative roll on top of Dexterity. Optional so every existing
    * combatant — monsters, the practice dummy, a fast-track hero — keeps rolling

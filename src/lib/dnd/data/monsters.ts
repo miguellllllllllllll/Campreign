@@ -1,12 +1,14 @@
 import type { AttackAction } from '../../../types/action.ts'
 import type { AbilityScores } from '../../../types/character.ts'
-import type { Combatant, GridPosition } from '../../../types/combat.ts'
+import type { Combatant, GridPosition, TokenId } from '../../../types/combat.ts'
 
 export interface MonsterPreset {
   id: string
   name: string
   /** One sentence the tutorial can read aloud when the creature appears. */
   blurb: string
+  /** Which silhouette stands in the square when this one is spawned. */
+  tokenId: TokenId
   level: number
   scores: AbilityScores
   maxHp: number
