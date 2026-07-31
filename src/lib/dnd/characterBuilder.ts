@@ -16,10 +16,12 @@ import {
   channelDivinityFor,
   critThresholdFor,
   hasAmbushFor,
+  hasFastHandsFor,
   hasReactionFor,
   subclassById,
   superiorityDiceFor,
 } from '../../content/subclasses.ts'
+import { STARTING_POTIONS } from './items.ts'
 import { FIRST_LEVEL_SLOTS } from './spellcasting.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
@@ -192,6 +194,7 @@ export function buildCharacter(
   const channelDivinityCharges = channelDivinityFor(answers.subclassId)
   const hasReaction = hasReactionFor(answers.subclassId)
   const hasAmbush = hasAmbushFor(answers.subclassId)
+  const hasFastHands = hasFastHandsFor(answers.subclassId)
   // One 1st-level slot for anyone who prepares spells at all.
   const spellSlots = selectionHasLeveledSpells(answers, klass.spellcasting !== undefined)
     ? FIRST_LEVEL_SLOTS
@@ -255,6 +258,10 @@ export function buildCharacter(
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),
     ...(hasReaction ? { hasReaction } : {}),
     ...(hasAmbush ? { hasAmbush } : {}),
+    ...(hasFastHands ? { hasFastHands } : {}),
+    // Everyone walks in with one, so the Thief's bonus action has something
+    // to be quicker than.
+    potions: STARTING_POTIONS,
     ...(spellSlots === undefined ? {} : { spellSlots }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }

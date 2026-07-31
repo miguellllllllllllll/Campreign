@@ -77,6 +77,10 @@ export interface Combatant {
   hasActedThisCombat?: boolean
   /** Whether this combatant strikes with advantage on their opening turn. */
   hasAmbush?: boolean
+  /** Potions still unopened. */
+  potions?: number
+  /** Whether using an item costs this combatant a bonus action instead. */
+  hasFastHands?: boolean
   /**
    * Whether this combatant's one reaction is still unspent this round. Absent
    * means they have nothing to react with, which is everyone without a feature

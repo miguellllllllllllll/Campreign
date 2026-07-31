@@ -1,7 +1,8 @@
 'use client'
 
-import { Hourglass, Swords } from 'lucide-react'
+import { Heart, Hourglass, Swords } from 'lucide-react'
 import { castableSpells } from '../../lib/dnd/casting.ts'
+import { POTION_LABEL, hasPotion, resolveItemUseCost } from '../../lib/dnd/items.ts'
 import {
   ChannelDivinityIcon,
   SpellFlareIcon,
@@ -26,6 +27,9 @@ export interface ActionBarProps {
   onAttack: (attackId: string, maneuverId?: 'trip') => void
   /** Undefined when this hero prepares no spells at all. */
   onCast?: (spellId: string) => void
+  /** Whether the turn's bonus action is still available. */
+  bonusActionSpent?: boolean
+  onDrink?: () => void
   /** Which oath power this hero has, from their subclass. Absent for everyone else. */
   oathPower?: 'sacredWeapon' | 'vowOfEnmity'
   /** Undefined when this hero has no oath to call on. */
@@ -43,6 +47,8 @@ export function ActionBar({
   stranded = false,
   onAttack,
   onCast,
+  bonusActionSpent = false,
+  onDrink,
   oathPower,
   onChannel,
   onEndTurn,
@@ -60,6 +66,10 @@ export function ActionBar({
   const charges = active.channelDivinityCharges ?? 0
   const oath = active.activeChannelDivinity
   const spells = onCast === undefined ? [] : castableSpells(active)
+  const potions = active.potions ?? 0
+  const drinkCost = resolveItemUseCost(active)
+  const drinkBlocked = drinkCost === 'action' ? hasActed : bonusActionSpent
+  const canDrink = onDrink !== undefined && hasPotion(active) && !drinkBlocked
   const slots = active.spellSlots ?? 0
 
   const canChannel =
@@ -74,6 +84,14 @@ export function ActionBar({
             {movementRemaining} {movementRemaining === 1 ? 'square' : 'squares'}
           </span>
         </span>
+        {drinkCost === 'bonusAction' && (
+          <span>
+            Bonus action:{' '}
+            <span className="font-mono text-parchment">
+              {bonusActionSpent ? 'used' : 'ready'}
+            </span>
+          </span>
+        )}
         {slots > 0 && (
           <span>
             <Explain k="preparedSpell">Spell slots</Explain>:{' '}
@@ -157,6 +175,25 @@ export function ActionBar({
             {!castable && <span className="text-xs font-normal">— {reason}</span>}
           </FantasyButton>
         ))}
+
+        {onDrink !== undefined && potions > 0 && (
+          <FantasyButton
+            variant="iron"
+            disabled={!canDrink || !attackEnabled}
+            onClick={onDrink}
+            title={
+              drinkCost === 'bonusAction'
+                ? 'Fast Hands: drinking costs only a bonus action, so you can still attack.'
+                : 'Drinking takes your whole action for the turn.'
+            }
+          >
+            <Heart aria-hidden />
+            Drink {POTION_LABEL}
+            <span className="font-mono text-xs font-normal">
+              {potions} left{drinkCost === 'bonusAction' ? ' · bonus' : ''}
+            </span>
+          </FantasyButton>
+        )}
 
         <FantasyButton variant="iron" disabled={!endTurnEnabled} onClick={onEndTurn}>
           <Hourglass aria-hidden />

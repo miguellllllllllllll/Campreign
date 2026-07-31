@@ -33,6 +33,7 @@ export interface SubclassFeature {
  * adding a second kind forces every reader to handle it.
  */
 export type SubclassEffect =
+  | { kind: 'itemEconomy'; power: 'fastHands' }
   | { kind: 'openingAdvantage'; power: 'ambush' }
   | { kind: 'castHook'; power: 'discipleOfLife' | 'arcaneWard' }
   | { kind: 'reaction'; power: 'wardingFlare' }
@@ -156,10 +157,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You are quick with objects as well as knives — a potion drunk mid-fight, a lever pulled at the right moment.',
     feature: {
       name: 'Fast Hands',
-      description: 'Use an object as a bonus action instead of your whole turn.',
-      active: false,
-      pending: 'Bonus actions are not tracked separately yet.',
+      description:
+        'Drink a potion as a bonus action, so you can heal and still swing in the same turn.',
+      active: true,
     },
+    effect: { kind: 'itemEconomy', power: 'fastHands' },
   },
   {
     id: 'assassin',
@@ -251,6 +253,11 @@ export function critThresholdFor(id: string | undefined): number | undefined {
 export function superiorityDiceFor(id: string | undefined): number | undefined {
   const effect = subclassById(id)?.effect
   return effect?.kind === 'superiorityDice' ? effect.count : undefined
+}
+
+/** Whether this subclass uses items on a bonus action. */
+export function hasFastHandsFor(id: string | undefined): boolean {
+  return subclassById(id)?.effect?.kind === 'itemEconomy'
 }
 
 /** Whether this subclass opens a fight with advantage. */

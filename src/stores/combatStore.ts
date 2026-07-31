@@ -6,6 +6,7 @@ import {
   createEncounter,
   encounterWinner,
   castFromActive,
+  drinkPotion,
   channelDivinity,
   endTurn,
   resolveReaction,
@@ -30,6 +31,8 @@ interface CombatStore {
   channel: (args: { power: 'sacredWeapon' | 'vowOfEnmity'; targetId?: string }) => void
   /** Casts a prepared spell, spending the action and a slot. */
   cast: (args: { spellId: string; targetId: string; subclassId?: string }) => void
+  /** Drinks a potion, spending an action or a bonus action as the hero allows. */
+  drink: () => void
   /** Commits a paused attack, with or without the reaction. */
   dispatchReaction: (choice: 'flare' | 'pass', rng?: Rng) => void
   /** Ends the player's turn and plays out every enemy turn until it is the player's again. */
@@ -95,6 +98,13 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
       targetId,
       ...(subclassId === undefined ? {} : { subclassId }),
     })
+    set({ encounter: result.encounter, refusal: result.refusal })
+  },
+
+  drink: () => {
+    const { encounter } = get()
+    if (encounter === null) return
+    const result = drinkPotion(encounter)
     set({ encounter: result.encounter, refusal: result.refusal })
   },
 

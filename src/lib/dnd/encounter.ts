@@ -9,6 +9,7 @@ import type {
 import type { Rng } from '../../types/dice.ts'
 import {
   applyDamage,
+  applyHealing,
   canAct,
   gridDistance,
   initiativeOrder,
@@ -22,6 +23,8 @@ import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
 import { canWardingFlare, resolveWardingFlare } from './reactions.ts'
 import { castSpell } from './casting.ts'
+import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
+import { roll } from './dice.ts'
 import { narrateAttackFully } from './narrate.ts'
 
 /** The tutorial board. Small enough to read at a glance on a phone. */
@@ -34,7 +37,11 @@ export interface Encounter {
   activeIndex: number
   combatants: Record<string, Combatant>
   movementRemaining: number
+  /** The turn's action. Kept under its original name — every existing action
+   * in the game costs one, so nothing about its meaning changed. */
   hasActed: boolean
+  /** The turn's bonus action, which only a Thief currently has a use for. */
+  bonusActionSpent: boolean
   /**
    * An attack rolled but not yet applied, waiting on the target's reaction.
    * Absent almost always — its presence is the whole of the paused state.
@@ -63,6 +70,7 @@ export function createEncounter(roster: readonly Combatant[], rng: Rng = Math.ra
     combatants,
     movementRemaining: first?.speedSquares ?? 0,
     hasActed: false,
+    bonusActionSpent: false,
     log: [
       `Initiative rolled. Turn order: ${order
         .map((id) => `${combatants[id]?.name} (${combatants[id]?.initiative})`)
@@ -294,6 +302,58 @@ export function attackWith(
     outcome,
     refusal: null,
     ...(maneuver === undefined ? {} : { maneuver }),
+  }
+}
+
+export interface DrinkResult {
+  encounter: Encounter
+  refusal: string | null
+}
+
+/**
+ * Drinks a potion, spending whichever budget it costs this combatant.
+ *
+ * The whole of Fast Hands lives in resolveItemUseCost: a Thief pays a bonus
+ * action and can still swing, everybody else pays the turn's action and
+ * chooses between drinking and attacking.
+ */
+export function drinkPotion(
+  encounter: Encounter,
+  rng: Rng = Math.random,
+): DrinkResult {
+  const drinker = activeCombatant(encounter)
+  if (drinker === undefined) return { encounter, refusal: "It is nobody's turn." }
+  if (!hasPotion(drinker)) return { encounter, refusal: 'You have nothing left to drink.' }
+
+  const cost = resolveItemUseCost(drinker)
+  if (cost === 'action' && encounter.hasActed) {
+    return { encounter, refusal: 'You have already taken your action this turn.' }
+  }
+  if (cost === 'bonusAction' && encounter.bonusActionSpent) {
+    return { encounter, refusal: 'You have already used your bonus action this turn.' }
+  }
+
+  const healed = roll(POTION_OF_HEALING, { rng })
+  const before = drinker.currentHp
+  const after = applyHealing(
+    { ...drinker, potions: (drinker.potions ?? 0) - 1 },
+    healed.total,
+  )
+  const restored = after.currentHp - before
+
+  return {
+    encounter: {
+      ...encounter,
+      combatants: { ...encounter.combatants, [after.id]: after },
+      ...(cost === 'action' ? { hasActed: true } : { bonusActionSpent: true }),
+      log: [
+        ...encounter.log,
+        `${drinker.name} drinks a ${POTION_LABEL} and recovers ${restored} hit `
+          + `${restored === 1 ? 'point' : 'points'}`
+          + (cost === 'bonusAction' ? ' — quick enough to still act.' : '.'),
+      ],
+    },
+    refusal: null,
   }
 }
 
@@ -534,6 +594,7 @@ export function endTurn(encounter: Encounter): Encounter {
         combatants,
         movementRemaining: next.speedSquares,
         hasActed: false,
+        bonusActionSpent: false,
         log:
           round === encounter.round
             ? encounter.log

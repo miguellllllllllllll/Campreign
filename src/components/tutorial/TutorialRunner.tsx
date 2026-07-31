@@ -192,6 +192,10 @@ export function TutorialRunner() {
     })
   }
 
+  function drink() {
+    useCombatStore.getState().drink()
+  }
+
   function react(choice: 'flare' | 'pass') {
     useCombatStore.getState().dispatchReaction(choice)
   }
@@ -285,6 +289,8 @@ export function TutorialRunner() {
               stranded={stranded}
               onAttack={attack}
               onCast={cast}
+              onDrink={drink}
+              bonusActionSpent={encounter?.bonusActionSpent ?? false}
               {...(oathPower === undefined ? {} : { oathPower, onChannel: channel })}
               onEndTurn={endTurn}
             />

@@ -62,6 +62,7 @@ function encounter(overrides: Partial<EncounterShape> = {}): EncounterShape {
     combatants: { hero: heroine, goblin },
     movementRemaining: 3,
     hasActed: false,
+    bonusActionSpent: false,
     log: [],
     ...overrides,
   }
