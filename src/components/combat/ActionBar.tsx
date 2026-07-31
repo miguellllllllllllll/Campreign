@@ -119,7 +119,7 @@ export function ActionBar({
             <FantasyButton
               key={attack.id}
               variant="brass"
-              disabled={!usable}
+              aria-disabled={!usable}
               onClick={() => {
                 onAttack(attack.id, tripArmed && attack.kind === 'weapon' ? 'trip' : undefined)
                 setTripArmed(false)
@@ -142,7 +142,7 @@ export function ActionBar({
         {canTrip && (
           <FantasyButton
             variant={tripArmed ? 'crimson' : 'iron'}
-            disabled={hasActed}
+            aria-disabled={hasActed}
             aria-pressed={tripArmed}
             onClick={() => setTripArmed((armed) => !armed)}
             title="Spend a superiority die: extra damage, and the target falls over unless it saves."
@@ -172,7 +172,7 @@ export function ActionBar({
           <FantasyButton
             key={spell.id}
             variant="iron"
-            disabled={!castable || hasActed || !attackEnabled}
+            aria-disabled={!castable || hasActed || !attackEnabled}
             onClick={() => onCast?.(spell.id)}
             title={reason ?? spell.description}
           >
@@ -185,7 +185,7 @@ export function ActionBar({
         {onDrink !== undefined && potions > 0 && (
           <FantasyButton
             variant="iron"
-            disabled={!canDrink || !attackEnabled}
+            aria-disabled={!canDrink || !attackEnabled}
             onClick={onDrink}
             title={
               drinkCost === 'bonusAction'
@@ -201,7 +201,7 @@ export function ActionBar({
           </FantasyButton>
         )}
 
-        <FantasyButton variant="iron" disabled={!endTurnEnabled} onClick={onEndTurn}>
+        <FantasyButton variant="iron" aria-disabled={!endTurnEnabled} onClick={onEndTurn}>
           <Hourglass aria-hidden />
           End Turn
         </FantasyButton>

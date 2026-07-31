@@ -12,6 +12,13 @@ const fantasyButtonVariants = cva(
     + 'transition-[transform,box-shadow,border-color,background-color] duration-150 ease-out '
     + 'hover:-translate-y-px active:translate-y-0 active:scale-[0.98] '
     + 'disabled:pointer-events-none disabled:opacity-40 disabled:saturate-50 '
+    // `aria-disabled` looks identical but stays in the tab order, which is the
+    // whole reason it exists here: an unavailable button in this app carries
+    // the reason it is unavailable — "too far, move closer" — and `disabled`
+    // hides that sentence from anyone not using a mouse.
+    + 'aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:saturate-50 '
+    + 'aria-disabled:hover:translate-y-0 aria-disabled:active:translate-y-0 '
+    + 'aria-disabled:active:scale-100 '
     + '[&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
@@ -64,17 +71,28 @@ export function FantasyButton({
   onClick,
   onPointerEnter,
   children,
+  'aria-disabled': ariaDisabled,
   ...props
 }: FantasyButtonProps) {
   const Component = asChild ? Slot : 'button'
 
+  /** ARIA takes the string form as readily as the boolean, so both count. */
+  const inert = ariaDisabled === true || ariaDisabled === 'true'
+
   function handlePointerEnter(event: PointerEvent<HTMLButtonElement>) {
     // Pen and touch "enter" on the way to a tap, which would double up with press.
-    if (event.pointerType === 'mouse') playSound('hover')
+    if (event.pointerType === 'mouse' && !inert) playSound('hover')
     onPointerEnter?.(event)
   }
 
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    // `aria-disabled` is a claim, not an enforcement — the browser still
+    // delivers the click, so the refusal has to be written out. Silently, too:
+    // a press sound on a button that does nothing reads as a bug.
+    if (inert) {
+      event.preventDefault()
+      return
+    }
     playSound('press')
     onClick?.(event)
   }
@@ -84,6 +102,7 @@ export function FantasyButton({
       className={cn(fantasyButtonVariants({ variant, size }), className)}
       onPointerEnter={handlePointerEnter}
       onClick={handleClick}
+      aria-disabled={ariaDisabled}
       {...props}
     >
       {/* A highlight that wipes across the face on hover. Purely decorative. */}
