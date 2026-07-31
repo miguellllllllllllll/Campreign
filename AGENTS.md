@@ -20,6 +20,25 @@ Separate worktrees, one `.git`. Commits are shared the moment they are made;
 uncommitted state is not, which is the entire point — a torn working tree is
 invisible to `git log` and breaks the build anyway.
 
+## One carve-out: accessibility and layout
+
+Ownership by directory cannot express that two different *kinds* of change land
+in the same file. A new spell needs a button — that is the rules session
+surfacing a mechanic, and it is why `components/combat` sits on their side.
+Accessibility, keyboard semantics, ARIA and responsive layout are a different
+kind of edit entirely: the rules session will not make them, and they alter no
+behaviour.
+
+Those belong to the interface session **in any file**, provided the change adds
+no import from `lib/dnd` or `content` and changes no behaviour. The two kinds
+are orthogonal — a roving tabindex and a Shield button do not touch the same
+lines — and on separate branches a genuine overlap surfaces as an ordinary
+merge conflict rather than a torn tree.
+
+Worth knowing why this was needed: only `ActionBar.tsx` in `components/combat`
+imports rules logic at all. The other five are presentation the rules session
+happens to edit when a mechanic lands.
+
 ## Shared types are the seam
 
 Both domains legitimately need `src/types/combat.ts`, and every build break so
