@@ -6,13 +6,15 @@ import type { TokenId } from '../../types/combat.ts'
  * square.
  *
  * Filled shapes rather than the line work in `custom-icons.tsx`, and that is the
- * only real design rule here: a token is drawn at about forty pixels inside a
- * lit square, and a 1.5px stroke disappears at that size. Solid mass survives.
+ * first design rule: a token is drawn at about forty pixels inside a lit square,
+ * and a 1.5px stroke disappears at that size. Solid mass survives.
  *
- * Every humanoid is a head-and-shoulders bust on the same shoulder line, so the
- * set reads as one family and the differences land where a player looks first —
- * the headgear. The goblin gets ears, the dummy gets a post, the paladin is a
- * shield and no body at all, because a wall is what a paladin is.
+ * The second rule was learned the hard way. These were first drawn as
+ * head-and-shoulders busts distinguished by their headgear, and every one of
+ * them read as the generic contact-avatar — the shoulders took the eye and the
+ * hat was too small to argue with. So each shape now fills the frame and is
+ * nothing but its own emblem: the fighter is a helm, the wizard is a hat, the
+ * paladin is a shield. No bodies.
  *
  * A `Record` lookup, unlike the named exports next door: `tokenId` arrives from
  * a combatant at runtime, so there is nothing to import by name. The exhaustive
@@ -24,54 +26,47 @@ export interface CreatureTokenProps extends Omit<SVGProps<SVGSVGElement>, 'child
   size?: number | string
 }
 
-/** Shared so every bust sits on the same line and the set reads as one hand. */
-const SHOULDERS = 'M3.6 22c0-3.9 3.8-6.1 8.4-6.1s8.4 2.2 8.4 6.1Z'
-
 const SHAPES: Record<TokenId, ReactNode> = {
-  /** A great helm: square, banded, one vertical slit to see through. */
+  /** A great helm, squared off, with a T of vision cut through it. */
   fighter: (
-    <>
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M7.4 4.6A1.4 1.4 0 0 1 8.8 3.2h6.4a1.4 1.4 0 0 1 1.4 1.4v5.6a4.6 4.6 0 0 1-9.2 0V4.6Zm3.8 1.8h1.6v5.4h-1.6V6.4Z"
-      />
-      <path d={SHOULDERS} />
-    </>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M5.8 5.2a2.2 2.2 0 0 1 2.2-2.2h8a2.2 2.2 0 0 1 2.2 2.2v8.4c0 4.1-2.8 7.4-6.2 8.6-3.4-1.2-6.2-4.5-6.2-8.6V5.2ZM6.2 8.2h11.6v2.3H6.2V8.2Zm4.7 4.1h2.2v6.4h-2.2v-6.4Z"
+    />
   ),
 
-  /** The hat does the work; the face underneath is barely there, as intended. */
+  /** The hat, and only the hat, with a star burned into the cone. */
   wizard: (
     <>
-      <path d="M12 1.4 16.8 9.4H7.2L12 1.4Z" />
-      <path d="M5.6 9.6h12.8v1.8H5.6V9.6Z" />
-      <path d="M9.2 11.6h5.6v1.8a2.8 2.8 0 0 1-5.6 0v-1.8Z" />
-      <path d={SHOULDERS} />
-    </>
-  ),
-
-  /** A hood pulled forward, with a horizontal gap where a face should be. */
-  rogue: (
-    <>
       <path
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M12 2.2c4 0 6.6 3 6.6 7 0 3-1.3 5.4-3.2 6.6H8.6C6.7 14.6 5.4 12.2 5.4 9.2c0-4 2.6-7 6.6-7Zm-3 6.6h6v2.4H9V8.8Z"
+        d="M12 1.4c1.1 0 1.6 1.1 2 2.4l3.5 10.3H6.5L10 3.8c.4-1.3.9-2.4 2-2.4Zm0 4.6-.8 2-2 .8 2 .8.8 2 .8-2 2-.8-2-.8-.8-2Z"
       />
-      <path d={SHOULDERS} />
+      <path d="M3.2 15.4h17.6c.6 0 1.1.5 1.1 1.1v1.2c0 .6-.5 1.1-1.1 1.1H3.2c-.6 0-1.1-.5-1.1-1.1v-1.2c0-.6.5-1.1 1.1-1.1Z" />
     </>
   ),
 
-  /** Bare head under a raised symbol — the power is borrowed, not worn. */
-  cleric: (
-    <>
-      <path d="M11.1 1h1.8v2.1H15v1.8h-2.1V7h-1.8V4.9H9V3.1h2.1V1Z" />
-      <circle cx="12" cy="11.4" r="3.6" />
-      <path d={SHOULDERS} />
-    </>
+  /**
+   * A hood over a cloak that flares out at the hem. The flare is load-bearing:
+   * a cowl that tapered to a point underneath read as a map pin.
+   */
+  rogue: (
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M12 1.8c4.4 0 7.2 3.3 7.2 7.7 0 2.4-.6 4.6-1.6 6.5l2.6 6H3.8l2.6-6c-1-1.9-1.6-4.1-1.6-6.5 0-4.4 2.8-7.7 7.2-7.7ZM8.3 8.6h7.4v2.5H8.3V8.6Z"
+    />
   ),
 
-  /** No bust: the shield is the whole silhouette, which is the whole point. */
+  /**
+   * A cross with the long stem of a real one. Drawn symmetrical first, which
+   * was a mistake — an even-armed cross at icon size is the "add" button.
+   */
+  cleric: <path d="M10.6 2.2h2.8v5.4h6v2.8h-6v11.4h-2.8V10.4h-6V7.6h6V2.2Z" />,
+
+  /** A shield, because a wall is what a paladin is. */
   paladin: (
     <path
       fillRule="evenodd"
@@ -83,35 +78,40 @@ const SHAPES: Record<TokenId, ReactNode> = {
   /** Ears wider than the skull, and two mean little eyes. */
   goblin: (
     <>
-      <path d="M7.9 8.4 2.6 5.2l4.9-.7L7.9 8.4Z" />
-      <path d="M16.1 8.4 21.4 5.2l-4.9-.7L16.1 8.4Z" />
+      <path d="M7.2 9.6 1.4 5.6l5.4-.6L7.2 9.6Z" />
+      <path d="M16.8 9.6 22.6 5.6l-5.4-.6L16.8 9.6Z" />
       <path
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M12 4.4c2.9 0 5.1 2.1 5.1 5 0 3.2-2.3 5.8-5.1 5.8s-5.1-2.6-5.1-5.8c0-2.9 2.2-5 5.1-5ZM9.4 9h1.7v1.7H9.4V9Zm3.5 0h1.7v1.7h-1.7V9Z"
+        d="M12 3.4c3.6 0 6.4 2.6 6.4 6.2 0 4-2.9 7.2-6.4 7.2s-6.4-3.2-6.4-7.2c0-3.6 2.8-6.2 6.4-6.2ZM8.6 9.2h2.1v2.1H8.6V9.2Zm4.7 0h2.1v2.1h-2.1V9.2Z"
       />
-      <path d="M5.6 22c0-3.4 2.9-5.4 6.4-5.4s6.4 2 6.4 5.4H5.6Z" />
+      <path d="M6.4 22c0-3 2.5-4.7 5.6-4.7s5.6 1.7 5.6 4.7H6.4Z" />
     </>
   ),
 
-  /** A straw head on a crossbar. Nothing about it is alive. */
+  /**
+   * A straw head on a crossbar, standing on a base. The knobbed arm ends and
+   * the base are not decoration — a bare post and crossbar is a crucifix, and
+   * at icon size it was indistinguishable from the cleric.
+   */
   dummy: (
     <>
-      <circle cx="12" cy="5.4" r="3.4" />
-      <path d="M10.9 8.4h2.2V22h-2.2V8.4Z" />
-      <path d="M3 10.4h18v2.2H3v-2.2Z" />
+      <circle cx="12" cy="4.6" r="3.4" />
+      <path d="M10.6 7.4h2.8v11.8h-2.8V7.4Z" />
+      <path d="M4.4 10.4h15.2v2.4H4.4v-2.4Z" />
+      <circle cx="3.4" cy="11.6" r="2.2" />
+      <circle cx="20.6" cy="11.6" r="2.2" />
+      <path d="M7.4 22l2.2-2.8h4.8l2.2 2.8H7.4Z" />
     </>
   ),
 
-  /** A plain kettle helm — a soldier, not a knight. */
+  /** A plain kettle helm, brim and all — a soldier, not a knight. */
   squire: (
     <>
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M12 3a4.8 4.8 0 0 0-4.8 4.8v3.4a4.8 4.8 0 0 0 9.6 0V7.8A4.8 4.8 0 0 0 12 3Zm-3 4.6h6v1.7H9V7.6Z"
-      />
-      <path d={SHOULDERS} />
+      <path d="M12 4.2c3.7 0 6.7 2.8 7 6.5H5c.3-3.7 3.3-6.5 7-6.5Z" />
+      <path d="M3 11.6h18c.6 0 1.1.5 1.1 1.1s-.5 1.1-1.1 1.1H3c-.6 0-1.1-.5-1.1-1.1S2.4 11.6 3 11.6Z" />
+      {/* A squared jaw, not a taper — a point below the brim read as a stem. */}
+      <path d="M8.6 14.9h6.8v3.3c0 2-1.4 3.2-3.4 3.8-2-.6-3.4-1.8-3.4-3.8v-3.3Z" />
     </>
   ),
 }

@@ -4,30 +4,41 @@ import { ImageResponse } from 'next/og'
  * The card that shows up when somebody pastes the link.
  *
  * Built rather than drawn, so it can never drift from the site: the same ink,
- * the same gold, the same d20, the same sentence off the landing page.
+ * the same gold, the same d20, the same sentence off the tab title.
  *
- * The wordmark wants Cinzel Decorative, which `next/font` only ever hands us as
- * woff2 — a format satori cannot parse — so the ttf is pulled at build time.
- * That fetch is allowed to fail. If it does the card renders in the bundled
- * default face, which is worse-looking and completely harmless; a social image
- * is not worth failing a deploy over.
+ * One font, and that decides the layout. Satori has no font stack to fall
+ * through — the single supplied face becomes the default for every glyph on the
+ * card — and Cinzel Decorative is a title face that layout.tsx explicitly bans
+ * at body sizes. Rather than ship a second ttf (the static ones large enough to
+ * cover Latin are 440–650KB, and satori's whole bundle budget is 500KB), the
+ * card says one short line and says it in the display face, which is what a
+ * display face is for.
+ *
+ * The fetch is allowed to fail. If it does the card renders in satori's bundled
+ * default and the build still succeeds; a social image is not worth a red
+ * deploy.
  */
 
 export const alt = 'Hero Step — learn D&D by playing it'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
+/** Only ttf and otf parse in satori, which rules out everything next/font holds. */
 const CINZEL_DECORATIVE_BOLD =
   'https://raw.githubusercontent.com/google/fonts/main/ofl/cinzeldecorative/CinzelDecorative-Bold.ttf'
 
+/** The same die as `icon.svg`, so the tab and the shared card are one mark. */
 const D20_MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="150" height="150">
   <defs>
-    <linearGradient id="gold" x1="16" y1="2.8" x2="16" y2="29.2" gradientUnits="userSpaceOnUse">
+    <linearGradient id="gold" x1="16" y1="2.4" x2="16" y2="29.6" gradientUnits="userSpaceOnUse">
       <stop stop-color="#f4d97a"/><stop offset="1" stop-color="#c08b1f"/>
     </linearGradient>
   </defs>
-  <path d="M16 2.8 28 9.6v12.8L16 29.2 4 22.4V9.6z" fill="url(#gold)"/>
-  <path d="M16 9.4 23.2 22H8.8z" fill="#0d0b09"/>
+  <g stroke="url(#gold)" fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M16 2.6 27.6 9.4v13.2L16 29.4 4.4 22.6V9.4z" stroke-width="2.2" fill="#d4af37" fill-opacity="0.16"/>
+    <path d="M16 9.2 22.9 21.4H9.1z" stroke-width="1.9"/>
+    <path d="M16 9.2V2.6M9.1 21.4 4.4 22.6M22.9 21.4l4.7 1.2" stroke-width="1.7"/>
+  </g>
 </svg>`
 
 async function displayFont(): Promise<ArrayBuffer | null> {
@@ -64,11 +75,10 @@ export default async function Image() {
         <div
           style={{
             display: 'flex',
-            marginTop: 36,
-            fontSize: 104,
+            marginTop: 40,
+            fontSize: 108,
             letterSpacing: 2,
             color: '#f0d68a',
-            ...(font === null ? {} : { fontFamily: 'Cinzel Decorative' }),
           }}
         >
           HERO STEP
@@ -78,9 +88,9 @@ export default async function Image() {
         <div
           style={{
             display: 'flex',
-            width: 520,
+            width: 560,
             height: 1,
-            marginTop: 34,
+            marginTop: 40,
             backgroundImage:
               'linear-gradient(90deg, rgba(212,175,55,0), rgba(212,175,55,0.85), rgba(212,175,55,0))',
           }}
@@ -89,16 +99,13 @@ export default async function Image() {
         <div
           style={{
             display: 'flex',
-            marginTop: 34,
-            maxWidth: 820,
-            textAlign: 'center',
-            fontSize: 34,
-            lineHeight: 1.4,
+            marginTop: 38,
+            fontSize: 38,
+            letterSpacing: 3,
             color: '#a89f8d',
           }}
         >
-          Learn D&amp;D by actually playing it. Three questions build your hero, then every rule
-          explains itself as you fight.
+          LEARN D&amp;D BY PLAYING IT
         </div>
       </div>
     ),
