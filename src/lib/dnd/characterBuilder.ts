@@ -12,7 +12,12 @@ import type { Armor } from '../../types/items.ts'
 import { magicStyleById } from '../../content/spellPresets.ts'
 import { spellsByIds } from '../../content/spells.ts'
 import { bonusInitiative, bonusMaxHp, featById, grantedCantripId } from '../../content/feats.ts'
-import { critThresholdFor, subclassById, superiorityDiceFor } from '../../content/subclasses.ts'
+import {
+  channelDivinityFor,
+  critThresholdFor,
+  subclassById,
+  superiorityDiceFor,
+} from '../../content/subclasses.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
   ARMORS,
@@ -165,6 +170,7 @@ export function buildCharacter(
   const initiativeBonus = bonusInitiative(answers.featId)
   const critOn = critThresholdFor(answers.subclassId)
   const superiorityDice = superiorityDiceFor(answers.subclassId)
+  const channelDivinityCharges = channelDivinityFor(answers.subclassId)
   const trimmedName = name.trim()
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)
   const selection = resolveSpellSelection(answers)
@@ -221,6 +227,7 @@ export function buildCharacter(
     ...(initiativeBonus === 0 ? {} : { initiativeBonus }),
     ...(critOn === undefined ? {} : { critOn }),
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
+    ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }
 }

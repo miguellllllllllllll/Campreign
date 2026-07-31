@@ -5,6 +5,7 @@ import {
   attackWith,
   createEncounter,
   encounterWinner,
+  channelDivinity,
   endTurn,
   moveActive,
   takeEnemyTurn,
@@ -23,6 +24,8 @@ interface CombatStore {
   start: (roster: readonly Combatant[], rng?: Rng) => void
   move: (to: GridPosition) => boolean
   attack: (args: { targetId: string; attackId: string; maneuverId?: 'trip' }) => AttackOutcome | null
+  /** Spends the paladin's oath charge. Costs no action, so the turn continues. */
+  channel: (args: { power: 'sacredWeapon' | 'vowOfEnmity'; targetId?: string }) => void
   /** Ends the player's turn and plays out every enemy turn until it is the player's again. */
   finishTurn: (rng?: Rng) => void
   reset: () => void
@@ -66,6 +69,16 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
       refusal: result.refusal,
     })
     return result.outcome
+  },
+
+  channel: ({ power, targetId }) => {
+    const { encounter } = get()
+    if (encounter === null) return
+    const result = channelDivinity(encounter, {
+      power,
+      ...(targetId === undefined ? {} : { targetId }),
+    })
+    set({ encounter: result.encounter, refusal: result.refusal })
   },
 
   finishTurn: (rng = Math.random) => {

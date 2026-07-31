@@ -96,8 +96,16 @@ test('the player is never left on an undecided board they cannot act on', () => 
 
 test('ending a turn hands control straight back, never mid-enemy-round', () => {
   useCombatStore.getState().reset()
-  useCombatStore.getState().start(roster())
-  useCombatStore.getState().finishTurn()
+  /*
+   * Seeded on purpose. Left to Math.random this failed about one run in thirty:
+   * the goblin would occasionally drop a level 1 hero inside the very round
+   * being tested, the fight would end, and control would correctly *not* come
+   * back to the party. That is the engine behaving, not breaking — but it makes
+   * the assertion below a coin toss, and a suite that fails at random teaches
+   * everyone to re-run it rather than read it.
+   */
+  useCombatStore.getState().start(roster(), seededRng(20260801))
+  useCombatStore.getState().finishTurn(seededRng(20260801))
 
   const encounter = useCombatStore.getState().encounter
   assert.ok(encounter)

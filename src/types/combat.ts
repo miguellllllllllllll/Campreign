@@ -53,7 +53,21 @@ export interface Combatant {
    * caller having to ask what subclass someone is.
    */
   superiorityDice?: number
+  /** Channel Divinity charges left, and the pool they came from. Paladins only. */
+  channelDivinityCharges?: number
+  channelDivinityMax?: number
+  /** The oath power currently running, for the rest of this encounter. */
+  activeChannelDivinity?: ActiveChannelDivinity
   initiative: number
+}
+
+/** The paladin oath powers, named here so combat types stay self-contained. */
+export type ChannelDivinityType = 'sacredWeapon' | 'vowOfEnmity'
+
+export interface ActiveChannelDivinity {
+  type: ChannelDivinityType
+  /** Only Vow of Enmity names a victim; Sacred Weapon buffs every swing. */
+  targetId?: string
 }
 
 export interface RollPart {

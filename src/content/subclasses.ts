@@ -1,4 +1,6 @@
 import { SUPERIORITY_DICE_AT_LEVEL_1 } from '../lib/dnd/maneuvers.ts'
+import { CHANNEL_DIVINITY_CHARGES_AT_LEVEL_1 } from '../lib/dnd/channelDivinity.ts'
+import type { ChannelDivinityType } from '../types/combat.ts'
 import type { ClassId } from '../types/character.ts'
 
 /**
@@ -33,6 +35,7 @@ export interface SubclassFeature {
 export type SubclassEffect =
   | { kind: 'critOn'; value: number }
   | { kind: 'superiorityDice'; count: number }
+  | { kind: 'channelDivinity'; charges: number; power: ChannelDivinityType }
 
 export interface Subclass {
   id: string
@@ -177,9 +180,14 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You keep your word in front of people who would rather you did not. Your weapon answers to that.',
     feature: {
       name: 'Sacred Weapon',
-      description: 'Your Charisma sharpens your weapon as well as your speeches.',
-      active: false,
-      pending: 'Channel Divinity arrives with your oath at level 3.',
+      description:
+        'Spend your Channel Divinity to add your Charisma to every attack roll for the fight.',
+      active: true,
+    },
+    effect: {
+      kind: 'channelDivinity',
+      charges: CHANNEL_DIVINITY_CHARGES_AT_LEVEL_1,
+      power: 'sacredWeapon',
     },
   },
   {
@@ -191,9 +199,13 @@ export const SUBCLASSES: readonly Subclass[] = [
       'Your oath is not abstract. It is aimed at a specific enemy, and you will not be talked out of it.',
     feature: {
       name: 'Vow of Enmity',
-      description: 'Swear at one foe and strike it with advantage.',
-      active: false,
-      pending: 'Channel Divinity arrives with your oath at level 3.',
+      description: 'Spend your Channel Divinity to swear at one foe and strike it with advantage.',
+      active: true,
+    },
+    effect: {
+      kind: 'channelDivinity',
+      charges: CHANNEL_DIVINITY_CHARGES_AT_LEVEL_1,
+      power: 'vowOfEnmity',
     },
   },
 ]
@@ -224,4 +236,18 @@ export function critThresholdFor(id: string | undefined): number | undefined {
 export function superiorityDiceFor(id: string | undefined): number | undefined {
   const effect = subclassById(id)?.effect
   return effect?.kind === 'superiorityDice' ? effect.count : undefined
+}
+
+/** The Channel Divinity charges this subclass grants, or undefined for none. */
+export function channelDivinityFor(id: string | undefined): number | undefined {
+  const effect = subclassById(id)?.effect
+  return effect?.kind === 'channelDivinity' ? effect.charges : undefined
+}
+
+/** Which oath power the subclass spends its charge on, if any. */
+export function channelDivinityPowerFor(
+  id: string | undefined,
+): ChannelDivinityType | undefined {
+  const effect = subclassById(id)?.effect
+  return effect?.kind === 'channelDivinity' ? effect.power : undefined
 }

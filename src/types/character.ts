@@ -148,6 +148,8 @@ export interface Character {
   critOn?: number
   /** The full superiority-dice pool, restored on a long rest. Battle Master only. */
   superiorityDice?: number
+  /** Channel Divinity charges, restored on a rest. Paladin oaths only. */
+  channelDivinityCharges?: number
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

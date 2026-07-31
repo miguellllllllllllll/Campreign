@@ -40,5 +40,11 @@ export function characterToCombatant(
     ...(character.superiorityDice === undefined
       ? {}
       : { superiorityDice: character.superiorityDice }),
+    ...(character.channelDivinityCharges === undefined
+      ? {}
+      : {
+          channelDivinityCharges: character.channelDivinityCharges,
+          channelDivinityMax: character.channelDivinityCharges,
+        }),
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { Hourglass, Swords } from 'lucide-react'
+import { Hourglass, Sparkles, Swords } from 'lucide-react'
 import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
@@ -17,6 +17,10 @@ export interface ActionBarProps {
   /** No movement and nothing in reach — say so, rather than leaving them hunting. */
   stranded?: boolean
   onAttack: (attackId: string, maneuverId?: 'trip') => void
+  /** Which oath power this hero has, from their subclass. Absent for everyone else. */
+  oathPower?: 'sacredWeapon' | 'vowOfEnmity'
+  /** Undefined when this hero has no oath to call on. */
+  onChannel?: (power: 'sacredWeapon' | 'vowOfEnmity') => void
   onEndTurn: () => void
 }
 
@@ -29,6 +33,8 @@ export function ActionBar({
   endTurnEnabled,
   stranded = false,
   onAttack,
+  oathPower,
+  onChannel,
   onEndTurn,
 }: ActionBarProps) {
   /*
@@ -40,6 +46,11 @@ export function ActionBar({
   const [tripArmed, setTripArmed] = useState(false)
   const dice = active.superiorityDice ?? 0
   const canTrip = dice > 0
+
+  const charges = active.channelDivinityCharges ?? 0
+  const oath = active.activeChannelDivinity
+  const canChannel =
+    onChannel !== undefined && oathPower !== undefined && charges > 0 && oath === undefined
 
   return (
     <div className="border-gold-ornate rounded-card p-4">
@@ -97,11 +108,34 @@ export function ActionBar({
           </FantasyButton>
         )}
 
+        {canChannel && (
+          <FantasyButton
+            variant="crimson"
+            onClick={() => onChannel(oathPower)}
+            title="Call on your oath. It costs no action, and lasts the rest of the fight."
+          >
+            <Sparkles aria-hidden />
+            {oathPower === 'sacredWeapon' ? 'Sacred Weapon' : 'Vow of Enmity'}
+            <span className="font-mono text-xs font-normal">{charges} left</span>
+          </FantasyButton>
+        )}
+
         <FantasyButton variant="iron" disabled={!endTurnEnabled} onClick={onEndTurn}>
           <Hourglass aria-hidden />
           End Turn
         </FantasyButton>
       </div>
+
+      {oath !== undefined && (
+        <p className="mt-3 font-serif text-xs text-amber-torch">
+          <Sparkles size={12} aria-hidden className="mr-1 inline" />
+          {oath.type === 'sacredWeapon'
+            ? 'Sacred Weapon is burning — your Charisma is added to every attack roll.'
+            : 'Your vow is sworn — you strike that foe with '}
+          {oath.type === 'vowOfEnmity' && <Explain k="advantage">advantage</Explain>}
+          {oath.type === 'vowOfEnmity' && '.'}
+        </p>
+      )}
 
       {stranded && (
         <p aria-live="polite" className="mt-3 text-xs leading-relaxed text-amber-torch">

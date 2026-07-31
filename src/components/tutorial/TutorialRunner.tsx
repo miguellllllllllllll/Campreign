@@ -12,6 +12,7 @@ import {
   reachableSquares,
   turnOrder,
 } from '../../lib/dnd/encounter.ts'
+import { channelDivinityPowerFor } from '../../content/subclasses.ts'
 import { useActiveCharacter, useRosterHydrated } from '../../stores/characterStore.ts'
 import { useCombatStore } from '../../stores/combatStore.ts'
 import { useTutorialStore } from '../../stores/tutorialStore.ts'
@@ -139,6 +140,9 @@ export function TutorialRunner() {
   // Out of movement and out of reach: ending the turn is the only move left, so
   // it has to be offered even though this step was teaching something else.
   const stranded = boardLive && !hasLegalAction(encounter)
+  // Absent for everyone without a paladin oath, which is what keeps the button off
+  // the bar for every other hero.
+  const oathPower = channelDivinityPowerFor(character.subclassId)
 
   function move(to: GridPosition) {
     if (useCombatStore.getState().move(to)) dispatch({ type: 'moved' })
@@ -154,6 +158,18 @@ export function TutorialRunner() {
     // The tutorial only cares that an attack resolved; a manoeuvre rides along
     // with it rather than being a second beat the script has to know about.
     if (outcome !== null) dispatch({ type: 'attackResolved' })
+  }
+
+  /**
+   * The vow always names the goblin: there is exactly one enemy on this board,
+   * so asking the player to pick a target would be a click with no decision in
+   * it. A wider encounter would want a targeting step here.
+   */
+  function channel(power: 'sacredWeapon' | 'vowOfEnmity') {
+    useCombatStore.getState().channel({
+      power,
+      ...(power === 'vowOfEnmity' && foe !== undefined ? { targetId: foe.id } : {}),
+    })
   }
 
   function endTurn() {
@@ -234,6 +250,7 @@ export function TutorialRunner() {
               }
               stranded={stranded}
               onAttack={attack}
+              {...(oathPower === undefined ? {} : { oathPower, onChannel: channel })}
               onEndTurn={endTurn}
             />
           )}

@@ -13,6 +13,7 @@ import {
 } from './combat.ts'
 import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
+import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
 import { narrateAttackFully } from './narrate.ts'
 
 /** The tutorial board. Small enough to read at a glance on a phone. */
@@ -251,6 +252,66 @@ export function attackWith(
     outcome,
     refusal: null,
     ...(maneuver === undefined ? {} : { maneuver }),
+  }
+}
+
+export interface ChannelResult {
+  encounter: Encounter
+  refusal: string | null
+}
+
+/**
+ * Spends the active combatant's Channel Divinity charge.
+ *
+ * Costs no action in this build: at level 1 there is exactly one charge and one
+ * fight, so making it compete with the attack would mean the feature is only
+ * ever used on a turn the player gives up swinging — which is how a once-per-
+ * rest power ends up never being pressed at all.
+ *
+ * `targetId` is required for a vow and ignored for a sacred weapon.
+ */
+export function channelDivinity(
+  encounter: Encounter,
+  args: { power: 'sacredWeapon' | 'vowOfEnmity'; targetId?: string },
+): ChannelResult {
+  const actor = activeCombatant(encounter)
+  if (actor === undefined) return { encounter, refusal: 'It is nobody\'s turn.' }
+  if (!canChannelDivinity(actor)) {
+    return { encounter, refusal: 'You have already called on your oath.' }
+  }
+  if (actor.activeChannelDivinity !== undefined) {
+    return { encounter, refusal: 'Your oath is already burning.' }
+  }
+
+  if (args.power === 'vowOfEnmity') {
+    const target = args.targetId === undefined ? undefined : encounter.combatants[args.targetId]
+    if (target === undefined) return { encounter, refusal: 'Swear at somebody in particular.' }
+    if (isDefeated(target)) return { encounter, refusal: `${target.name} is already down.` }
+  }
+
+  const spent = spendChannelDivinity(actor, args.power, args.targetId)
+  const sworn =
+    args.targetId === undefined ? undefined : encounter.combatants[args.targetId]?.name
+
+  return {
+    encounter: {
+      ...encounter,
+      combatants: {
+        ...encounter.combatants,
+        [actor.id]: {
+          ...actor,
+          channelDivinityCharges: spent.chargesRemaining,
+          activeChannelDivinity: spent.active,
+        },
+      },
+      log: [
+        ...encounter.log,
+        args.power === 'sacredWeapon'
+          ? `${actor.name} calls on their oath. Their weapon blazes — every attack is sharper now.`
+          : `${actor.name} swears vengeance on ${sworn ?? 'their foe'}. Every blow against them comes with advantage.`,
+      ],
+    },
+    refusal: null,
   }
 }
 

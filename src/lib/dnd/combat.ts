@@ -9,7 +9,8 @@ import type {
 import type { Rng, RollMode } from '../../types/dice.ts'
 import { roll, toCriticalNotation } from './dice.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
-import { attackRollMode, blocksActions } from './conditions.ts'
+import { attackRollMode, blocksActions, combineRollModes } from './conditions.ts'
+import { channelDivinityAttackBonus, hasVowAgainst } from './channelDivinity.ts'
 import { damageNotation } from './characterBuilder.ts'
 
 /** Dexterity decides who acts first, plus whatever a feat is worth. */
@@ -32,7 +33,13 @@ export function initiativeOrder(combatants: readonly Combatant[]): string[] {
 
 export function attackBonusFor(attacker: Combatant, attack: AttackAction): number {
   const ability = abilityModifier(attacker.scores[attack.ability])
-  return ability + (attack.proficient ? proficiencyBonus(attacker.level) : 0)
+  // Sacred Weapon is worth nothing to anyone who has not spent the charge, so
+  // this stays a no-op for every combatant without an active oath.
+  return (
+    ability
+    + (attack.proficient ? proficiencyBonus(attacker.level) : 0)
+    + channelDivinityAttackBonus(attacker)
+  )
 }
 
 function breakdownParts(attacker: Combatant, attack: AttackAction): RollPart[] {
@@ -44,6 +51,10 @@ function breakdownParts(attacker: Combatant, attack: AttackAction): RollPart[] {
   if (attack.proficient) {
     parts.push({ label: 'Prof', value: proficiencyBonus(attacker.level) })
   }
+  // Named in the breakdown rather than folded silently into the total: the
+  // whole point of the roll panel is that no number appears unexplained.
+  const sacred = channelDivinityAttackBonus(attacker)
+  if (sacred !== 0) parts.push({ label: 'Sacred Weapon', value: sacred })
   return parts
 }
 
@@ -57,7 +68,15 @@ export function resolveAttack(args: {
 }): AttackOutcome {
   const { attacker, target, attack } = args
   const rng = args.rng ?? Math.random
-  const mode = args.mode ?? attackRollMode(attacker.conditions, target.conditions)
+  const conditionMode = attackRollMode(attacker.conditions, target.conditions)
+  /*
+   * A vow grants advantage, but it is combined with the conditions rather than
+   * overriding them: swearing at a foe must not cancel out the disadvantage of
+   * being prone. combineRollModes already knows advantage and disadvantage
+   * annihilate, which is the SRD's rule and the one players expect.
+   */
+  const vowMode: RollMode = hasVowAgainst(attacker, target.id) ? 'advantage' : 'normal'
+  const mode = args.mode ?? combineRollModes([conditionMode, vowMode])
 
   const bonus = attackBonusFor(attacker, attack)
   // The attacker's own crit range, so a Champion swinging is not the same roll
