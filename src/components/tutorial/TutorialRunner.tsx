@@ -144,6 +144,9 @@ export function TutorialRunner() {
   // Absent for everyone without a paladin oath, which is what keeps the button off
   // the bar for every other hero.
   const oathPower = channelDivinityPowerFor(character.subclassId)
+  // Captured here because `cast` below is a hoisted declaration, and narrowing
+  // of `character` does not reach inside one.
+  const subclassId = character.subclassId
   // A pause outranks everything: the board is frozen until it is answered.
   const pending = encounter?.pendingReaction
 
@@ -172,6 +175,20 @@ export function TutorialRunner() {
     useCombatStore.getState().channel({
       power,
       ...(power === 'vowOfEnmity' && foe !== undefined ? { targetId: foe.id } : {}),
+    })
+  }
+
+  /**
+   * Healing targets the caster. With one hero and one goblin on the board there
+   * is no ally to aim at, and a target picker would be a click with no decision
+   * in it — the same call the vow makes.
+   */
+  function cast(spellId: string) {
+    if (hero === undefined) return
+    useCombatStore.getState().cast({
+      spellId,
+      targetId: hero.id,
+      ...(subclassId === undefined ? {} : { subclassId }),
     })
   }
 
@@ -267,6 +284,7 @@ export function TutorialRunner() {
               }
               stranded={stranded}
               onAttack={attack}
+              onCast={cast}
               {...(oathPower === undefined ? {} : { oathPower, onChannel: channel })}
               onEndTurn={endTurn}
             />

@@ -21,6 +21,7 @@ import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
 import { canWardingFlare, resolveWardingFlare } from './reactions.ts'
+import { castSpell } from './casting.ts'
 import { narrateAttackFully } from './narrate.ts'
 
 /** The tutorial board. Small enough to read at a glance on a phone. */
@@ -293,6 +294,56 @@ export function attackWith(
     outcome,
     refusal: null,
     ...(maneuver === undefined ? {} : { maneuver }),
+  }
+}
+
+export interface CastResultOnBoard {
+  encounter: Encounter
+  refusal: string | null
+}
+
+/**
+ * Casts a prepared spell from the active combatant.
+ *
+ * Spends the action like an attack does, so a turn is still one thing plus
+ * movement. Healing yourself is the common case at this level, and passing the
+ * caster as its own target is allowed rather than special-cased.
+ */
+export function castFromActive(
+  encounter: Encounter,
+  args: { spellId: string; targetId: string; subclassId?: string; rng?: Rng },
+): CastResultOnBoard {
+  const caster = activeCombatant(encounter)
+  const target = encounter.combatants[args.targetId]
+
+  if (caster === undefined || target === undefined) {
+    return { encounter, refusal: 'There is nobody there to aim at.' }
+  }
+  if (encounter.hasActed) {
+    return { encounter, refusal: 'You have already taken your action this turn.' }
+  }
+
+  const result = castSpell({
+    caster,
+    target,
+    spellId: args.spellId,
+    ...(args.subclassId === undefined ? {} : { subclassId: args.subclassId }),
+    ...(args.rng === undefined ? {} : { rng: args.rng }),
+  })
+  if (result.refusal !== null) return { encounter, refusal: result.refusal }
+
+  return {
+    encounter: {
+      ...encounter,
+      combatants: {
+        ...encounter.combatants,
+        [result.caster.id]: result.caster,
+        [result.target.id]: result.target,
+      },
+      hasActed: true,
+      log: [...encounter.log, ...result.lines],
+    },
+    refusal: null,
   }
 }
 

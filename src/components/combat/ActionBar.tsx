@@ -1,6 +1,7 @@
 'use client'
 
 import { Hourglass, Swords } from 'lucide-react'
+import { castableSpells } from '../../lib/dnd/casting.ts'
 import {
   ChannelDivinityIcon,
   SpellFlareIcon,
@@ -23,6 +24,8 @@ export interface ActionBarProps {
   /** No movement and nothing in reach — say so, rather than leaving them hunting. */
   stranded?: boolean
   onAttack: (attackId: string, maneuverId?: 'trip') => void
+  /** Undefined when this hero prepares no spells at all. */
+  onCast?: (spellId: string) => void
   /** Which oath power this hero has, from their subclass. Absent for everyone else. */
   oathPower?: 'sacredWeapon' | 'vowOfEnmity'
   /** Undefined when this hero has no oath to call on. */
@@ -39,6 +42,7 @@ export function ActionBar({
   endTurnEnabled,
   stranded = false,
   onAttack,
+  onCast,
   oathPower,
   onChannel,
   onEndTurn,
@@ -55,6 +59,9 @@ export function ActionBar({
 
   const charges = active.channelDivinityCharges ?? 0
   const oath = active.activeChannelDivinity
+  const spells = onCast === undefined ? [] : castableSpells(active)
+  const slots = active.spellSlots ?? 0
+
   const canChannel =
     onChannel !== undefined && oathPower !== undefined && charges > 0 && oath === undefined
 
@@ -67,6 +74,12 @@ export function ActionBar({
             {movementRemaining} {movementRemaining === 1 ? 'square' : 'squares'}
           </span>
         </span>
+        {slots > 0 && (
+          <span>
+            <Explain k="preparedSpell">Spell slots</Explain>:{' '}
+            <span className="font-mono text-parchment">{slots}</span>
+          </span>
+        )}
         <span>
           <Explain k="action">Action</Explain>:{' '}
           <span className="font-mono text-parchment">{hasActed ? 'used' : 'ready'}</span>
@@ -130,6 +143,20 @@ export function ActionBar({
             <span className="font-mono text-xs font-normal">{charges} left</span>
           </FantasyButton>
         )}
+
+        {spells.map(({ spell, castable, reason }) => (
+          <FantasyButton
+            key={spell.id}
+            variant="iron"
+            disabled={!castable || hasActed || !attackEnabled}
+            onClick={() => onCast?.(spell.id)}
+            title={reason ?? spell.description}
+          >
+            <SpellFlareIcon size={16} className="text-gold-bright" />
+            {spell.name}
+            {!castable && <span className="text-xs font-normal">— {reason}</span>}
+          </FantasyButton>
+        ))}
 
         <FantasyButton variant="iron" disabled={!endTurnEnabled} onClick={onEndTurn}>
           <Hourglass aria-hidden />

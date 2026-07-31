@@ -11,6 +11,7 @@ import { roll, toCriticalNotation } from './dice.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
 import { attackRollMode, blocksActions, combineRollModes } from './conditions.ts'
 import { channelDivinityAttackBonus, hasVowAgainst } from './channelDivinity.ts'
+import { applyDamageWithWard } from './spellcasting.ts'
 import { damageNotation } from './characterBuilder.ts'
 
 /** Dexterity decides who acts first, plus whatever a feat is worth. */
@@ -128,8 +129,20 @@ export function resolveAttack(args: {
 }
 
 export function applyDamage(combatant: Combatant, amount: number): Combatant {
-  const currentHp = Math.max(0, combatant.currentHp - Math.max(0, amount))
-  return { ...combatant, currentHp }
+  /*
+   * An Arcane Ward soaks what it can before hit points move. Everyone else has
+   * no ward, so applyDamageWithWard reduces to the same subtraction this always
+   * was — which is why every existing caller is untouched.
+   */
+  const { newHp, newWardHp } = applyDamageWithWard(amount, combatant.currentHp, combatant.arcaneWardHp)
+
+  return {
+    ...combatant,
+    currentHp: newHp,
+    // A depleted ward stays at 0 rather than vanishing: 0 means "broken and
+    // rechargeable", undefined means "never raised", and the hooks tell them apart.
+    ...(combatant.arcaneWardHp === undefined ? {} : { arcaneWardHp: newWardHp }),
+  }
 }
 
 export function applyHealing(combatant: Combatant, amount: number): Combatant {

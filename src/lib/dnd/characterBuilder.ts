@@ -19,6 +19,7 @@ import {
   subclassById,
   superiorityDiceFor,
 } from '../../content/subclasses.ts'
+import { FIRST_LEVEL_SLOTS } from './spellcasting.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import {
   ARMORS,
@@ -129,6 +130,22 @@ export function resolveSpellSelection(answers: CreationDraft): {
 }
 
 /**
+ * Whether these answers amount to a caster with levelled spells.
+ *
+ * Checks the class as well as the list. resolveSpellSelection will happily
+ * return a cleric's prepared spells for a fighter carrying a stale style id —
+ * the wizard clears it on a class change so it cannot happen through the UI,
+ * but the builder is a pure function and should not hand out spell slots on
+ * the strength of an id nobody validated.
+ */
+function selectionHasLeveledSpells(
+  answers: CreationDraft,
+  casts: boolean,
+): boolean {
+  return casts && resolveSpellSelection(answers).preparedSpellIds.length > 0
+}
+
+/**
  * Keeps the first attack of each id. A wizard's class list already carries Fire
  * Bolt, so choosing it as a cantrip would otherwise print the same button twice.
  */
@@ -173,6 +190,10 @@ export function buildCharacter(
   const superiorityDice = superiorityDiceFor(answers.subclassId)
   const channelDivinityCharges = channelDivinityFor(answers.subclassId)
   const hasReaction = hasReactionFor(answers.subclassId)
+  // One 1st-level slot for anyone who prepares spells at all.
+  const spellSlots = selectionHasLeveledSpells(answers, klass.spellcasting !== undefined)
+    ? FIRST_LEVEL_SLOTS
+    : undefined
   const trimmedName = name.trim()
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)
   const selection = resolveSpellSelection(answers)
@@ -231,6 +252,7 @@ export function buildCharacter(
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),
     ...(hasReaction ? { hasReaction } : {}),
+    ...(spellSlots === undefined ? {} : { spellSlots }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }
 }

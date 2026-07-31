@@ -1,5 +1,5 @@
 import type { AttackAction } from './action.ts'
-import type { AbilityScores } from './character.ts'
+import type { AbilityName, AbilityScores } from './character.ts'
 import type { DiceRoll } from './dice.ts'
 
 export type ConditionId =
@@ -58,6 +58,17 @@ export interface Combatant {
   channelDivinityMax?: number
   /** The oath power currently running, for the rest of this encounter. */
   activeChannelDivinity?: ActiveChannelDivinity
+  /**
+   * First-level spell slots left. Absent for anyone who never had any, so a
+   * fighter is not carrying a zero around.
+   */
+  spellSlots?: number
+  /** Prepared spell ids this combatant may still cast from. */
+  preparedSpells?: string[]
+  /** The ability that powers this combatant's magic, for healing maths. */
+  castingAbility?: AbilityName
+  /** Arcane Ward buffer. Absent means the ward has never been raised. */
+  arcaneWardHp?: number
   /**
    * Whether this combatant's one reaction is still unspent this round. Absent
    * means they have nothing to react with, which is everyone without a feature

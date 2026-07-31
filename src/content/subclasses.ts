@@ -33,6 +33,7 @@ export interface SubclassFeature {
  * adding a second kind forces every reader to handle it.
  */
 export type SubclassEffect =
+  | { kind: 'castHook'; power: 'discipleOfLife' | 'arcaneWard' }
   | { kind: 'reaction'; power: 'wardingFlare' }
   | { kind: 'critOn'; value: number }
   | { kind: 'superiorityDice'; count: number }
@@ -105,10 +106,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You spend your magic on wards and shields, and outlast the people trying to interrupt you.',
     feature: {
       name: 'Arcane Ward',
-      description: 'Casting a spell wraps you in temporary hit points.',
-      active: false,
-      pending: 'Nothing hooks the moment a spell is cast yet.',
+      description:
+        'Casting an abjuration spell raises a ward that soaks damage before your hit points do.',
+      active: true,
     },
+    effect: { kind: 'castHook', power: 'arcaneWard' },
   },
 
   // --- Cleric ---------------------------------------------------------------
@@ -121,10 +123,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'Your healing goes further than it should. Where you are, people get back up.',
     feature: {
       name: 'Disciple of Life',
-      description: 'Your healing spells restore extra hit points on top of the roll.',
-      active: false,
-      pending: 'Healing is not resolved through the rules engine yet.',
+      description:
+        'Every spell you cast to heal restores 2 extra hit points, plus the spell\'s level.',
+      active: true,
     },
+    effect: { kind: 'castHook', power: 'discipleOfLife' },
   },
   {
     id: 'light',
