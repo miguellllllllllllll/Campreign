@@ -54,15 +54,25 @@ function SpellCard({
   disabled: boolean
   onToggle: () => void
 }) {
+  /*
+   * Full means "you cannot take another", not "you may not read this one".
+   * `disabled` would say both: once the last cantrip slot was filled every
+   * remaining card left the tab order, so a player choosing without a mouse
+   * lost the ability to compare what they had passed over.
+   */
+  const full = disabled && !selected
+
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={() => {
+        if (!full) onToggle()
+      }}
       aria-pressed={selected}
-      disabled={disabled && !selected}
+      aria-disabled={full}
       className={cn(
         'rounded-card flex flex-col gap-1 border p-3 text-left transition-colors',
-        'disabled:cursor-not-allowed disabled:opacity-40',
+        'aria-disabled:cursor-not-allowed aria-disabled:opacity-40',
         selected
           ? 'border-gold-ornate shadow-torch'
           : 'border-edge bg-surface-raised/40 hover:border-gold-border/60',

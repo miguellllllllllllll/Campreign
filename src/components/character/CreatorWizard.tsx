@@ -149,6 +149,28 @@ export function CreatorWizard() {
   const canAdvance = stepAnswered(step, draft) && spellsComplete
 
   /**
+   * What is still missing, phrased as the question that is still open. A dead
+   * Next with no explanation is the one place this wizard stopped teaching —
+   * and `disabled` made it worse than silent, because a disabled button leaves
+   * the tab order, so a player without a mouse could not even find the thing
+   * refusing them.
+   */
+  const blocker: string | null = (() => {
+    const unanswered = step.fields.find(
+      (field) =>
+        field.optional !== true
+        && choicesFor(field, draft).length > 0
+        && draft[field.id] === undefined,
+    )
+    if (unanswered !== undefined) return unanswered.question
+    if (!spellsComplete) return 'Finish choosing your spells'
+    return null
+  })()
+
+  /** The same question for the final button, which gates on every step at once. */
+  const firstUnfinishedStep = stepsFor(draft).find((candidate) => !stepAnswered(candidate, draft))
+
+  /**
    * Records an answer and drops any later answer it invalidates: a new class
    * offers different spells and loadouts, a new background different flaws.
    */
@@ -352,15 +374,24 @@ export function CreatorWizard() {
               </FantasyButton>
             )}
             {!isLastStep && (
-              <FantasyButton disabled={!canAdvance} onClick={() => setStepIndex(safeIndex + 1)}>
+              <FantasyButton
+                aria-disabled={!canAdvance}
+                onClick={() => setStepIndex(safeIndex + 1)}
+              >
                 Next
                 <ArrowRight aria-hidden />
+                {blocker !== null && <span className="text-xs font-normal">— {blocker}</span>}
               </FantasyButton>
             )}
             {isLastStep && (
-              <FantasyButton size="lg" disabled={!isComplete(draft)} onClick={forge}>
+              <FantasyButton size="lg" aria-disabled={!isComplete(draft)} onClick={forge}>
                 <Dices aria-hidden />
                 Finalize hero
+                {firstUnfinishedStep !== undefined && (
+                  <span className="text-xs font-normal">
+                    — {firstUnfinishedStep.title} is unanswered
+                  </span>
+                )}
               </FantasyButton>
             )}
           </div>
