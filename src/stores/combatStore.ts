@@ -140,7 +140,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
      */
     const settled =
       encounterWinner(result.encounter) === null
-        ? playUntilPlayerTurn(endTurn(result.encounter), get().playerId, rng)
+        ? playUntilPlayerTurn(endTurn(result.encounter, rng), get().playerId, rng)
         : { encounter: result.encounter, outcome: null }
 
     set({
@@ -154,7 +154,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     const { encounter } = get()
     if (encounter === null) return
 
-    const played = playUntilPlayerTurn(endTurn(encounter), get().playerId, rng)
+    const played = playUntilPlayerTurn(endTurn(encounter, rng), get().playerId, rng)
     set({
       encounter: played.encounter,
       lastOutcome: played.outcome ?? get().lastOutcome,
@@ -207,7 +207,7 @@ function playUntilPlayerTurn(
       return { encounter: enemy.encounter, outcome }
     }
 
-    const after = endTurn(enemy.encounter)
+    const after = endTurn(enemy.encounter, rng)
     // endTurn refuses to advance once the fight is decided, which is how a foe
     // can still be the active combatant here: it just killed the hero. There is
     // no turn to hand back, and the UI shows the defeat rather than a board.

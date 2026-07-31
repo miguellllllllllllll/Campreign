@@ -19,6 +19,7 @@ import {
 import { channelDivinityAttackBonus, hasVowAgainst } from './channelDivinity.ts'
 import { applyDamageWithWard } from './spellcasting.ts'
 import { damageNotation } from './characterBuilder.ts'
+import { clearDeathSaves } from './dying.ts'
 
 /**
  * The armour a combatant is actually wearing right now.
@@ -194,7 +195,10 @@ export function applyDamage(combatant: Combatant, amount: number): Combatant {
 
 export function applyHealing(combatant: Combatant, amount: number): Combatant {
   const currentHp = Math.min(combatant.maxHp, combatant.currentHp + Math.max(0, amount))
-  return { ...combatant, currentHp }
+  const healed = { ...combatant, currentHp }
+  // Back above 0 means the dying is over and does not carry forward. A hero
+  // patched up at 1 hit point starts the next count from nothing.
+  return currentHp > 0 ? clearDeathSaves(healed) : healed
 }
 
 export function isDefeated(combatant: Combatant): boolean {

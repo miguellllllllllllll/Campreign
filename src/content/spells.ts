@@ -65,6 +65,11 @@ export type SpellEffect =
   /** Replaces the AC formula outright, as Mage Armor does. */
   | { kind: 'setAc'; base: number; addsDex: boolean }
   /**
+   * Stops a dying creature slipping away, restoring nothing. The only spell
+   * here whose whole worth is a number that stops changing.
+   */
+  | { kind: 'stabilise' }
+  /**
    * Lays a condition on one target and concentrates to keep it there.
    * The condition carries the effect, so losing the spell takes it back.
    */
@@ -293,6 +298,7 @@ export const SPELLS: readonly Spell[] = [
     description:
       'Touch someone who has dropped to 0 hit points and they stop slipping away. It restores no hit points, but it stops them dying.',
     isConcentration: false,
+    effect: { kind: 'stabilise' },
   },
 
   // --- Cleric 1st-level ---------------------------------------------------

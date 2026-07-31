@@ -1,5 +1,6 @@
 import { roll } from './dice.ts'
 import { addCondition } from './conditions.ts'
+import { isDead, isDying, isStable, stabilise } from './dying.ts'
 import { narrateAttackFully } from './narrate.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
 import {
@@ -200,6 +201,33 @@ export function castSpell(args: {
       }
       lines.push(`${target.name} is left glowing — the next blow lands easier.`)
     }
+  } else if (effect.kind === 'stabilise') {
+    /*
+     * Touch range, and the only spell that cares whether the target is already
+     * down. Refusing it on somebody standing is not pedantry — a cantrip spent
+     * on a conscious ally does nothing at all, and saying so is the difference
+     * between a rule taught and a click wasted.
+     */
+    if (!isDying(target)) {
+      return {
+        caster,
+        target,
+        lines: [],
+        refusal: isDead(target)
+          ? `It is too late for ${target.name}.`
+          : isStable(target)
+            ? `${target.name} has already stopped slipping.`
+            : `${target.name} is still on their feet.`,
+      }
+    }
+    if (gridDistance(caster.position, target.position) > 1) {
+      return { caster, target, lines: [], refusal: `${target.name} is out of reach.` }
+    }
+    nextTarget = stabilise(target)
+    lines.push(
+      `${target.name} stops slipping away. Still down, still at 0 hit points — but no `
+        + 'longer rolling.',
+    )
   } else if (effect.kind === 'wardTarget') {
     nextTarget = {
       ...target,
