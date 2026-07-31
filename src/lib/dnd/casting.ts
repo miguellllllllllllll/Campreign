@@ -1,6 +1,15 @@
 import { roll } from './dice.ts'
+import { addCondition } from './conditions.ts'
+import { narrateAttackFully } from './narrate.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
-import { applyDamage, applyHealing, gridDistance } from './combat.ts'
+import {
+  applyDamage,
+  applyHealing,
+  gridDistance,
+  isDefeated,
+  isInRange,
+  resolveAttack,
+} from './combat.ts'
 import {
   FIRST_LEVEL_SLOTS,
   resolveSpellCastHook,
@@ -65,6 +74,18 @@ export function castableSpells(combatant: Combatant): CastableSpell[] {
     }
     return [{ spell, castable: true }]
   })
+}
+
+/**
+ * Whether a spell is aimed at somebody you would rather were hurt.
+ *
+ * Derived from the effect rather than stored, so a new spell cannot forget to
+ * declare it: anything that rolls to hit or covers an area points outward, and
+ * everything else lands on you or an ally.
+ */
+export function spellTargetsEnemies(spellId: string): boolean {
+  const kind = SPELLS_BY_ID[spellId]?.effect?.kind
+  return kind === 'spellAttack' || kind === 'aoeSave'
 }
 
 export interface CastResult {
@@ -144,6 +165,33 @@ export function castSpell(args: {
     lines.push(`Restored ${restored} hit ${restored === 1 ? 'point' : 'points'}.`)
     if (outcome.triggeredFeatures.includes('life_domain_disciple_of_life')) {
       lines.push(`Disciple of Life added ${2 + spell.level} on top.`)
+    }
+  } else if (effect.kind === 'spellAttack') {
+    const attack = spell.attack
+    if (attack === undefined) {
+      return { caster, target, lines: [], refusal: `${spell.name} has nothing to aim.` }
+    }
+    if (!isInRange(caster, target, attack)) {
+      return { caster, target, lines: [], refusal: `${target.name} is out of range.` }
+    }
+
+    const outcome = resolveAttack({ attacker: caster, target, attack, rng })
+    const landed = outcome.kind === 'hit' || outcome.kind === 'crit'
+    nextTarget = landed ? applyDamage(target, outcome.damage) : target
+
+    lines.push(narrateAttackFully(outcome, target.name, attack.damageType))
+
+    // The rider only lands with the beam.
+    if (landed && effect.conditionOnHit !== undefined && !isDefeated(nextTarget)) {
+      nextTarget = {
+        ...nextTarget,
+        conditions: addCondition(
+          nextTarget.conditions,
+          effect.conditionOnHit,
+          effect.conditionRounds ?? 1,
+        ),
+      }
+      lines.push(`${target.name} is left glowing — the next blow lands easier.`)
     }
   } else if (effect.kind === 'aoeSave') {
     // Areas go through castAreaSpell, which has more than one target to return.

@@ -129,16 +129,14 @@ starts with. Everything above that is out of scope, not merely unwritten.
 
 Any monster beyond the goblin and the practice dummy.
 
-Four 1st-level spells are known but not yet castable, and say so on the button
+Three 1st-level spells are known but not yet castable, and say so on the button
 rather than failing quietly:
 
-- **Guiding Bolt** — has an attack roll, but only cantrips currently become
-  buttons, so nothing routes a prepared attack spell onto the bar.
 - **Magic Missile** — darts that hit automatically, with no attack roll to
   resolve them through.
 - **Bless** — needs concentration and a buff that lands on several targets.
 - **Shield** — needs to fire in reaction to an incoming attack. The interrupt
-  seam exists now, so this is the nearest of the four.
+  seam exists now, so this is the nearest of the three.
 
 ## Licence
 

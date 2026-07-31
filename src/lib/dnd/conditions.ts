@@ -14,6 +14,16 @@ export interface ConditionInfo {
 }
 
 export const CONDITIONS: Record<ConditionId, ConditionInfo> = {
+  dazzled: {
+    id: 'dazzled',
+    label: 'Dazzled',
+    plain:
+      'You are outlined in light and cannot help being seen. Attacks against you have advantage until the glow fades.',
+    ownAttacks: 'normal',
+    incomingAttacks: 'advantage',
+    // Being lit up is embarrassing, not incapacitating.
+    preventsActions: false,
+  },
   poisoned: {
     id: 'poisoned',
     label: 'Poisoned',

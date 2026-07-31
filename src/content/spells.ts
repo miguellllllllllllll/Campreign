@@ -1,6 +1,7 @@
 import type { AttackAction } from '../types/action.ts'
 import type { AbilityName } from '../types/character.ts'
 import type { DamageType } from '../types/items.ts'
+import type { ConditionId } from '../types/combat.ts'
 
 /**
  * The 5e SRD spell registry for 1st-level casters.
@@ -28,6 +29,12 @@ export type SpellSchool =
  */
 export type SpellEffect =
   | { kind: 'heal'; dice: string; addsAbility: boolean }
+  /**
+   * Aimed with an attack roll, using the `attack` on the spell beside this.
+   * The rider is a condition rather than a bespoke flag, because conditions
+   * already feed the roll mode and already expire on the round tick.
+   */
+  | { kind: 'spellAttack'; conditionOnHit?: ConditionId; conditionRounds?: number }
   /**
    * Everything within `radiusSquares` of the caster rolls a save.
    *
@@ -306,6 +313,8 @@ export const SPELLS: readonly Spell[] = [
     classes: ['cleric'],
     range: '120 ft (24 squares)',
     damageOrEffect: '4d6 Radiant, then advantage',
+    // The glow lasts a round, so the attack it helps is the next one made.
+    effect: { kind: 'spellAttack', conditionOnHit: 'dazzled', conditionRounds: 1 },
     description:
       'A searing beam that hurts badly and leaves the target glowing, so the next attack against them has advantage. Excellent for setting up an ally.',
     isConcentration: false,

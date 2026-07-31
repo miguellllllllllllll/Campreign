@@ -2,13 +2,14 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
-import { applyDamage } from '../src/lib/dnd/combat.ts'
-import { castSpell, castableSpells } from '../src/lib/dnd/casting.ts'
+import { applyDamage, resolveAttack } from '../src/lib/dnd/combat.ts'
+import { addCondition, hasCondition, tickConditions } from '../src/lib/dnd/conditions.ts'
+import { castSpell, castableSpells, spellTargetsEnemies } from '../src/lib/dnd/casting.ts'
 import { FIRST_LEVEL_SLOTS } from '../src/lib/dnd/spellcasting.ts'
 import { castFromActive, createEncounter } from '../src/lib/dnd/encounter.ts'
 import { SUBCLASSES } from '../src/content/subclasses.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
-import { faceValue } from './helpers/rng.ts'
+import { faceValue, sequenceRng } from './helpers/rng.ts'
 
 const meta = { id: 'caster', now: 1_700_000_000_000 }
 
@@ -237,4 +238,96 @@ test('every subclass that claims to be active carries an effect', () => {
     ],
     'all ten features should now be genuinely wired',
   )
+})
+
+// --- Guiding Bolt ---------------------------------------------------------
+
+test('Guiding Bolt is castable and aimed outward', () => {
+  const { combatant } = caster()
+  const listed = castableSpells(combatant).find((e) => e.spell.id === 'guidingBolt')
+  assert.ok(listed !== undefined, 'a radiantWrath cleric prepares it')
+  assert.equal(listed.castable, true)
+  assert.equal(spellTargetsEnemies('guidingBolt'), true)
+  // Heals and wards still land on the caster.
+  assert.equal(spellTargetsEnemies('cureWounds'), false)
+  assert.equal(spellTargetsEnemies('mageArmor'), false)
+})
+
+test('a hit deals radiant damage, spends the slot, and leaves the target glowing', () => {
+  const { hero, combatant } = caster()
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const target = { ...characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' }), maxHp: 40, currentHp: 40 }
+
+  // A natural 20 to be sure it lands, then the doubled damage dice.
+  const result = castSpell({
+    caster: combatant,
+    target,
+    spellId: 'guidingBolt',
+    rng: sequenceRng([
+      faceValue(20, 20),
+      faceValue(4, 6), faceValue(4, 6), faceValue(4, 6), faceValue(4, 6),
+      faceValue(4, 6), faceValue(4, 6), faceValue(4, 6), faceValue(4, 6),
+    ]),
+  })
+
+  assert.equal(result.refusal, null)
+  assert.ok(result.target.currentHp < 40, 'the beam should hurt')
+  assert.equal(result.caster.spellSlots, 0, 'a levelled spell costs its slot')
+  assert.ok(
+    hasCondition(result.target.conditions, 'dazzled'),
+    'the rider is what separates this from a cantrip',
+  )
+  assert.ok(result.lines.some((l) => /glowing/.test(l)))
+  assert.equal(hero.id, result.caster.id)
+})
+
+test('a miss deals nothing and leaves no glow', () => {
+  const { combatant } = caster()
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const target = characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' })
+
+  const result = castSpell({
+    caster: combatant,
+    target,
+    spellId: 'guidingBolt',
+    rng: () => faceValue(1, 20),
+  })
+
+  assert.equal(result.target.currentHp, target.currentHp)
+  assert.equal(hasCondition(result.target.conditions, 'dazzled'), false)
+  assert.equal(result.caster.spellSlots, 0, 'the slot goes whether or not it connects')
+})
+
+test('the glow actually makes the next attack easier', () => {
+  // The whole point of the rider, asserted through the roll mode rather than
+  // by trusting the condition table.
+  const { combatant } = caster()
+  const foe = buildCharacter(
+    { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
+    'Goblin',
+    { ...meta, id: 'foe' },
+  )
+  const plain = characterToCombatant(foe, { position: { x: 1, y: 0 }, team: 'foes' })
+  const lit = { ...plain, conditions: addCondition(plain.conditions, 'dazzled', 1) }
+  const attack = combatant.attacks[0]
+  assert.ok(attack !== undefined)
+
+  const normal = resolveAttack({ attacker: combatant, target: plain, attack, rng: () => faceValue(10, 20) })
+  const withGlow = resolveAttack({ attacker: combatant, target: lit, attack, rng: () => faceValue(10, 20) })
+
+  assert.equal(normal.attackRoll.mode, 'normal')
+  assert.equal(withGlow.attackRoll.mode, 'advantage')
+})
+
+test('the glow fades rather than lasting the fight', () => {
+  const faded = tickConditions([{ id: 'dazzled', roundsRemaining: 1 }])
+  assert.deepEqual(faded, [], 'one round, then gone')
 })

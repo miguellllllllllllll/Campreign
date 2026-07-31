@@ -12,6 +12,7 @@ import {
   reachableSquares,
   turnOrder,
 } from '../../lib/dnd/encounter.ts'
+import { spellTargetsEnemies } from '../../lib/dnd/casting.ts'
 import { channelDivinityPowerFor } from '../../content/subclasses.ts'
 import { useActiveCharacter, useRosterHydrated } from '../../stores/characterStore.ts'
 import { useCombatStore } from '../../stores/combatStore.ts'
@@ -192,9 +193,16 @@ export function TutorialRunner() {
    */
   function cast(spellId: string) {
     if (hero === undefined) return
+    /*
+     * Beams and blasts point at the goblin; heals and wards land on the caster.
+     * With one enemy and one ally there is no decision in it, so the spell says
+     * where it goes rather than asking.
+     */
+    const aimed = spellTargetsEnemies(spellId) ? foe : hero
+    if (aimed === undefined) return
     useCombatStore.getState().cast({
       spellId,
-      targetId: hero.id,
+      targetId: aimed.id,
       ...(subclassId === undefined ? {} : { subclassId }),
     })
   }

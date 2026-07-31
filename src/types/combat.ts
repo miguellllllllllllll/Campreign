@@ -10,6 +10,7 @@ import type { DiceRoll } from './dice.ts'
 export type TokenId = ClassId | 'goblin' | 'dummy' | 'squire'
 
 export type ConditionId =
+  | 'dazzled'
   | 'poisoned'
   | 'prone'
   | 'frightened'
