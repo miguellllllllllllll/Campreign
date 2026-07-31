@@ -77,7 +77,16 @@ export function resolveAttack(args: {
    * annihilate, which is the SRD's rule and the one players expect.
    */
   const vowMode: RollMode = hasVowAgainst(attacker, target.id) ? 'advantage' : 'normal'
-  const mode = args.mode ?? combineRollModes([conditionMode, vowMode])
+  /*
+   * Ambush is a third source of advantage, not an override. An assassin who
+   * opens a fight while prone is swinging at normal, because advantage and
+   * disadvantage annihilate — combining is the only way that stays true.
+   */
+  const ambushMode: RollMode =
+    attacker.hasAmbush === true && attacker.hasActedThisCombat !== true
+      ? 'advantage'
+      : 'normal'
+  const mode = args.mode ?? combineRollModes([conditionMode, vowMode, ambushMode])
 
   const bonus = attackBonusFor(attacker, attack)
   // The attacker's own crit range, so a Champion swinging is not the same roll

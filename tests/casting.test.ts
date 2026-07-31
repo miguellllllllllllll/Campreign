@@ -231,7 +231,7 @@ test('every subclass that claims to be active carries an effect', () => {
   const active = SUBCLASSES.filter((s) => s.feature.active).map((s) => s.id)
   assert.deepEqual(
     active.sort(),
-    ['abjuration', 'battlemaster', 'champion', 'devotion', 'life', 'light', 'vengeance'],
-    'seven features should now be genuinely wired',
+    ['abjuration', 'assassin', 'battlemaster', 'champion', 'devotion', 'life', 'light', 'vengeance'],
+    'eight features should now be genuinely wired',
   )
 })

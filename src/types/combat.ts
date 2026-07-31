@@ -70,6 +70,14 @@ export interface Combatant {
   /** Arcane Ward buffer. Absent means the ward has never been raised. */
   arcaneWardHp?: number
   /**
+   * True once this combatant has finished a turn in this encounter. Distinct
+   * from the encounter's `hasActed`, which resets every turn — this one never
+   * goes back to false.
+   */
+  hasActedThisCombat?: boolean
+  /** Whether this combatant strikes with advantage on their opening turn. */
+  hasAmbush?: boolean
+  /**
    * Whether this combatant's one reaction is still unspent this round. Absent
    * means they have nothing to react with, which is everyone without a feature
    * that uses one — so no caller has to ask what subclass somebody is.

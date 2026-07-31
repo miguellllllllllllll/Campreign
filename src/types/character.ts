@@ -154,6 +154,8 @@ export interface Character {
   hasReaction?: boolean
   /** First-level spell slots. One at level 1 for a full caster. */
   spellSlots?: number
+  /** True when this hero opens a fight with advantage. */
+  hasAmbush?: boolean
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

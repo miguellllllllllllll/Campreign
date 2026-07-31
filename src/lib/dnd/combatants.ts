@@ -41,6 +41,7 @@ export function characterToCombatant(
       ? {}
       : { superiorityDice: character.superiorityDice }),
     ...(character.hasReaction === true ? { reactionAvailable: true } : {}),
+    ...(character.hasAmbush === true ? { hasAmbush: true } : {}),
     ...(character.spellSlots === undefined ? {} : { spellSlots: character.spellSlots }),
     ...(character.preparedSpells === undefined
       ? {}

@@ -15,6 +15,7 @@ import { bonusInitiative, bonusMaxHp, featById, grantedCantripId } from '../../c
 import {
   channelDivinityFor,
   critThresholdFor,
+  hasAmbushFor,
   hasReactionFor,
   subclassById,
   superiorityDiceFor,
@@ -190,6 +191,7 @@ export function buildCharacter(
   const superiorityDice = superiorityDiceFor(answers.subclassId)
   const channelDivinityCharges = channelDivinityFor(answers.subclassId)
   const hasReaction = hasReactionFor(answers.subclassId)
+  const hasAmbush = hasAmbushFor(answers.subclassId)
   // One 1st-level slot for anyone who prepares spells at all.
   const spellSlots = selectionHasLeveledSpells(answers, klass.spellcasting !== undefined)
     ? FIRST_LEVEL_SLOTS
@@ -252,6 +254,7 @@ export function buildCharacter(
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),
     ...(hasReaction ? { hasReaction } : {}),
+    ...(hasAmbush ? { hasAmbush } : {}),
     ...(spellSlots === undefined ? {} : { spellSlots }),
     blurb: `${race.label.toLowerCase()} ${klass.label.toLowerCase()}, ${background.blurb}`,
   }

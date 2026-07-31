@@ -479,12 +479,30 @@ export function channelDivinity(
 }
 
 /** Advances to the next combatant still standing, ticking conditions on a new round. */
+/** Records that a combatant has now had a turn. Never goes back to false. */
+function markTurnCompleted(combatant: Combatant): Combatant {
+  return combatant.hasActedThisCombat === true
+    ? combatant
+    : { ...combatant, hasActedThisCombat: true }
+}
+
 export function endTurn(encounter: Encounter): Encounter {
   if (encounterWinner(encounter) !== null) return encounter
 
   let index = encounter.activeIndex
   let round = encounter.round
   let combatants = encounter.combatants
+
+  /*
+   * The combatant whose turn is ending has now taken one. Marked here rather
+   * than when they attack, because a turn spent walking is still a turn — an
+   * assassin does not keep their opening strike by declining to use it.
+   */
+  const outgoingId = encounter.order[encounter.activeIndex]
+  const outgoing = outgoingId === undefined ? undefined : combatants[outgoingId]
+  if (outgoing !== undefined) {
+    combatants = { ...combatants, [outgoing.id]: markTurnCompleted(outgoing) }
+  }
 
   // At most one full lap: someone on the board is always able to act here,
   // because encounterWinner already ruled out a wiped-out side.
