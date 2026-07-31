@@ -58,7 +58,30 @@ export interface Combatant {
   channelDivinityMax?: number
   /** The oath power currently running, for the rest of this encounter. */
   activeChannelDivinity?: ActiveChannelDivinity
+  /**
+   * Whether this combatant's one reaction is still unspent this round. Absent
+   * means they have nothing to react with, which is everyone without a feature
+   * that uses one — so no caller has to ask what subclass somebody is.
+   */
+  reactionAvailable?: boolean
   initiative: number
+}
+
+/**
+ * An attack that has been rolled but not yet committed, held while the target
+ * decides whether to spend a reaction on it.
+ *
+ * Lives on the Encounter rather than in the store so the pause is part of the
+ * pure value everything else is tested against. There is deliberately no `id`:
+ * the engine never invents identity, and at most one attack is ever pending.
+ */
+export interface PendingReaction {
+  kind: 'wardingFlare'
+  attackerId: string
+  targetId: string
+  attackId: string
+  /** What happens if the reaction is passed — already rolled, not yet applied. */
+  outcome: AttackOutcome
 }
 
 /** The paladin oath powers, named here so combat types stay self-contained. */

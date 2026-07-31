@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { buildCharacter } from '../lib/dnd/characterBuilder.ts'
@@ -73,13 +73,18 @@ export function useActiveCharacter(): Character | null {
  * before this flips, or the server and client markup disagree.
  */
 export function useRosterHydrated(): boolean {
-  const [hydrated, setHydrated] = useState(false)
-  useEffect(() => {
-    if (useCharacterStore.persist.hasHydrated()) {
-      setHydrated(true)
-      return
-    }
-    return useCharacterStore.persist.onFinishHydration(() => setHydrated(true))
-  }, [])
-  return hydrated
+  /*
+   * useSyncExternalStore rather than an effect that calls setState.
+   *
+   * The two are not interchangeable here: the server snapshot must be `false`
+   * and the client snapshot must be whatever the store already knows, and this
+   * hook is the one place that difference is allowed to exist. Reading
+   * hasHydrated() during render instead would reintroduce exactly the mismatch
+   * this guard was written to stop.
+   */
+  return useSyncExternalStore(
+    (onStoreChange) => useCharacterStore.persist.onFinishHydration(onStoreChange),
+    () => useCharacterStore.persist.hasHydrated(),
+    () => false,
+  )
 }

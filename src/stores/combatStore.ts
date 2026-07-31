@@ -7,6 +7,7 @@ import {
   encounterWinner,
   channelDivinity,
   endTurn,
+  resolveReaction,
   moveActive,
   takeEnemyTurn,
   type Encounter,
@@ -26,6 +27,8 @@ interface CombatStore {
   attack: (args: { targetId: string; attackId: string; maneuverId?: 'trip' }) => AttackOutcome | null
   /** Spends the paladin's oath charge. Costs no action, so the turn continues. */
   channel: (args: { power: 'sacredWeapon' | 'vowOfEnmity'; targetId?: string }) => void
+  /** Commits a paused attack, with or without the reaction. */
+  dispatchReaction: (choice: 'flare' | 'pass', rng?: Rng) => void
   /** Ends the player's turn and plays out every enemy turn until it is the player's again. */
   finishTurn: (rng?: Rng) => void
   reset: () => void
@@ -81,6 +84,35 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     set({ encounter: result.encounter, refusal: result.refusal })
   },
 
+  dispatchReaction: (choice, rng = Math.random) => {
+    const { encounter } = get()
+    if (encounter === null) return
+
+    const result = resolveReaction(encounter, choice, rng)
+    if (result.refusal !== null) {
+      set({ refusal: result.refusal })
+      return
+    }
+
+    /*
+     * Resuming is the other half of the pause. The foe was mid-turn when the
+     * board froze, so answering the prompt has to hand the rest of the round
+     * back — otherwise the player is left looking at a foe's turn that never
+     * ends. Only resume if the fight is still going: a flare that failed to
+     * save the hero ends it here.
+     */
+    const settled =
+      encounterWinner(result.encounter) === null
+        ? playFoeTurns(endTurn(result.encounter), rng)
+        : { encounter: result.encounter, outcome: null }
+
+    set({
+      encounter: settled.encounter,
+      lastOutcome: settled.outcome ?? result.outcome ?? get().lastOutcome,
+      refusal: null,
+    })
+  },
+
   finishTurn: (rng = Math.random) => {
     const { encounter } = get()
     if (encounter === null) return
@@ -119,6 +151,17 @@ function playFoeTurns(
   while (activeTeam(current) === 'foes' && encounterWinner(current) === null) {
     const enemy = takeEnemyTurn(current, rng)
     outcome = enemy.outcome ?? outcome
+
+    /*
+     * A pause stops the loop dead. The foe's turn is rolled but uncommitted,
+     * and running the next one would resolve attacks on top of a blow the
+     * player has not answered yet. The turn is finished by dispatchReaction,
+     * which resumes from here.
+     */
+    if (enemy.encounter.pendingReaction !== undefined) {
+      return { encounter: enemy.encounter, outcome }
+    }
+
     const after = endTurn(enemy.encounter)
     // endTurn refuses to advance once the fight is decided, which is how a foe
     // can still be the active combatant here: it just killed the hero. There is

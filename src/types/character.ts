@@ -150,6 +150,8 @@ export interface Character {
   superiorityDice?: number
   /** Channel Divinity charges, restored on a rest. Paladin oaths only. */
   channelDivinityCharges?: number
+  /** True when this hero has a feature that spends a reaction. */
+  hasReaction?: boolean
   /** One-sentence story summary built from the creation answers. */
   blurb: string
 }

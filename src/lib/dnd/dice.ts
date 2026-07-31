@@ -112,6 +112,23 @@ export function roll(
   return { notation, groups, modifier, total, mode, crit: detectCrit(groups, critOn) }
 }
 
+/**
+ * What a bare natural d20 means, given a crit threshold.
+ *
+ * Exported because anything that changes a d20 after the fact — a reaction
+ * imposing disadvantage, say — has to re-ask this question, and a second
+ * implementation is how a Champion ends up critting on 19 everywhere except
+ * through whichever path forgot.
+ */
+export function critFor(natural: number, critOn: number = DEFAULT_CRIT_ON): 'hit' | 'fumble' | null {
+  // A natural 1 stays a fumble even for a Champion: widening the crit range
+  // never narrows the fumble range, and a threshold of 1 would make every roll
+  // both at once.
+  if (natural === 1) return 'fumble'
+  if (natural >= critOn) return 'hit'
+  return null
+}
+
 function detectCrit(groups: DieGroup[], critOn: number): 'hit' | 'fumble' | null {
   const d20s = groups.filter((group) => group.size === 20)
   const only = d20s[0]
@@ -119,12 +136,7 @@ function detectCrit(groups: DieGroup[], critOn: number): 'hit' | 'fumble' | null
 
   const natural = only.kept[0]
   if (natural === undefined) return null
-  // A natural 1 stays a fumble even for a Champion: widening the crit range
-  // never narrows the fumble range, and a threshold of 1 would make every roll
-  // both at once.
-  if (natural === 1) return 'fumble'
-  if (natural >= critOn) return 'hit'
-  return null
+  return critFor(natural, critOn)
 }
 
 /** SRD critical hits double the damage dice but not the flat modifier. */
