@@ -50,7 +50,7 @@ const FOE_FIRST_THEN_KILLS = sequenceRng([
 
 test('a foe winning initiative still hands control back to the player', () => {
   useCombatStore.getState().reset()
-  useCombatStore.getState().start(roster(), FOE_FIRST_THEN_MISSES)
+  useCombatStore.getState().start(roster(), 'hero-1', FOE_FIRST_THEN_MISSES)
   const encounter = useCombatStore.getState().encounter
   assert.ok(encounter)
 
@@ -65,7 +65,7 @@ test('a foe winning initiative still hands control back to the player', () => {
 
 test('a foe that drops the hero outright ends the fight instead of passing the turn', () => {
   useCombatStore.getState().reset()
-  useCombatStore.getState().start(roster(), FOE_FIRST_THEN_KILLS)
+  useCombatStore.getState().start(roster(), 'hero-1', FOE_FIRST_THEN_KILLS)
   const encounter = useCombatStore.getState().encounter
   assert.ok(encounter)
 
@@ -81,7 +81,7 @@ test('a foe that drops the hero outright ends the fight instead of passing the t
 test('the player is never left on an undecided board they cannot act on', () => {
   for (let seed = 1; seed <= 300; seed += 1) {
     useCombatStore.getState().reset()
-    useCombatStore.getState().start(roster(), seededRng(seed))
+    useCombatStore.getState().start(roster(), 'hero-1', seededRng(seed))
     const encounter = useCombatStore.getState().encounter
     assert.ok(encounter)
 
@@ -104,7 +104,7 @@ test('ending a turn hands control straight back, never mid-enemy-round', () => {
    * the assertion below a coin toss, and a suite that fails at random teaches
    * everyone to re-run it rather than read it.
    */
-  useCombatStore.getState().start(roster(), seededRng(20260801))
+  useCombatStore.getState().start(roster(), 'hero-1', seededRng(20260801))
   useCombatStore.getState().finishTurn(seededRng(20260801))
 
   const encounter = useCombatStore.getState().encounter
@@ -115,7 +115,7 @@ test('ending a turn hands control straight back, never mid-enemy-round', () => {
 
 test('an illegal move is refused in plain English', () => {
   useCombatStore.getState().reset()
-  useCombatStore.getState().start(roster())
+  useCombatStore.getState().start(roster(), 'hero-1')
 
   const before = useCombatStore.getState().encounter
   assert.equal(useCombatStore.getState().move({ x: 0, y: 0 }), false)

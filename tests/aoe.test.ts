@@ -6,6 +6,7 @@ import { castAreaSpell, resolveAoeTargetSave, spellSaveDcFor } from '../src/lib/
 import { castFromActive, createEncounter } from '../src/lib/dnd/encounter.ts'
 import { SPELLS_BY_ID } from '../src/content/spells.ts'
 import { SUBCLASSES } from '../src/content/subclasses.ts'
+import { useTutorialStore } from '../src/stores/tutorialStore.ts'
 import type { Combatant } from '../src/types/combat.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
@@ -134,14 +135,18 @@ test('sculpting never shields an enemy', () => {
   assert.equal(outcome.damageTaken, 11)
 })
 
-test('the app can never produce an ally for it to shield', () => {
-  // The reason the tenth flag stays false. If this ever fails, a companion
-  // exists and Sculpt Spells can honestly be switched on.
-  const { hero, combatant } = wizard('evocation')
-  const encounter = createEncounter([combatant, goblin('g1', 1)], () => 0.99)
-  const party = Object.values(encounter.combatants).filter((c) => c.team === 'party')
-  assert.equal(party.length, 1, 'a party of one has nobody to sculpt around')
-  assert.equal(party[0]?.id, hero.id)
+test('the tutorial now fields an ally worth shielding', () => {
+  // This assertion used to read `party.length === 1`, and was the stated reason
+  // the tenth flag stayed false. A squire exists now, so it says the opposite.
+  const { hero } = wizard('evocation')
+  useTutorialStore.getState().begin(
+    buildCharacter(answers({ subclassId: 'evocation' }), 'Evoker', meta),
+  )
+  const roster = useTutorialStore.getState().roster ?? []
+  const party = roster.filter((c) => c.team === 'party')
+
+  assert.equal(party.length, 2, 'the hero has somebody to sculpt around')
+  assert.ok(party.some((c) => c.id === hero.id), 'and one of them is the player')
 })
 
 // --- The whole blast on the board -----------------------------------------
@@ -235,15 +240,62 @@ test('casting an area spell through the board spends the action and logs each sa
 
 // --- The flag stays honest -------------------------------------------------
 
-test('Sculpt Spells is still inactive, and says why accurately', () => {
+test('Sculpt Spells is active, and carries no blocker at all', () => {
   const evocation = SUBCLASSES.find((s) => s.id === 'evocation')
   assert.ok(evocation !== undefined)
-  assert.equal(evocation.feature.active, false)
-  assert.equal(evocation.effect, undefined)
-  assert.match(evocation.feature.pending ?? '', /on your side of the board/i)
-  assert.doesNotMatch(
-    evocation.feature.pending ?? '',
-    /targets an area/i,
-    'the old blocker is obsolete now that Burning Hands covers one',
-  )
+  assert.equal(evocation.feature.active, true)
+  assert.notEqual(evocation.effect, undefined)
+  assert.equal(evocation.feature.pending, undefined, 'nothing is blocking it now')
+})
+
+test('every subclass feature in the game is wired', () => {
+  // Ten of ten. Each one is pressable, observable, and covered — and the
+  // invariant below still binds effect and active together, so a future
+  // feature cannot be declared without being built.
+  const inert = SUBCLASSES.filter((s) => !s.feature.active)
+  assert.deepEqual(inert, [], 'no feature is waiting on a primitive any more')
+  for (const subclass of SUBCLASSES) {
+    assert.notEqual(subclass.effect, undefined, `${subclass.id} claims to work`)
+    assert.equal(subclass.feature.pending, undefined, `${subclass.id} has no excuse left`)
+  }
+  assert.equal(SUBCLASSES.length, 10)
+})
+
+test('an Evoker on the real tutorial board spares the squire and burns the goblin', () => {
+  /*
+   * The end of a long road. This uses the roster the app actually builds — no
+   * hand-assembled ally — so it proves the feature is reachable by a player
+   * rather than merely correct in isolation.
+   */
+  const hero = buildCharacter(answers({ subclassId: 'evocation' }), 'Evoker', meta)
+  useTutorialStore.getState().begin(hero)
+  const roster = useTutorialStore.getState().roster ?? []
+
+  const caster = roster.find((c) => c.id === hero.id)
+  const squire = roster.find((c) => c.team === 'party' && c.id !== hero.id)
+  const goblin = roster.find((c) => c.team === 'foes')
+  assert.ok(caster !== undefined && squire !== undefined && goblin !== undefined)
+
+  // Move the goblin into the blast; it starts four squares off.
+  const inRange = { ...goblin, position: { x: caster.position.x, y: caster.position.y - 2 } }
+
+  const result = castAreaSpell({
+    caster: { ...caster, preparedSpells: ['burningHands'], spellSlots: 1 },
+    candidates: [caster, squire, inRange],
+    spellId: 'burningHands',
+    subclassId: 'evocation',
+    rng: sequenceRng([
+      faceValue(4, 6), faceValue(4, 6), faceValue(3, 6),
+      faceValue(1, 20),
+    ]),
+  })
+
+  assert.equal(result.refusal, null)
+  const hitSquire = result.affected.find((c) => c.id === squire.id)
+  const hitGoblin = result.affected.find((c) => c.id === goblin.id)
+  assert.ok(hitSquire !== undefined && hitGoblin !== undefined, 'both were in the fire')
+
+  assert.equal(hitSquire.currentHp, squire.maxHp, 'the squire is sculpted clear and untouched')
+  assert.ok(hitGoblin.currentHp < inRange.currentHp, 'the goblin is not')
+  assert.ok(result.lines.some((l) => /sculpted clear/.test(l)))
 })

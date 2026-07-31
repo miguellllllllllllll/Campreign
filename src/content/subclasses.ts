@@ -33,6 +33,7 @@ export interface SubclassFeature {
  * adding a second kind forces every reader to handle it.
  */
 export type SubclassEffect =
+  | { kind: 'areaShaping'; power: 'sculptSpells' }
   | { kind: 'itemEconomy'; power: 'fastHands' }
   | { kind: 'openingAdvantage'; power: 'ambush' }
   | { kind: 'castHook'; power: 'discipleOfLife' | 'arcaneWard' }
@@ -94,17 +95,11 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You throw the loudest spells in the book and have learned to do it without hitting your own party.',
     feature: {
       name: 'Sculpt Spells',
-      description: 'Your allies automatically pass their saves against your area spells.',
-      active: false,
-      /*
-       * Burning Hands now genuinely covers an area, and resolveAoeTargetSave
-       * has the sculpting branch written and wired. It cannot fire: every
-       * roster in this build is one hero and one monster, so the set of allies
-       * to shield is always empty. The blocker is a second party member, which
-       * README lists under "Not in this build" — not the spell or the engine.
-       */
-      pending: 'There is never anyone on your side of the board to shield.',
+      description:
+        'Your allies are spared your own fire — they pass their saves automatically and take nothing.',
+      active: true,
     },
+    effect: { kind: 'areaShaping', power: 'sculptSpells' },
   },
   {
     id: 'abjuration',

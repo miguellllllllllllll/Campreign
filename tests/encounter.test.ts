@@ -10,7 +10,7 @@ import {
   hasLegalAction,
   moveActive,
   reachableSquares,
-  takeEnemyTurn,
+  takeAutomaticTurn,
 } from '../src/lib/dnd/encounter.ts'
 import { GOBLIN, spawnMonster } from '../src/lib/dnd/data/monsters.ts'
 import type { AttackAction } from '../src/types/action.ts'
@@ -314,7 +314,7 @@ test('the goblin closes the distance and swings in one turn', () => {
   })
   // Two diagonal steps close the gap, then the attack roll and damage die.
   const rng = sequenceRng([faceValue(19, 20), faceValue(3, 6)])
-  const { encounter: after, outcome } = takeEnemyTurn(state, rng)
+  const { encounter: after, outcome } = takeAutomaticTurn(state, rng)
 
   assert.deepEqual(after.combatants.goblin?.position, { x: 3, y: 3 }, 'stops when adjacent')
   assert.equal(after.movementRemaining, 2, 'only one square was needed')
@@ -332,7 +332,7 @@ test('a goblin that cannot reach anyone says so instead of throwing', () => {
       goblin: spawnMonster(GOBLIN, { id: 'goblin', position: { x: 4, y: 4 } }),
     },
   })
-  const { outcome, encounter: after } = takeEnemyTurn(state, constantRng(0.5))
+  const { outcome, encounter: after } = takeAutomaticTurn(state, constantRng(0.5))
   assert.equal(outcome, null)
   assert.match(after.log.at(-1) ?? '', /cannot reach/)
 })

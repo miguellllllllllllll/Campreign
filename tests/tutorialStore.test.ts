@@ -25,15 +25,34 @@ function begin() {
   return useTutorialStore.getState()
 }
 
-test('begin puts the hero and the goblin four squares apart', () => {
+test('begin puts a hero, a squire and a goblin on the board', () => {
   begin()
-  const roster = useTutorialStore.getState().roster
-  assert.equal(roster?.length, 2)
-  const [hero, goblin] = roster ?? []
-  assert.equal(hero?.team, 'party')
-  assert.equal(goblin?.team, 'foes')
+  const roster = useTutorialStore.getState().roster ?? []
+  assert.equal(roster.length, 3)
+
+  const party = roster.filter((c) => c.team === 'party')
+  const foes = roster.filter((c) => c.team === 'foes')
+  assert.equal(party.length, 2, 'the hero no longer stands alone')
+  assert.equal(foes.length, 1)
+
+  const hero = roster[0]
+  const goblin = foes[0]
   assert.equal(hero?.speedSquares, 3, 'movement is capped so it fits the board')
   assert.equal(Math.abs((hero?.position.y ?? 0) - (goblin?.position.y ?? 0)), 4)
+})
+
+test('the squire stands inside a blast aimed from the hero', () => {
+  // Sculpt Spells is only observable if the ally is somewhere the fire reaches.
+  begin()
+  const roster = useTutorialStore.getState().roster ?? []
+  const [hero, squire] = roster.filter((c) => c.team === 'party')
+  assert.ok(hero !== undefined && squire !== undefined)
+  const distance = Math.max(
+    Math.abs(hero.position.x - squire.position.x),
+    Math.abs(hero.position.y - squire.position.y),
+  )
+  assert.ok(distance <= 3, 'Burning Hands has a three-square radius')
+  assert.notEqual(hero.id, squire.id)
 })
 
 test('an event the current step does not care about is ignored', () => {
@@ -94,7 +113,7 @@ test('entering the initiative step is what starts the encounter', () => {
 
   const encounter = useCombatStore.getState().encounter
   assert.ok(encounter, 'the startCombat effect built the encounter')
-  assert.equal(encounter?.order.length, 2)
+  assert.equal(encounter?.order.length, 3, 'hero, squire and goblin all roll initiative')
   assert.equal(encounter?.round, 1)
 })
 

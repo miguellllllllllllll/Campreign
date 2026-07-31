@@ -130,10 +130,17 @@ export function TutorialRunner() {
   const step = stepById(stepId)
   if (step === undefined) return null
 
-  const hero = encounter === null ? undefined : combatantsOf(encounter, 'party')[0]
+  /*
+   * By id, not by team index. There are two combatants on the party side now,
+   * and "the first one" would be whoever happened to roll higher initiative —
+   * so the action bar would occasionally be driving the squire.
+   */
+  const hero = encounter === null ? undefined : encounter.combatants[character.id]
   const foe = encounter === null ? undefined : combatantsOf(encounter, 'foes')[0]
   const active = encounter === null ? undefined : activeCombatant(encounter)
-  const playerTurn = active?.team === 'party'
+  // The player's own turn, not merely their side's — the squire is on their
+  // team and plays itself.
+  const playerTurn = active?.id === character.id
 
   // Every combat step past the initiative roll hands the board over.
   const inCombat = encounter !== null && step.phase === 'combat' && step.id !== 'initiative'
