@@ -652,7 +652,14 @@ function stepToward(from: GridPosition, to: GridPosition): GridPosition {
  * deliberately simple — the tutorial is teaching the player's turn, not
  * showing off tactics.
  */
-export function takeEnemyTurn(
+/**
+ * Plays one turn for a combatant nobody is steering.
+ *
+ * Named for enemies when they were the only ones, and now drives the squire
+ * as well — the logic never cared which team the actor was on, because
+ * nearestEnemy reads it off the actor.
+ */
+export function takeAutomaticTurn(
   encounter: Encounter,
   rng: Rng = Math.random,
 ): { encounter: Encounter; outcome: AttackOutcome | null } {

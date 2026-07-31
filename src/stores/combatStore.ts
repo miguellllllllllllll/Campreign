@@ -11,10 +11,10 @@ import {
   endTurn,
   resolveReaction,
   moveActive,
-  takeEnemyTurn,
+  takeAutomaticTurn,
   type Encounter,
 } from '../lib/dnd/encounter.ts'
-import type { AttackOutcome, Combatant, GridPosition, Team } from '../types/combat.ts'
+import type { AttackOutcome, Combatant, GridPosition } from '../types/combat.ts'
 import type { Rng } from '../types/dice.ts'
 
 interface CombatStore {
@@ -23,8 +23,10 @@ interface CombatStore {
   lastOutcome: AttackOutcome | null
   /** Why the last attempted action was rejected, cleared as soon as one lands. */
   refusal: string | null
+  /** The combatant the player steers. Everyone else plays themselves. */
+  playerId: string | null
   /** `rng` is injectable so a test can pin initiative and the foe's swing. */
-  start: (roster: readonly Combatant[], rng?: Rng) => void
+  start: (roster: readonly Combatant[], playerId: string, rng?: Rng) => void
   move: (to: GridPosition) => boolean
   attack: (args: { targetId: string; attackId: string; maneuverId?: 'trip' }) => AttackOutcome | null
   /** Spends the paladin's oath charge. Costs no action, so the turn continues. */
@@ -44,12 +46,13 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
   encounter: null,
   lastOutcome: null,
   refusal: null,
+  playerId: null,
 
-  start: (roster, rng = Math.random) => {
+  start: (roster, playerId, rng = Math.random) => {
     // The goblin can win initiative, so hand control back to the player before
     // the board is ever shown — otherwise there is nothing they can press.
-    const played = playFoeTurns(createEncounter(roster, rng), rng)
-    set({ encounter: played.encounter, lastOutcome: played.outcome, refusal: null })
+    const played = playUntilPlayerTurn(createEncounter(roster, rng), playerId, rng)
+    set({ encounter: played.encounter, lastOutcome: played.outcome, refusal: null, playerId })
   },
 
   move: (to) => {
@@ -127,7 +130,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
      */
     const settled =
       encounterWinner(result.encounter) === null
-        ? playFoeTurns(endTurn(result.encounter), rng)
+        ? playUntilPlayerTurn(endTurn(result.encounter), get().playerId, rng)
         : { encounter: result.encounter, outcome: null }
 
     set({
@@ -141,7 +144,7 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     const { encounter } = get()
     if (encounter === null) return
 
-    const played = playFoeTurns(endTurn(encounter), rng)
+    const played = playUntilPlayerTurn(endTurn(encounter), get().playerId, rng)
     set({
       encounter: played.encounter,
       lastOutcome: played.outcome ?? get().lastOutcome,
@@ -149,21 +152,25 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     })
   },
 
-  reset: () => set({ encounter: null, lastOutcome: null, refusal: null }),
+  reset: () => set({ encounter: null, lastOutcome: null, refusal: null, playerId: null }),
 }))
 
-function activeTeam(encounter: Encounter): Team | undefined {
-  const id = encounter.order[encounter.activeIndex]
-  return id === undefined ? undefined : encounter.combatants[id]?.team
+function activeId(encounter: Encounter): string | undefined {
+  return encounter.order[encounter.activeIndex]
 }
 
 /**
- * Runs every foe turn back to back until the player is up again. Done in the
- * store rather than the component so the player never sees a board they cannot
- * act on.
+ * Runs every turn nobody is steering, back to back, until the player's own
+ * character is up. Done in the store rather than the component so the player
+ * never sees a board they cannot act on.
+ *
+ * That now includes the squire as well as the goblin: an ally the player does
+ * not control is, from the turn loop's point of view, the same problem as an
+ * enemy.
  */
-function playFoeTurns(
+function playUntilPlayerTurn(
   encounter: Encounter,
+  playerId: string | null,
   rng: Rng = Math.random,
 ): {
   encounter: Encounter
@@ -172,8 +179,12 @@ function playFoeTurns(
   let current = encounter
   let outcome: AttackOutcome | null = null
 
-  while (activeTeam(current) === 'foes' && encounterWinner(current) === null) {
-    const enemy = takeEnemyTurn(current, rng)
+  while (
+    playerId !== null
+    && activeId(current) !== playerId
+    && encounterWinner(current) === null
+  ) {
+    const enemy = takeAutomaticTurn(current, rng)
     outcome = enemy.outcome ?? outcome
 
     /*

@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { FINAL_STEP_ID, FIRST_STEP_ID, stepById } from '../content/goblinCellar.ts'
 import { characterToCombatant } from '../lib/dnd/combatants.ts'
+import { LOYAL_SQUIRE, spawnCompanion } from '../lib/dnd/data/companions.ts'
 import { GOBLIN, spawnMonster } from '../lib/dnd/data/monsters.ts'
 import type { Character } from '../types/character.ts'
 import type { Combatant } from '../types/combat.ts'
@@ -18,6 +19,8 @@ const TUTORIAL_SPEED_SQUARES = 3
 const HERO_START = { x: 2, y: 4 }
 const GOBLIN_START = { x: 2, y: 0 }
 const GOBLIN_ID = 'goblin'
+/** Beside the hero, and inside a three-square blast from them. */
+const SQUIRE_START = { x: 1, y: 4 }
 
 interface TutorialStore {
   stepId: string
@@ -26,6 +29,8 @@ interface TutorialStore {
   resolution: string | null
   /** Kept here so a startCombat effect can build the encounter itself. */
   roster: Combatant[] | null
+  /** The combatant the player steers; everyone else on the board plays itself. */
+  playerId: string | null
   begin: (character: Character) => void
   dispatch: (event: GameEvent) => void
   restart: () => void
@@ -68,6 +73,7 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
   finished: false,
   resolution: null,
   roster: null,
+  playerId: null,
 
   begin: (character) => {
     const roster = [
@@ -75,9 +81,12 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
         position: HERO_START,
         speedSquares: TUTORIAL_SPEED_SQUARES,
       }),
+      // A second body on the player's side, so an area spell has somebody to
+      // spare. It fights itself; the tutorial is teaching one hero's choices.
+      spawnCompanion(LOYAL_SQUIRE, { position: SQUIRE_START }),
       spawnMonster(GOBLIN, { id: GOBLIN_ID, position: GOBLIN_START }),
     ]
-    set({ stepId: FIRST_STEP_ID, finished: false, resolution: null, roster })
+    set({ stepId: FIRST_STEP_ID, finished: false, resolution: null, roster, playerId: character.id })
   },
 
   dispatch: (event) => {
@@ -104,16 +113,26 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
     // Effects run after the state has settled, never inside the updater, so a
     // combat action can never see a half-advanced tutorial.
     const arrived = next === null ? undefined : stepById(next)
-    for (const effect of arrived?.onEnter ?? []) applyEffect(effect, get().roster)
+    for (const effect of arrived?.onEnter ?? []) {
+      applyEffect(effect, get().roster, get().playerId)
+    }
   },
 
   restart: () => set({ stepId: FIRST_STEP_ID, finished: false, resolution: null }),
 }))
 
-function applyEffect(effect: EffectSpec, roster: readonly Combatant[] | null): void {
+function applyEffect(
+  effect: EffectSpec,
+  roster: readonly Combatant[] | null,
+  playerId: string | null,
+): void {
   switch (effect.kind) {
     case 'startCombat':
-      if (roster !== null) useCombatStore.getState().start(roster)
+      // The player steers exactly one of these; the squire and the goblin both
+      // play themselves, so the loop needs to know which id to stop at.
+      if (roster !== null && playerId !== null) {
+        useCombatStore.getState().start(roster, playerId)
+      }
       return
   }
 }

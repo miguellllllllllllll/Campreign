@@ -233,8 +233,8 @@ test('every subclass that claims to be active carries an effect', () => {
     active.sort(),
     [
       'abjuration', 'assassin', 'battlemaster', 'champion', 'devotion',
-      'life', 'light', 'thief', 'vengeance',
+      'evocation', 'life', 'light', 'thief', 'vengeance',
     ],
-    'nine features should now be genuinely wired',
+    'all ten features should now be genuinely wired',
   )
 })
