@@ -4,7 +4,12 @@ import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { applyHealing } from '../src/lib/dnd/combat.ts'
 import { createEncounter, endTurn } from '../src/lib/dnd/encounter.ts'
-import { castSpell } from '../src/lib/dnd/casting.ts'
+import {
+  castSpell,
+  castableSpells,
+  spellTargetsDying,
+  spellTargetsEnemies,
+} from '../src/lib/dnd/casting.ts'
 import { spawnCompanion, LOYAL_SQUIRE } from '../src/lib/dnd/data/companions.ts'
 import { GOBLIN, spawnMonster } from '../src/lib/dnd/data/monsters.ts'
 import {
@@ -294,3 +299,73 @@ test('three turns of bad luck kill a downed hero for good', () => {
 function spawnGoblin(position = { x: 3, y: 3 }): Combatant {
   return spawnMonster(GOBLIN, { position, id: 'goblin' })
 }
+
+// --- reaching the button --------------------------------------------------
+
+test('a utility cantrip is offered at all, which it never used to be', () => {
+  /*
+   * The reason Spare the Dying was dead code for so long: only cantrips
+   * carrying an `attack` became buttons, and this one has nothing to aim.
+   */
+  const caster = hero()
+  assert.ok(caster.cantrips?.includes('spareTheDying'), 'the loadout grants it')
+
+  const offered = castableSpells(caster, [caster, downed()])
+  assert.ok(
+    offered.some((one) => one.spell.id === 'spareTheDying'),
+    'it reaches the action bar',
+  )
+})
+
+test('it greys out with a reason when nobody is down', () => {
+  const caster = hero()
+  const found = castableSpells(caster, [caster, { ...hero('upright'), currentHp: 9 }]).find(
+    (one) => one.spell.id === 'spareTheDying',
+  )
+  assert.equal(found?.castable, false)
+  assert.match(found?.reason ?? '', /Nobody is down/)
+})
+
+test('an enemy bleeding out is not your problem', () => {
+  // Scoped to your own side, so a dying foe does not light up the button.
+  const caster = hero()
+  const dyingFoe = { ...downed(), team: 'foes' as const, deathSaves: { successes: 0, failures: 0 } }
+  const found = castableSpells(caster, [caster, dyingFoe]).find(
+    (one) => one.spell.id === 'spareTheDying',
+  )
+  assert.equal(found?.castable, false)
+})
+
+test('a cantrip stays castable with every slot spent', () => {
+  const caster = { ...hero(), spellSlots: 0 }
+  const offered = castableSpells(caster, [caster, downed()])
+  const cantrip = offered.find((one) => one.spell.id === 'spareTheDying')
+  const levelled = offered.find((one) => one.spell.level >= 1)
+
+  assert.equal(cantrip?.castable, true, 'cantrips do not run out')
+  assert.equal(levelled?.castable, false)
+  assert.match(levelled?.reason ?? '', /No spell slots/)
+})
+
+test('damage cantrips are not printed twice', () => {
+  // Sacred Flame is already a weapon in `attacks`; it must not also be a spell.
+  const caster = buildCharacter(
+    answers({ magicStyleId: 'radiantWrath' }),
+    'Burner',
+    { ...meta, id: 'burner' },
+  )
+  const combatant = characterToCombatant(caster, { position: { x: 0, y: 0 } })
+  assert.ok(combatant.cantrips?.includes('sacredFlame'))
+  assert.ok(combatant.attacks.some((a) => a.id.toLowerCase().includes('sacredflame')))
+  assert.equal(
+    castableSpells(combatant, [combatant]).filter((one) => one.spell.id === 'sacredFlame').length,
+    0,
+    'it is a weapon here, not a spell button',
+  )
+})
+
+test('the registry, not a hard-coded id, says what aims at the dying', () => {
+  assert.equal(spellTargetsDying('spareTheDying'), true)
+  assert.equal(spellTargetsDying('cureWounds'), false)
+  assert.equal(spellTargetsEnemies('spareTheDying'), false, 'it lands on your own side')
+})

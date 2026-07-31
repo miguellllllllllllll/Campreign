@@ -12,7 +12,8 @@ import {
   reachableSquares,
   turnOrder,
 } from '../../lib/dnd/encounter.ts'
-import { spellTargetsEnemies } from '../../lib/dnd/casting.ts'
+import { spellTargetsDying, spellTargetsEnemies } from '../../lib/dnd/casting.ts'
+import { isDying } from '../../lib/dnd/dying.ts'
 import { channelDivinityPowerFor } from '../../content/subclasses.ts'
 import { useActiveCharacter, useRosterHydrated } from '../../stores/characterStore.ts'
 import { useCombatStore } from '../../stores/combatStore.ts'
@@ -138,6 +139,9 @@ export function TutorialRunner() {
    */
   const hero = encounter === null ? undefined : encounter.combatants[character.id]
   const foe = encounter === null ? undefined : combatantsOf(encounter, 'foes')[0]
+  /** Whoever on the party's side is on the floor and still slipping. */
+  const fallen =
+    encounter === null ? undefined : combatantsOf(encounter, 'party').find(isDying)
   const active = encounter === null ? undefined : activeCombatant(encounter)
   // The player's own turn, not merely their side's — the squire is on their
   // team and plays itself.
@@ -187,18 +191,23 @@ export function TutorialRunner() {
   }
 
   /**
-   * Healing targets the caster. With one hero and one goblin on the board there
-   * is no ally to aim at, and a target picker would be a click with no decision
-   * in it — the same call the vow makes.
+   * Spells say where they go rather than asking.
+   *
+   * Beams and blasts point at the goblin, heals and wards land on the caster,
+   * and Spare the Dying finds whoever is on the floor — it cannot work on
+   * anybody else, so offering a picker would be offering one answer.
+   *
+   * Cure Wounds still lands on the caster even with a dying squire beside them.
+   * Choosing between healing yourself and reaching your ally is a real decision
+   * and deserves a real targeting step, which this is not.
    */
   function cast(spellId: string) {
     if (hero === undefined) return
-    /*
-     * Beams and blasts point at the goblin; heals and wards land on the caster.
-     * With one enemy and one ally there is no decision in it, so the spell says
-     * where it goes rather than asking.
-     */
-    const aimed = spellTargetsEnemies(spellId) ? foe : hero
+    const aimed = spellTargetsEnemies(spellId)
+      ? foe
+      : spellTargetsDying(spellId)
+        ? fallen
+        : hero
     if (aimed === undefined) return
     useCombatStore.getState().cast({
       spellId,
@@ -295,6 +304,7 @@ export function TutorialRunner() {
             <ActionBar
               active={hero}
               target={foe}
+              board={turnOrder(encounter)}
               movementRemaining={playerTurn ? encounter.movementRemaining : 0}
               hasActed={encounter.hasActed}
               attackEnabled={boardLive && step.id !== 'move'}

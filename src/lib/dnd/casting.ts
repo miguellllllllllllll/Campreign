@@ -58,28 +58,65 @@ export interface CastableSpell {
 }
 
 /**
- * Every prepared spell, each marked with whether it can be cast this instant.
+ * Every spell this combatant could press, each marked with whether it can be
+ * cast this instant.
  *
  * Returns the unusable ones too rather than filtering them out: a player who
  * cannot see Bless has no way to learn that they know it, and a greyed button
  * with a reason teaches more than an absent one.
+ *
+ * Cantrips are included, but only the ones that are not already an attack.
+ * A damage cantrip arrives on the board as a weapon in `attacks` and would
+ * otherwise print twice; a utility cantrip arrives nowhere at all, which is how
+ * Spare the Dying sat in two starting loadouts with no way to cast it.
+ *
+ * `board` is optional and only ever narrows: without it a spell that needs a
+ * particular kind of target is offered and refused on cast, with it the button
+ * greys out and says why first.
  */
-export function castableSpells(combatant: Combatant): CastableSpell[] {
-  return (combatant.preparedSpells ?? []).flatMap((id): CastableSpell[] => {
+export function castableSpells(
+  combatant: Combatant,
+  board: readonly Combatant[] = [],
+): CastableSpell[] {
+  const utilityCantrips = (combatant.cantrips ?? []).filter((id) => {
     const spell = SPELLS_BY_ID[id]
-    if (spell === undefined) return []
-    if (spell.effect === undefined) {
-      return [{ spell, castable: false, reason: 'This one is not ready to cast yet.' }]
-    }
-    if (spell.effect.kind === 'reactionSpell') {
-      // Known and usable, just never from here — it fires when you are hit.
-      return [{ spell, castable: false, reason: 'Cast in reaction, when a blow is about to land.' }]
-    }
-    if ((combatant.spellSlots ?? 0) <= 0) {
-      return [{ spell, castable: false, reason: 'No spell slots left until you rest.' }]
-    }
-    return [{ spell, castable: true }]
+    /*
+     * Two exclusions, for opposite reasons. A cantrip with an `attack` is
+     * already on the board as a weapon and would print twice. A cantrip with no
+     * `effect` does nothing anywhere — Light and Thaumaturgy are flavour, and
+     * Guidance is waiting on casting outside a fight — and a permanently greyed
+     * button teaches a player nothing except that the bar is cluttered.
+     */
+    return spell !== undefined && spell.attack === undefined && spell.effect !== undefined
   })
+
+  return [...(combatant.preparedSpells ?? []), ...utilityCantrips].flatMap(
+    (id): CastableSpell[] => {
+      const spell = SPELLS_BY_ID[id]
+      if (spell === undefined) return []
+      if (spell.effect === undefined) {
+        return [{ spell, castable: false, reason: 'This one is not ready to cast yet.' }]
+      }
+      if (spell.effect.kind === 'reactionSpell') {
+        // Known and usable, just never from here — it fires when you are hit.
+        return [
+          { spell, castable: false, reason: 'Cast in reaction, when a blow is about to land.' },
+        ]
+      }
+      // Cantrips never run out, so the slot count has no say over them. It used
+      // to, harmlessly, because no cantrip could reach this function.
+      if (spell.level >= 1 && (combatant.spellSlots ?? 0) <= 0) {
+        return [{ spell, castable: false, reason: 'No spell slots left until you rest.' }]
+      }
+      if (
+        spell.effect.kind === 'stabilise'
+        && !board.some((one) => one.team === combatant.team && isDying(one))
+      ) {
+        return [{ spell, castable: false, reason: 'Nobody is down and slipping away.' }]
+      }
+      return [{ spell, castable: true }]
+    },
+  )
 }
 
 /**
@@ -92,6 +129,17 @@ export function castableSpells(combatant: Combatant): CastableSpell[] {
 export function spellTargetsEnemies(spellId: string): boolean {
   const kind = SPELLS_BY_ID[spellId]?.effect?.kind
   return kind === 'spellAttack' || kind === 'aoeSave' || kind === 'autoHit'
+}
+
+/**
+ * Whether a spell is only ever aimed at somebody who has already dropped.
+ *
+ * Asked because the alternative is a caller hard-coding a spell id. Spare the
+ * Dying is the only one today, and the point of asking the registry is that the
+ * second one costs nothing.
+ */
+export function spellTargetsDying(spellId: string): boolean {
+  return SPELLS_BY_ID[spellId]?.effect?.kind === 'stabilise'
 }
 
 export interface CastResult {
