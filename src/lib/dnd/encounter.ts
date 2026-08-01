@@ -22,6 +22,11 @@ import {
 import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
+import {
+  canActionSurge,
+  narrateActionSurge,
+  spendActionSurge,
+} from './actionSurge.ts'
 import { checkConcentration, dropConcentration } from './concentration.ts'
 import { isDead, isDying, narrateDeathSave, rollDeathSave } from './dying.ts'
 import { availableReactions, canShield, resolveShield, resolveWardingFlare } from './reactions.ts'
@@ -655,6 +660,43 @@ export function resolveReaction(
       log,
     },
     outcome,
+    refusal: null,
+  }
+}
+
+export interface SurgeResult {
+  encounter: Encounter
+  refusal: string | null
+}
+
+/**
+ * Spends a second action, which here means handing back the one already used.
+ *
+ * Movement is deliberately not restored. Action Surge gives an action in the
+ * SRD and nothing else, and a feature that quietly also refilled your movement
+ * would be a different, better feature that the tutorial never explained.
+ */
+export function actionSurge(encounter: Encounter): SurgeResult {
+  const actor = activeCombatant(encounter)
+  if (actor === undefined) return { encounter, refusal: 'Nobody is taking a turn.' }
+  if (!canActionSurge(actor, encounter.hasActed)) {
+    return {
+      encounter,
+      refusal:
+        (actor.actionSurges ?? 0) <= 0
+          ? 'You have no surge left until you rest.'
+          : 'You still have your action — spend it before you surge.',
+    }
+  }
+
+  const spent = spendActionSurge(actor)
+  return {
+    encounter: {
+      ...encounter,
+      combatants: { ...encounter.combatants, [spent.id]: spent },
+      hasActed: false,
+      log: [...encounter.log, narrateActionSurge(spent.name, spent.actionSurges ?? 0)],
+    },
     refusal: null,
   }
 }

@@ -11,6 +11,7 @@ import {
   superiorityDiceFor,
 } from '../../content/subclasses.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
+import { actionSurgesFor } from './actionSurge.ts'
 
 /**
  * Taking a level.
@@ -212,6 +213,7 @@ export function levelUp(character: Character): LevelUpResult {
    * where its numbers actually reach the sheet. Recomputed at the new level
    * rather than toggled, so the grant and the gate can never disagree.
    */
+  const surges = actionSurgesFor(character.classId, level)
   const subclassId = character.subclassId
   const critOn = critThresholdFor(subclassId, level)
   const superiorityDice = superiorityDiceFor(subclassId, level)
@@ -225,6 +227,7 @@ export function levelUp(character: Character): LevelUpResult {
     ...character,
     level,
     maxHp,
+    ...(surges === undefined ? {} : { actionSurges: surges }),
     ...(critOn === undefined ? {} : { critOn }),
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),

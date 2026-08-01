@@ -134,6 +134,11 @@ export interface Combatant {
    * rather than dead — absent is every monster, which simply drops.
    */
   deathSaves?: DeathSaves
+  /**
+   * Second actions left before a rest. Absent for everyone who is not a
+   * 2nd-level fighter, so no caller has to ask what class somebody is.
+   */
+  actionSurges?: number
   /** Potions still unopened. */
   potions?: number
   /** Whether using an item costs this combatant a bonus action instead. */

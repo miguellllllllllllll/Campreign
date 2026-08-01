@@ -257,6 +257,10 @@ export function TutorialRunner() {
     useCombatStore.getState().drink()
   }
 
+  function surge() {
+    useCombatStore.getState().surge()
+  }
+
   function react(choice: ReactionKind | 'pass') {
     useCombatStore.getState().dispatchReaction(choice)
   }
@@ -360,6 +364,7 @@ export function TutorialRunner() {
               onDrink={drink}
               bonusActionSpent={encounter?.bonusActionSpent ?? false}
               {...(oathPower === undefined ? {} : { oathPower, onChannel: channel })}
+              {...((hero.actionSurges ?? 0) > 0 ? { onSurge: surge } : {})}
               onEndTurn={endTurn}
             />
           )}
