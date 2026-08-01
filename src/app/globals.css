@@ -315,6 +315,74 @@
     40px 70px;
 }
 
+/* ---------------------------------------------------------------------------
+ * Tactile furniture
+ *
+ * The casual-game look these come from is built almost entirely out of three
+ * tricks: grain so a fill is not flat, a hard offset underside so a panel has
+ * thickness, and a notched ribbon so a label is cloth rather than a rectangle.
+ * None of it needs artwork.
+ *
+ * Drawn rather than downloaded, which is the same call `custom-icons.tsx`
+ * records: the reference sheets are somebody's asset pack, and NOTICE says
+ * third-party art brings its attribution in the same commit as the assets. A
+ * turbulence filter is nobody's, so the question does not arise.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Paper grain. A blended background layer rather than a `::before`, on purpose
+ * — a pseudo-element would need `position: relative` on the host and that is a
+ * layout change, which this session does not get to make. `background-blend-mode`
+ * touches nothing but pixels.
+ */
+@utility texture-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.32'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
+}
+
+/**
+ * Thickness. The whole illusion is the third shadow — a hard, un-blurred offset
+ * in the edge colour, so the panel has a side rather than a drop shadow. Blur
+ * it and it goes straight back to a floating rectangle.
+ */
+@utility panel-carved {
+  /* Deliberately sets no `border`. It did, and the shorthand beat the
+     `border-amber-torch/80` that marks a card as chosen — a utility that
+     silently repaints a selection state is worse than no utility. Thickness
+     here, colour stays with whatever border class the component already had. */
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, var(--color-parchment) 12%, transparent),
+    inset 0 -3px 6px -2px rgb(0 0 0 / 0.5),
+    0 4px 0 var(--color-edge),
+    0 12px 24px -10px rgb(0 0 0 / 0.85);
+}
+
+/** The same shape pressed in instead of standing out — for wells and slots. */
+@utility panel-sunken {
+  border: 2px solid var(--color-edge);
+  box-shadow:
+    inset 0 3px 7px -1px rgb(0 0 0 / 0.65),
+    0 1px 0 color-mix(in srgb, var(--color-parchment) 8%, transparent);
+}
+
+/** A cloth banner: both ends notched, so it reads as ribbon and not as a chip. */
+@utility ribbon-swallowtail {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 0.75rem) 50%,
+    100% 100%,
+    0 100%,
+    0.75rem 50%
+  );
+}
+
+/** One end notched, for a banner that starts flush against something. */
+@utility ribbon-tail-right {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.75rem) 50%, 100% 100%, 0 100%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
