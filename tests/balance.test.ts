@@ -4,6 +4,8 @@ import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { levelUp } from '../src/lib/dnd/leveling.ts'
 import { rosterFor } from '../src/stores/tutorialStore.ts'
 import { winRate } from './helpers/autoplay.ts'
+import { MONSTERS } from '../src/lib/dnd/data/monsters.ts'
+import { LOYAL_SQUIRE } from '../src/lib/dnd/data/companions.ts'
 import type { Character, CreationAnswers } from '../src/types/character.ts'
 
 /*
@@ -29,11 +31,18 @@ function fighterAtLevel(level: number): Character {
       flawId: 'orders',
       equipmentChoice: 'defensive',
       auraId: 'amber',
-      subclassId: 'battleMaster',
+      subclassId: 'battlemaster',
     } as CreationAnswers,
     'Sim',
     { id: 'sim', now: 0 },
   )
+  /*
+   * Asserted rather than trusted. `buildCharacter` drops a subclass id it does
+   * not recognise and says nothing, so this fixture spent its first version
+   * measuring a Battle Master that was never one — the id was `battleMaster`
+   * and every real id here is lower case.
+   */
+  assert.equal(character.subclassId, 'battlemaster', 'the fixture lost its subclass')
   while (character.level < level) {
     const result = levelUp(character)
     assert.equal(result.refusal, null, 'the fixture could not be levelled')
@@ -49,10 +58,10 @@ test('the spider alone is a fight the party usually wins', () => {
   const rate = winRate(() => rosterFor('rafters', hero), RUNS)
 
   assert.equal(rate.undecided, 0, 'a fight nobody can finish means the harness is lying')
-  // Documented at 59%. Auto-play never casts, drinks or surges, so the real
-  // player sits above this.
+  // Documented at 67% for a fighter. Auto-play never casts, drinks or surges,
+  // so the real player sits above this.
   assert.ok(
-    rate.party > 0.5 && rate.party < 0.7,
+    rate.party > 0.58 && rate.party < 0.78,
     `the spider is meant to be a close fight the party takes; got ${(rate.party * 100).toFixed(1)}%`,
   )
 })
@@ -97,4 +106,88 @@ test('the opening goblin is the easiest thing in the game', () => {
     rate.party > 0.9,
     `the first fight anybody has should not be losable; got ${(rate.party * 100).toFixed(1)}%`,
   )
+})
+
+// --- Every class, not just the one the encounter was tuned on ---------------
+
+/*
+ * The numbers above describe a fighter, and for a long while that was the only
+ * build anybody had measured. Running the other four turned up a simulation
+ * defect rather than a design one: `takeAutomaticTurn` swung `attacks[0]`,
+ * which is always the melee weapon, so an auto-played wizard walked into knife
+ * range holding Fire Bolt and won 16.7% of the rafters. Choosing by reach and
+ * damage instead put it at 54%.
+ *
+ * What survives is a real spread — a fighter takes the rafters about twice as
+ * often as a life cleric — and these assertions exist to keep it from widening
+ * into a fight some classes simply cannot be brought to.
+ */
+
+const BUILDS = [
+  { classId: 'fighter', subclassId: 'champion' },
+  { classId: 'rogue', subclassId: 'thief' },
+  { classId: 'cleric', subclassId: 'life', magicStyleId: 'healersMercy' },
+  { classId: 'cleric', subclassId: 'light', magicStyleId: 'radiantWrath' },
+  { classId: 'wizard', subclassId: 'evocation', magicStyleId: 'pyromancer' },
+  { classId: 'wizard', subclassId: 'abjuration', magicStyleId: 'guardianMage' },
+  { classId: 'paladin', subclassId: 'devotion' },
+] as const
+
+function buildAtLevel(spec: (typeof BUILDS)[number], level: number): Character {
+  let character = buildCharacter(
+    {
+      raceId: 'human',
+      backgroundId: 'soldier',
+      flawId: 'orders',
+      equipmentChoice: 'defensive',
+      auraId: 'amber',
+      ...spec,
+    } as CreationAnswers,
+    'Sim',
+    { id: 'sim', now: 0 },
+  )
+  assert.equal(character.subclassId, spec.subclassId, `${spec.classId} lost its subclass`)
+  while (character.level < level) {
+    character = levelUp(character).character
+  }
+  return character
+}
+
+test('no class is locked out of the tutorial it has to finish', () => {
+  for (const spec of BUILDS) {
+    const name = `${spec.classId}/${spec.subclassId}`
+    const cellar = winRate(() => rosterFor('cellar', buildAtLevel(spec, 1)), RUNS)
+    const hero = buildAtLevel(spec, 2)
+    const deeper = winRate(() => rosterFor('deeper', hero), RUNS)
+    const rafters = winRate(() => rosterFor('rafters', hero), RUNS)
+
+    assert.equal(cellar.undecided + deeper.undecided + rafters.undecided, 0, `${name} stalled`)
+    assert.ok(cellar.party > 0.95, `${name} cellar ${(cellar.party * 100).toFixed(1)}%`)
+    assert.ok(deeper.party > 0.7, `${name} deeper ${(deeper.party * 100).toFixed(1)}%`)
+    /*
+     * A third is the floor, and it is deliberately generous. Auto-play never
+     * heals, so a life cleric — whose whole kit is healing — is the build this
+     * measurement flatters least, and it sits closest to the line at ~35%.
+     */
+    assert.ok(rafters.party > 0.3, `${name} rafters ${(rafters.party * 100).toFixed(1)}%`)
+  }
+})
+
+test('nothing the machine steers carries a second attack', () => {
+  /*
+   * A tripwire, not a rule about the game.
+   *
+   * `takeAutomaticTurn` now picks between attacks instead of taking the first,
+   * and that is a provable no-op for everything the machine actually drives —
+   * because every monster and the squire carry exactly one. Give a monster a
+   * bow as well as a bite and the choice starts deciding real fights, and the
+   * numbers above would shift with nothing pointing at why.
+   */
+  for (const monster of Object.values(MONSTERS)) {
+    assert.ok(
+      monster.attacks.length <= 1,
+      `${monster.id} has ${monster.attacks.length} attacks — re-check the balance figures`,
+    )
+  }
+  assert.ok(LOYAL_SQUIRE.attacks.length <= 1)
 })

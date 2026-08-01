@@ -273,9 +273,20 @@ export function rosterFor(encounterId: string, character: Character): Combatant[
   }
   /*
    * One enemy, and the hardest one written. Simulated over 600 auto-played runs
-   * at level 2: the party wins 59% against the spider alone, 96% against the
-   * bat and skeleton it follows. Pairing it with either of them dropped the
-   * party under 40%, and all three together to 31% — so it fights alone.
+   * at level 2: a fighter wins 67% against the spider alone, 98% against the
+   * bat and skeleton it follows. Pairing it with either of them drops the
+   * party under 40% — so it fights alone.
+   *
+   * "A fighter" is the correction. These read "the party" while only one build
+   * had ever been measured, and running the other four found the auto-player
+   * swinging `attacks[0]` — always the melee weapon — so a wizard walked into
+   * knife range holding Fire Bolt and took the rafters 17% of the time. Fixed
+   * in `takeAutomaticTurn`, which moved these numbers up too: the fighter now
+   * throws its handaxe while closing instead of arriving empty-handed.
+   *
+   * The spread that survives is real and is the thing to watch. A fighter takes
+   * this fight about twice as often as a life cleric (67% against 35%), and
+   * `tests/balance.test.ts` holds every class above a third.
    *
    * Those numbers are a floor rather than a forecast: the simulation plays the
    * hero automatically, so it never casts, drinks or spends an Action Surge.

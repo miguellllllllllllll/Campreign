@@ -330,6 +330,24 @@ the fight somebody remembered writing, and would stay green through exactly the
 change the test exists to catch. Adding a second monster to the rafters drops the
 party to 38% and turns it red.
 
+It also covers all five classes, which turned out to matter. The figures were
+measured on a fighter and written down as "the party", and running the rest
+found a defect in the simulation rather than the design: `takeAutomaticTurn`
+swung `attacks[0]`, always the melee weapon, so an auto-played wizard walked
+across the cellar holding Fire Bolt to hit things with a stick. It won 17% of
+the rafters. Choosing by reach and damage instead puts it at 54%.
+
+That fix is a provable no-op for the shipped game — every monster and the squire
+carry exactly one attack, and a test asserts it, so the choice can only start
+deciding real fights if somebody gives a monster a bow. It did move the
+documented numbers, because a fighter now throws its handaxe while closing
+instead of arriving empty-handed: 59% became 67%.
+
+What survives is a real spread. A fighter takes the rafters about twice as often
+as a life cleric, 67% against 35%, and the floor is set at a third. The healer is
+the build this measurement flatters least — auto-play never heals — which is
+exactly why the floor is generous rather than tight.
+
 The bands are wide on purpose. Pinning 59.2% would fail on noise and teach a
 reader to ignore the test; the assertions say "a close fight the party usually
 takes", "not a coin flip", and — the claim that survives both numbers drifting —
