@@ -38,31 +38,65 @@ compile-time, so it splits cleanly along one line:
 The five creature tokens currently on `main` were drawn by the rules session to
 be legible rather than good. Redrawing them is squarely your work.
 
-## Verifying art without a screenshot
+## Verifying art
 
-The browser preview pane reports a 0×0 viewport in this environment, so
-screenshots come back blank. `qlmanage` rasterises SVG and the result can be
-opened as an image:
+The browser preview works. This file used to say the pane reports a 0×0
+viewport and screenshots come back blank; that was a preview belonging to
+*another* session, running a dev server in this same folder, which this
+session's browser tools cannot reach. Start your own and it is fine:
+
+```
+preview_start name "hero-step-design"    # 5193, then screenshot as normal
+```
+
+Take that route for anything about the app — layout, spacing, a colour in
+context, whether a token reads against the square it sits in.
+
+For the drawings themselves, `qlmanage` is still the better instrument, and not
+because screenshots are broken. It rasterises an SVG at an exact pixel size, so
+you can put every shape on one sheet at the size it actually ships at:
 
 ```sh
 qlmanage -t -s 400 -o /tmp/out mydrawing.svg   # writes /tmp/out/mydrawing.svg.png
 ```
 
-Two things this caught that eyeballing the markup would not have: a silhouette
-that read as a completely different animal, and a path whose transcription into
-the file's shorthand had broken. **Render the paths exactly as they appear in
-the committed file**, not the draft you wrote them from.
+That is the check that earns its keep. **Render the shapes exactly as they
+appear in the committed file** — parse the file, do not re-type the draft you
+drew from — and lay them out *together, at shipping size*. Four things it has
+caught that eyeballing the markup would not:
+
+- a silhouette that read as a completely different animal;
+- a path whose transcription into the file's shorthand had broken;
+- the dummy token, which was perfectly legible on its own and identical to the
+  cleric next to it — visible only on a sheet of all of them at once;
+- every icon in `custom-icons.tsx`, drawn on a 24 grid and shipped at 12–18,
+  which is a failure you cannot see at any size but the real one.
+
+Legible is not the same as distinct, and neither is visible at the wrong size.
 
 ## Design rules already learned
 
-`creature-icons.tsx` opens with them, including the failures that produced them
-— busts reading as the generic contact-avatar, an even-armed cross reading as an
-"add" button, a spear-and-buckler reading as an arrow. Read that comment before
-drawing. Add to it when something fails; that file is the record.
+Both icon files open with them, including the failures that produced them —
+busts reading as the generic contact-avatar, an even-armed cross reading as an
+"add" button, a spear-and-buckler reading as an arrow, a boot reading as a lab
+flask. Read those comments before drawing. Add to them when something fails;
+those files are the record, and most of what is in them was only learnable by
+getting it wrong.
 
-The short version: filled shapes, never thin strokes — a token renders at about
-forty pixels and a 1.5px stroke disappears. Each shape fills its frame and is
-nothing but its own emblem.
+The short version, and the two halves pull opposite ways:
+
+- **Tokens** (`creature-icons.tsx`) are filled shapes, never thin strokes.
+  `QuestionStep` asks for 26, `MonsterPlate` for 30, `PracticeArena` for 58,
+  and `CombatGrid` for 68% of a square, which is the small end of that range.
+  A 1.5px stroke disappears at any of them. Each shape fills its frame and is
+  nothing but its own emblem.
+- **Action icons** (`custom-icons.tsx`) are line work at 12–18px, which is
+  *smaller* than the tokens despite the 24 grid the viewBox implies. Check the
+  call sites before drawing; nothing asks for 24. The budget is roughly two
+  marks, and interior detail is what dies first.
+
+Both come back to the same thing: draw for the size it ships at, and judge it
+next to its neighbours rather than on its own.
 
 ## Running it
 
