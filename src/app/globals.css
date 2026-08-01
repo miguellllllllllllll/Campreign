@@ -527,6 +527,47 @@
   mask-repeat: no-repeat;
 }
 
+/**
+ * A full ornate frame, for the one panel that should look more important than
+ * the cards around it. Corner filigree marks a card; this marks the card.
+ *
+ * Nine-sliced, which is the only way a drawn frame survives an arbitrary size:
+ * the four corners are pinned and the edges stretch between them. Stretching
+ * the whole 48×48 instead would pull the corner knots into smears, which is
+ * the same trap `rule-ornament` avoids with `mask-size: auto 100%`.
+ *
+ * Guarded behind `@supports`, and the guard is load-bearing rather than
+ * politeness. The overlay is a solid `currentColor` block that the mask cuts a
+ * frame out of; in a browser that cannot 9-slice a mask the declaration is
+ * dropped and the block stays — a gold rectangle over the card's whole
+ * content. So it starts hidden and only appears where the cut will happen.
+ */
+@utility frame-ornate {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    display: none;
+    pointer-events: none;
+    background-color: currentColor;
+    border-radius: inherit;
+  }
+
+  @supports (-webkit-mask-box-image: url("/ui/frame-panel.png")) {
+    &::after {
+      display: block;
+      -webkit-mask-box-image: url("/ui/frame-panel.png") 16 stretch;
+    }
+  }
+
+  @supports (mask-border-source: url("/ui/frame-panel.png")) {
+    &::after {
+      display: block;
+      mask-border: url("/ui/frame-panel.png") 16 / 16px stretch;
+    }
+  }
+}
+
 @utility corner-at-tl {
   -webkit-mask-position: left top;
   mask-position: left top;
