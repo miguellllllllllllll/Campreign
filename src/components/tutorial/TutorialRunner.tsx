@@ -133,7 +133,7 @@ export function TutorialRunner() {
       // The one panel on the page, and the only thing the reader has to act on
       // — it carries the full frame rather than the corner filigree every
       // ordinary card gets. Purely a treatment; see `frame-ornate`.
-      <ParchmentCard className="frame-ornate text-gold-border">
+      <ParchmentCard className="frame-ornate">
         <ParchmentCardContent className="pt-6">
           <h1 className="font-display text-xl text-parchment">You need a hero first</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
