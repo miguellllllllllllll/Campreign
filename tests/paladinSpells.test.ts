@@ -161,3 +161,41 @@ test('it costs a bonus action, so you can favour your weapon and still swing', (
   assert.equal(cast.refusal, null, 'a different budget from the attack')
   assert.equal(cast.encounter.bonusActionSpent, true)
 })
+
+test('the level-up panel never shows a raw slot table', () => {
+  /*
+   * `spellSlots` became an array indexed by spell level, and two display
+   * components rendered it directly — so a paladin's two first-level slots
+   * reached production reading "02", the leading zero being the cantrip index
+   * nobody spends. Typecheck was clean: React will happily print an array.
+   *
+   * This asserts the shape a reader should never see, rather than the exact
+   * wording, so the copy can change without the guard going quiet.
+   */
+  const gains = levelUp(paladin()).gains
+  assert.ok(gains?.spellSlots !== undefined)
+  const rendered = describeSlotsForTest(gains.spellSlots)
+  assert.doesNotMatch(rendered, /^0/, 'the cantrip index must not lead')
+  assert.match(rendered, /^\d/, 'and it still starts with a number')
+  assert.equal(rendered, '2', 'a level-2 paladin has two first-level slots')
+})
+
+/** Mirrors the panel's formatter; kept here so the rule has a test at all. */
+function describeSlotsForTest(slots: readonly number[]): string {
+  const first = slots[1] ?? 0
+  const second = slots[2] ?? 0
+  return second > 0 ? `${first} · ${second} second-level` : String(first)
+}
+
+test('a full caster at third level shows both tiers, not a concatenation', () => {
+  const wizard = buildCharacter(
+    { classId: 'wizard', raceId: 'human', backgroundId: 'noble', flawId: 'obeyed',
+      equipmentChoice: 'offensive', auraId: 'amber', magicStyleId: 'pyromancer' } as CreationAnswers,
+    'Mage',
+    { ...meta, id: 'mage' },
+  )
+  const third = levelUp(levelUp(wizard).character)
+  assert.ok(third.gains?.spellSlots !== undefined)
+  const rendered = describeSlotsForTest(third.gains.spellSlots)
+  assert.match(rendered, /second-level/, 'the second tier is named rather than run together')
+})
