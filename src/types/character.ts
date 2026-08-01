@@ -156,6 +156,8 @@ export interface Character {
   spellSlots?: number
   /** Action Surges left before a rest. Fighters, from 2nd level. */
   actionSurges?: number
+  /** Whether a slot can be burned on a blow. Paladins, from 2nd level. */
+  hasDivineSmite?: boolean
   /** True when this hero opens a fight with advantage. */
   hasAmbush?: boolean
   /** Potions carried into the fight. */

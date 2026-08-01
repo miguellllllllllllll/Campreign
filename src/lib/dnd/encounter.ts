@@ -21,6 +21,7 @@ import {
 } from './combat.ts'
 import { addCondition, tickConditions } from './conditions.ts'
 import { canSpendSuperiorityDie, resolveTripAttack, type TripAttackResult } from './maneuvers.ts'
+import { canSmite, narrateSmite, resolveSmite, type SmiteResult } from './divineSmite.ts'
 import { canChannelDivinity, spendChannelDivinity } from './channelDivinity.ts'
 import {
   canActionSurge,
@@ -271,11 +272,13 @@ export interface AttackResult {
   refusal: string | null
   /** Present only when a manoeuvre was spent and the attack actually landed. */
   maneuver?: TripAttackResult
+  /** Present only when a slot was burned and the attack actually landed. */
+  smite?: SmiteResult
 }
 
 export function attackWith(
   encounter: Encounter,
-  args: { targetId: string; attackId: string; maneuverId?: 'trip'; rng?: Rng },
+  args: { targetId: string; attackId: string; maneuverId?: 'trip'; smite?: boolean; rng?: Rng },
 ): AttackResult {
   const attacker = activeCombatant(encounter)
   const target = encounter.combatants[args.targetId]
@@ -326,6 +329,17 @@ export function attackWith(
       : resolveTripAttack({ attacker, target, attack, rng: args.rng })
 
   /*
+   * Declared before the swing and spent only if it lands, which is the Trip
+   * Attack precedent beside it rather than the SRD's decide-after-you-know.
+   * A second prompt in the middle of an attack is the reaction-shaped problem
+   * that machinery exists to avoid.
+   */
+  const smite =
+    args.smite !== true || !landed || !canSmite(attacker)
+      ? undefined
+      : resolveSmite({ attacker, target, ...(args.rng === undefined ? {} : { rng: args.rng }) })
+
+  /*
    * The seam. A blow that is about to land on somebody holding an unspent
    * reaction stops here: the attack is rolled and the action is spent, but no
    * hit points move until they have chosen. Everyone else — which is almost
@@ -355,7 +369,8 @@ export function attackWith(
     }
   }
 
-  const totalDamage = landed ? outcome.damage + (maneuver?.bonusDamage.total ?? 0) : 0
+  const totalDamage =
+    landed ? outcome.damage + (maneuver?.bonusDamage.total ?? 0) + (smite?.damage ?? 0) : 0
   const hit = damageAndConcentration(
     encounter.combatants,
     target,
@@ -367,16 +382,27 @@ export function attackWith(
     damaged = { ...damaged, conditions: addCondition(damaged.conditions, 'prone') }
   }
 
-  const spender =
-    maneuver === undefined
-      ? attacker
-      : { ...attacker, superiorityDice: maneuver.diceRemaining }
+  /*
+   * Both resources come off the same attacker, so they are applied in sequence
+   * rather than in a ternary — a Battle Master paladin does not exist today,
+   * but writing this as either/or would make one impossible to add.
+   */
+  let spender = attacker
+  if (maneuver !== undefined) {
+    spender = { ...spender, superiorityDice: maneuver.diceRemaining }
+  }
+  if (smite !== undefined) {
+    spender = { ...spender, spellSlots: smite.attacker.spellSlots }
+  }
 
   const log = [
     ...encounter.log,
     `${attacker.name} attacks with ${attack.name}. `
       + narrateAttackFully(outcome, target.name, attack.damageType),
   ]
+  if (smite !== undefined) {
+    log.push(narrateSmite(smite, target.name))
+  }
   if (maneuver !== undefined) {
     log.push(
       `Trip Attack adds ${maneuver.bonusDamage.total} damage. `
@@ -398,6 +424,7 @@ export function attackWith(
     outcome,
     refusal: null,
     ...(maneuver === undefined ? {} : { maneuver }),
+    ...(smite === undefined ? {} : { smite }),
   }
 }
 

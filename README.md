@@ -150,6 +150,17 @@ Flagged rather than hidden, all of them in service of a first-time player:
   so no single written-down list fits every cleric. Styles are written at the
   larger size and cut to the cap in `resolveSpellSelection`, leading with the
   spells that make them that style. A hand-picked list is never trimmed.
+- **A paladin's spell slots buy Divine Smite, not spells.** They gain two at 2nd
+  level, and the registry holds no paladin spells at all — so the slots arrived
+  with nothing to spend them on until Smite existed. That is the same
+  inert-resource failure this project keeps catching, and it shipped once.
+  Burning a slot on a blow is what a paladin does with them at a real table
+  anyway, so the mechanic is the honest fix rather than a stopgap.
+
+  The smite is armed *before* the swing and spent only if it lands, which
+  diverges from the SRD's decide-after-you-know. It follows the Trip Attack
+  precedent beside it: a second prompt in the middle of an attack is the
+  reaction-shaped problem that machinery exists to avoid.
 - **Your specialisation switches on at 2nd level, not at creation.** You pick it
   during creation and the choice is remembered; the numbers arrive when you
   level. Everything used to work from level 1, which handed a beginner the whole
