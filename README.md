@@ -11,9 +11,9 @@ Three things to do:
   character. Every number on the card explains itself on hover or keyboard focus.
 - **`/tutorial`** — *The Goblin in the Cellar*. Exploration (a Perception check),
   conversation (Persuasion / Intimidation / draw steel), then combat on a 5×5 grid
-  that teaches movement, then action, then ending the turn. Winning levels you to
-  2 and opens a second fight against two foes at once, which is where choosing a
-  target becomes a decision.
+  that teaches movement, then action, then ending the turn. Winning opens a second
+  fight against two foes at once, which is where choosing a target becomes a
+  decision, and then a third against the one thing down there that bites back.
 
 ## Running it
 
@@ -280,6 +280,27 @@ prompt when a blow is about to land, alongside Warding Flare if you have both.
 Light and Thaumaturgy still do nothing — neither has a combat effect to have.
 They are deliberately kept off the action bar rather than shown greyed out; a
 button that will never work teaches nothing.
+
+**Resistance is absent on purpose, and the reason is arithmetic.** It was the
+obvious fourth working cantrip: the SRD lends 1d4 to a saving throw, the
+`guideCheck` machinery for lending a die already existed, and the giant spider's
+venom finally gave the game a save the *player* rolls. Reachable at last — and
+measured before it was written, which is what stopped it. Over 200,000 rolls
+against that save it prevents **0.07** damage for a fighter and **0.23** for a
+caster, where spending the same action on an attack deals **4.43**. Generous
+figures, too, since the spell is spent by the first save. Three multiplications
+kill it: the spider has to hit, the d4 has to be the thing that flips the save,
+and the swing is only half against full of 2d8.
+
+The one change that would make it good would make this app teach a lie. The
+save that matters is the concentration check — losing Bless mid-fight is worth
+far more than half of 2d8 — but Resistance *is* concentration, so it can never
+protect another concentration spell. Dropping that requirement would make it
+genuinely useful and genuinely not Resistance.
+
+It becomes worth revisiting when more than one monster forces a save. Until
+then it would be a button nobody should press, which is the same reason Light
+and Thaumaturgy are not on the bar.
 
 Guidance works, and is the only spell cast outside a fight. It appears beside a
 skill check that has not been rolled yet, because that is the only moment it is
