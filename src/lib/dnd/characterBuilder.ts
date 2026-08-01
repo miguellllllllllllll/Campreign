@@ -114,7 +114,7 @@ function spellcastingFor(
   }
 }
 
-function uniqueSkills(...groups: readonly SkillName[][]): SkillName[] {
+function uniqueSkills(...groups: readonly (readonly SkillName[])[]): SkillName[] {
   return [...new Set(groups.flat())]
 }
 
@@ -181,6 +181,30 @@ function spellLimitsFor(answers: CreationDraft): SpellcastingLimits | undefined 
     abilityModifier(scores.wis),
     abilityModifier(scores.int),
   )
+}
+
+/**
+ * The two skills a background trains, or the two the player chose instead.
+ *
+ * Both or neither: a single pick would silently half-replace the pair, leaving a
+ * character trained in one skill they asked for and one they did not, with
+ * nothing on screen to explain which. The creation step cannot produce that —
+ * the second question is required once the first is answered — but this is a
+ * pure function and should not depend on the wizard being careful.
+ *
+ * Everything else the background gives is untouched. Its keepsake, its ideal and
+ * its bond are the life you had; these two are what it taught you, and only that
+ * is being swapped.
+ */
+export function trainedSkills(
+  answers: CreationDraft,
+  background: { skills: readonly SkillName[] },
+): readonly SkillName[] {
+  if (answers.trainingChoice !== 'custom') return background.skills
+  const { backgroundSkillA: first, backgroundSkillB: second } = answers
+  if (first === undefined || second === undefined) return background.skills
+  if (first === second) return background.skills
+  return [first, second]
 }
 
 /**
@@ -287,7 +311,7 @@ export function buildCharacter(
     equipmentChoice: loadout.id,
     loadoutName: loadout.label,
     proficiencyBonus: proficiencyBonus(level),
-    skillProficiencies: uniqueSkills(klass.skillProficiencies, background.skills),
+    skillProficiencies: uniqueSkills(klass.skillProficiencies, trainedSkills(answers, background)),
     savingThrows: [...klass.savingThrows],
     attacks: dedupeAttacks([
       ...loadout.attacks,

@@ -25,6 +25,17 @@ export interface CreationAnswers {
   classId: ClassId
   raceId: RaceId
   backgroundId: BackgroundId
+  /**
+   * Whether the background's usual training was kept or replaced.
+   *
+   * Absent means kept, so every character built before this existed is
+   * unchanged by it — and a player who never opens the question gets the fast
+   * path they came for.
+   */
+  trainingChoice?: 'standard' | 'custom'
+  /** The two skills a custom training trains instead. */
+  backgroundSkillA?: SkillName
+  backgroundSkillB?: SkillName
   /** Which of the background's flaws the player owned up to. */
   flawId: string
   /**

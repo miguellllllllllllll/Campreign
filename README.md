@@ -124,6 +124,25 @@ the sheet and the printed page and stops there — so the only rules are "not
 empty" and a 140-character ceiling the engine enforces itself rather than
 trusting the field to.
 
+**And you can pick the two skills yourself.** The background offers "the usual
+two" or "choose my own", and choosing your own replaces its pair with any two of
+the eighteen. Only the training changes — the trinket, the ideal and the bond
+still come from the life you picked, because a soldier who learned medicine
+instead of intimidation is still a soldier.
+
+Safe for the same reason the free-text weakness is: a background's skills were
+never load-bearing anywhere else. `Character.skillProficiencies` is a resolved
+list that the sheet, the printed page and every check read directly, so nothing
+downstream has to learn that the pair was swapped. The class's own training is
+merged on top and cannot be traded away — a fighter keeps athletics whatever the
+background does, which is why swapping a soldier's pair drops intimidation and
+leaves athletics standing.
+
+The two questions are invisible until you ask for them. An empty choice list is
+how a field hides itself here, and it is also how the step decides it has been
+answered — so the fast path costs a beginner nothing, and the second list drops
+whatever the first one took rather than offering a choice that cannot be made.
+
 **A weakness is not chained to a background.** Each background's own three come
 first, because they are the obvious answer and a beginner should find it at the
 top. After them sit eight anyone can carry, marked as such. Nothing mechanical

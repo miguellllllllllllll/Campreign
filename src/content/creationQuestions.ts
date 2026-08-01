@@ -9,7 +9,8 @@ import { magicStylesFor } from './spellPresets.ts'
 import { FEATS, cantripChoicesFor } from './feats.ts'
 import { SPELLS_BY_ID } from './spells.ts'
 import { subclassesFor } from './subclasses.ts'
-import type { BackgroundId, ClassId, CreationDraft } from '../types/character.ts'
+import type { BackgroundId, ClassId, CreationDraft, SkillName } from '../types/character.ts'
+import { SKILL_LABELS } from '../lib/dnd/stats.ts'
 
 /**
  * Character creation as data. Every question, every helper sentence and every
@@ -21,6 +22,9 @@ export type CreationFieldId =
   | 'classId'
   | 'raceId'
   | 'backgroundId'
+  | 'trainingChoice'
+  | 'backgroundSkillA'
+  | 'backgroundSkillB'
   | 'flawId'
   | 'flawText'
   | 'equipmentChoice'
@@ -148,6 +152,41 @@ export const CREATION_STEPS: readonly CreationStepDef[] = [
         helper: 'Your background trains two skills and hands you a keepsake from that life.',
         choices: BACKGROUND_CHOICES,
       },
+      /*
+       * Optional, and unanswered means the background's usual two. A player who
+       * never opens this question gets the fast path the whole flow is built
+       * around; a player who wants a soldier who learned to pick locks opens it.
+       */
+      {
+        id: 'trainingChoice',
+        question: 'What did that life actually teach you?',
+        helper:
+          'Every background trains two skills. Keep the ones it usually gives, or choose your own two — the rest of the background, its keepsake and its ideal, stays as it is.',
+        optional: true,
+        compact: true,
+        choices: [
+          {
+            id: 'standard',
+            label: 'The usual two',
+            tagline: 'What that life normally teaches.',
+          },
+          {
+            id: 'custom',
+            label: 'Choose my own',
+            tagline: 'Two skills, any two, whatever the story was.',
+          },
+        ],
+      },
+      {
+        id: 'backgroundSkillA',
+        question: 'The first thing you got good at.',
+        helper: 'Pick any skill. This replaces the first of the two your background usually trains.',
+      },
+      {
+        id: 'backgroundSkillB',
+        question: 'And the second.',
+        helper: 'Anything except the one you just picked.',
+      },
       {
         id: 'flawId',
         supersededBy: 'flawText',
@@ -244,6 +283,28 @@ export function loadoutChoices(classId: ClassId | undefined): readonly CreationC
   }))
 }
 
+/**
+ * Every skill, or none at all when the player has not asked to choose.
+ *
+ * Returning an empty list is how a field hides itself: the wizard renders
+ * nothing for a choice field with no choices, and `stepAnswered` treats it as
+ * answered. So these two questions appear only for somebody who wants them, and
+ * are required only once they do — without a new field kind or a line of UI.
+ */
+export function skillChoices(
+  draft: CreationDraft,
+  exclude: SkillName | undefined,
+): readonly CreationChoice[] {
+  if (draft.trainingChoice !== 'custom') return []
+  return (Object.keys(SKILL_LABELS) as SkillName[])
+    .filter((skill) => skill !== exclude)
+    .map((skill) => ({
+      id: skill,
+      label: SKILL_LABELS[skill],
+      tagline: '',
+    }))
+}
+
 export function flawChoices(backgroundId: BackgroundId | undefined): readonly CreationChoice[] {
   if (backgroundId === undefined) return []
   const background = BACKGROUND_PRESETS[backgroundId]
@@ -336,6 +397,12 @@ export function choicesFor(
 ): readonly CreationChoice[] {
   if (field.choices !== undefined) return field.choices
   switch (field.id) {
+    case 'backgroundSkillA':
+      return skillChoices(draft, undefined)
+    case 'backgroundSkillB':
+      // The first pick is excluded rather than validated after the fact: a
+      // choice you cannot make is clearer than an error you have to read.
+      return skillChoices(draft, draft.backgroundSkillA)
     case 'flawId':
       return flawChoices(draft.backgroundId)
     case 'equipmentChoice':
