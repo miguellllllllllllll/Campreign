@@ -62,7 +62,7 @@ export function hasDivineSmiteAt(classId: ClassId, level: number): boolean {
  * deliberately avoided when reactions were built — so it spends the cheapest
  * slot and says so.
  */
-const SMITE_SLOT_LEVEL = 1
+export const SMITE_SLOT_LEVEL = 1
 
 export function canSmite(combatant: Pick<Combatant, 'spellSlots' | 'hasDivineSmite'>): boolean {
   return combatant.hasDivineSmite === true && hasSlot(combatant.spellSlots, SMITE_SLOT_LEVEL)

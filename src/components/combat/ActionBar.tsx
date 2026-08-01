@@ -13,7 +13,8 @@ import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
 import { totalSlots } from '../../lib/dnd/slots.ts'
 import { canActionSurge } from '../../lib/dnd/actionSurge.ts'
-import { canSmite } from '../../lib/dnd/divineSmite.ts'
+import { SMITE_SLOT_LEVEL, canSmite } from '../../lib/dnd/divineSmite.ts'
+import { slotsAt } from '../../lib/dnd/slots.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { HintTooltip } from '../ui/rules-tooltip.tsx'
 import { Explain } from '../Explain.tsx'
@@ -91,6 +92,13 @@ export function ActionBar({
   const drinkBlocked = drinkCost === 'action' ? hasActed : bonusActionSpent
   const canDrink = onDrink !== undefined && hasPotion(active) && !drinkBlocked
   const slots = active.spellSlots ?? []
+  /*
+   * The count beside Divine Smite is first-level slots specifically, because
+   * that is what a smite spends. The button rendered `slots` itself, which put
+   * the raw table on it — "02 left", the leading zero being the cantrip index
+   * nobody spends. The readout above already formats the table properly.
+   */
+  const smiteSlots = slotsAt(active.spellSlots, SMITE_SLOT_LEVEL)
 
   const canChannel =
     onChannel !== undefined && oathPower !== undefined && charges > 0 && oath === undefined
@@ -223,7 +231,7 @@ export function ActionBar({
             >
               <ChannelDivinityIcon size={16} />
               {smiteArmed ? 'Smite armed' : 'Divine Smite'}
-              <span className="font-mono text-xs font-normal">{slots} left</span>
+              <span className="font-mono text-xs font-normal">{smiteSlots} left</span>
             </FantasyButton>
           </HintTooltip>
         )}

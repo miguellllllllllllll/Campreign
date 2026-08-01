@@ -16,6 +16,19 @@ export interface LevelUpSummaryProps {
  * numbers you have felt, so this shows the delta rather than the new total —
  * "+6 hit points" teaches what "16 hit points" does not.
  */
+/**
+ * Slots read as "3" or "3 · 2 second-level", never as the raw table.
+ *
+ * `spellSlots` became an array indexed by spell level, and this rendered it
+ * directly — so a paladin's two first-level slots reached production as "02",
+ * the leading zero being the cantrip index nobody spends.
+ */
+function describeSlots(slots: readonly number[]): string {
+  const first = slots[1] ?? 0
+  const second = slots[2] ?? 0
+  return second > 0 ? `${first} · ${second} second-level` : String(first)
+}
+
 export function LevelUpSummary({ gains }: LevelUpSummaryProps) {
   return (
     <div className="rounded-card border border-amber-torch/50 bg-amber-torch/10 p-5 shadow-[0_0_30px_rgb(212_175_55/0.15)]">
@@ -37,7 +50,7 @@ export function LevelUpSummary({ gains }: LevelUpSummaryProps) {
           <div className="flex items-center gap-2">
             <Sparkles aria-hidden className="size-4 shrink-0 text-arcane" />
             <dt className="text-muted">Spell slots</dt>
-            <dd className="font-mono">{gains.spellSlots}</dd>
+            <dd className="font-mono">{describeSlots(gains.spellSlots)}</dd>
           </div>
         )}
 
