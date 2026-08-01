@@ -121,16 +121,28 @@ function uniqueSkills(...groups: readonly SkillName[][]): SkillName[] {
 /**
  * The spells a set of answers actually amounts to.
  *
- * Explicit lists win, because they only exist when the player hand-picked them;
- * otherwise the chosen style supplies them. Reads spell data from content, which
- * is pure data like the presets beside it — no side effects cross the boundary.
+ * An explicit list wins over the style's, and the style's is used when there is
+ * none. Reads spell data from content, which is pure data like the presets
+ * beside it — no side effects cross the boundary.
  *
- * A style's list is trimmed to what the character can actually hold. A cleric
+ * Every list is clamped to what the character can actually hold. A cleric
  * prepares 1 + their Wisdom modifier, and racial bonuses move that between three
  * and four — so no single written-down list fits every cleric, and a preset that
- * misses the number in either direction leaves creation with no way forward.
+ * misses the number in either direction leaves creation showing an illegal one.
  * Presets are therefore written at the largest size and cut down here, which is
  * why each one leads with the spells that make it that style.
+ *
+ * Clamped *whether or not the list arrived explicitly*, which is the part that
+ * took a bug report to get right. This used to trust an explicit list on the
+ * grounds that only a player produces one — but choosing a style copies the
+ * preset straight into the draft, so from here it is indistinguishable from a
+ * hand-picked list and skipped the trim entirely. Every non-human cleric was
+ * shown "1st Level 4/3".
+ *
+ * Nothing is lost by clamping. The cap is a rule rather than a preference, a
+ * list longer than it is illegal wherever it came from, and the spell picker
+ * enforces the cap as you pick — so a genuinely hand-picked list can never be
+ * over it, and there is no choice here to overrule.
  */
 export function resolveSpellSelection(answers: CreationDraft): {
   cantripIds: readonly string[]
@@ -139,9 +151,11 @@ export function resolveSpellSelection(answers: CreationDraft): {
   const style = answers.magicStyleId === undefined ? undefined : magicStyleById(answers.magicStyleId)
   const limits = spellLimitsFor(answers)
   return {
-    cantripIds: answers.cantripIds ?? trim(style?.cantripIds, limits?.cantripsCount),
-    preparedSpellIds:
-      answers.preparedSpellIds ?? trim(style?.preparedSpellIds, limits?.preparedSpellsCount),
+    cantripIds: trim(answers.cantripIds ?? style?.cantripIds, limits?.cantripsCount),
+    preparedSpellIds: trim(
+      answers.preparedSpellIds ?? style?.preparedSpellIds,
+      limits?.preparedSpellsCount,
+    ),
   }
 }
 

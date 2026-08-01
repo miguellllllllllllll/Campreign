@@ -107,10 +107,10 @@ test('trimming keeps the spells that make it that style', () => {
   }
 })
 
-test('a hand-picked list is never trimmed', () => {
-  // Explicit answers only exist when the player chose them; enforcing the cap is
-  // the customise panel's job, and silently dropping one would be a betrayal.
-  const chosen = ['cureWounds', 'bless', 'shieldOfFaith', 'guidingBolt']
+test('a legal hand-picked list is left exactly as it is', () => {
+  // Clamping only ever cuts what is over the cap. Anything at or under it is the
+  // player's business and is handed back untouched, in their order.
+  const chosen = ['shieldOfFaith', 'guidingBolt', 'bless']
   const selection = resolveSpellSelection({
     classId: 'cleric',
     raceId: 'elf',
@@ -118,6 +118,55 @@ test('a hand-picked list is never trimmed', () => {
     preparedSpellIds: chosen,
   })
   assert.deepEqual([...selection.preparedSpellIds], chosen)
+})
+
+test('an explicit list over the cap is clamped, wherever it came from', () => {
+  /*
+   * The bug this replaces a wrong assumption with. The old rule was "an explicit
+   * list is never trimmed, because only a player produces one" — but choosing a
+   * style copies the preset straight into the draft, so from here it is
+   * indistinguishable from a hand-picked list. Every non-human cleric was shown
+   * "1st Level 4/3", reported from the interface session.
+   */
+  const selection = resolveSpellSelection({
+    classId: 'cleric',
+    raceId: 'dwarf',
+    magicStyleId: 'radiantWrath',
+    preparedSpellIds: ['guidingBolt', 'cureWounds', 'bless', 'shieldOfFaith'],
+  })
+  assert.equal(selection.preparedSpellIds.length, 3, 'a dwarf cleric prepares three')
+  assert.equal(selection.preparedSpellIds[0], 'guidingBolt', 'and keeps the signature one')
+})
+
+test('the draft the creation wizard actually builds is legal for every ancestry', () => {
+  /*
+   * Picking a style writes the preset's lists into the draft, so this walks the
+   * shape the UI really produces rather than the derived one. The previous test
+   * only exercised the path where the lists are absent — which is why it stayed
+   * green while the screen showed an illegal list.
+   */
+  for (const { answers, where } of everyBuild()) {
+    const style = MAGIC_STYLE_PRESETS.find((one) => one.id === answers.magicStyleId)
+    assert.ok(style !== undefined)
+    const asTheWizardWritesIt = {
+      ...answers,
+      cantripIds: [...style.cantripIds],
+      preparedSpellIds: [...style.preparedSpellIds],
+    }
+    const limits = capsFor(answers)
+    const selection = resolveSpellSelection(asTheWizardWritesIt)
+
+    assert.equal(
+      selection.preparedSpellIds.length,
+      limits.preparedSpellsCount,
+      `${where}: prepared ${selection.preparedSpellIds.length} of ${limits.preparedSpellsCount}`,
+    )
+    assert.equal(
+      selection.cantripIds.length,
+      limits.cantripsCount,
+      `${where}: cantrips ${selection.cantripIds.length} of ${limits.cantripsCount}`,
+    )
+  }
 })
 
 test('a draft too early to know its caps is left alone', () => {
