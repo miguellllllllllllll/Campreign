@@ -7,6 +7,7 @@ import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { GOBLIN, spawnMonster } from '../src/lib/dnd/data/monsters.ts'
 import { useCombatStore } from '../src/stores/combatStore.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
+import { levelUp } from '../src/lib/dnd/leveling.ts'
 
 const answers: CreationAnswers = {
   classId: 'fighter',
@@ -166,3 +167,82 @@ test('an illegal move is refused in plain English', () => {
   assert.equal(useCombatStore.getState().encounter, before, 'the board did not change')
   assert.ok(useCombatStore.getState().refusal)
 })
+
+test('the store forwards a smite to the engine, not just its type', () => {
+  /*
+   * This test exists because the store did not. `attack` destructured
+   * `{ targetId, attackId, maneuverId }` and dropped `smite` on the floor while
+   * its type signature happily accepted it — so typecheck passed, every engine
+   * test passed (they call `attackWith` directly), and the feature reached
+   * production doing nothing at all.
+   *
+   * The lesson is about where the tests point. A mechanic verified only at the
+   * layer that implements it is not verified; the layers between the button and
+   * the engine are exactly where it goes missing.
+   */
+  const hero = characterToCombatant(levelUp(paladinHero()).character, {
+    position: { x: 0, y: 0 },
+    speedSquares: 3,
+  })
+  const foe = {
+    ...spawnMonster(GOBLIN, { id: 'foe', position: { x: 1, y: 0 } }),
+    maxHp: 60,
+    currentHp: 60,
+  }
+  useCombatStore.getState().start([hero, foe], hero.id, () => 0.99)
+
+  const before = useCombatStore.getState().encounter?.combatants[hero.id]?.spellSlots
+  assert.equal(before, 2)
+
+  useCombatStore.getState().attack({
+    targetId: 'foe',
+    attackId: hero.attacks[0]!.id,
+    smite: true,
+    rng: () => faceValue(19, 20),
+  })
+
+  const after = useCombatStore.getState().encounter
+  assert.equal(
+    after?.combatants[hero.id]?.spellSlots,
+    1,
+    'the slot was burned, so the smite actually reached the engine',
+  )
+  assert.ok(after?.log.some((line) => /Divine Smite/.test(line)))
+})
+
+test('the store forwards a manoeuvre too, which is the same shape', () => {
+  const hero = characterToCombatant(
+    grownBattleMaster(),
+    { position: { x: 0, y: 0 }, speedSquares: 3 },
+  )
+  const foe = {
+    ...spawnMonster(GOBLIN, { id: 'foe', position: { x: 1, y: 0 } }),
+    maxHp: 60,
+    currentHp: 60,
+  }
+  useCombatStore.getState().start([hero, foe], hero.id, () => 0.99)
+  useCombatStore.getState().attack({
+    targetId: 'foe',
+    attackId: hero.attacks[0]!.id,
+    maneuverId: 'trip',
+    rng: () => faceValue(19, 20),
+  })
+  const after = useCombatStore.getState().encounter
+  assert.equal(after?.combatants[hero.id]?.superiorityDice, 1, 'a die was spent')
+})
+
+function paladinHero() {
+  return buildCharacter(
+    { classId: 'paladin', raceId: 'human', backgroundId: 'noble', flawId: 'obeyed',
+      equipmentChoice: 'offensive', auraId: 'amber' } as never,
+    'Oathkeeper', { id: 'smiter', now: 1_700_000_000_000 },
+  )
+}
+
+function grownBattleMaster() {
+  return levelUp(buildCharacter(
+    { classId: 'fighter', raceId: 'human', backgroundId: 'guildArtisan', flawId: 'haggler',
+      equipmentChoice: 'offensive', auraId: 'amber', subclassId: 'battlemaster' } as never,
+    'Duellist', { id: 'bm', now: 1_700_000_000_000 },
+  )).character
+}

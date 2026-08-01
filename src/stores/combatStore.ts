@@ -29,7 +29,15 @@ interface CombatStore {
   /** `rng` is injectable so a test can pin initiative and the foe's swing. */
   start: (roster: readonly Combatant[], playerId: string, rng?: Rng) => void
   move: (to: GridPosition) => boolean
-  attack: (args: { targetId: string; attackId: string; maneuverId?: 'trip' }) => AttackOutcome | null
+  attack: (args: {
+    targetId: string
+    attackId: string
+    maneuverId?: 'trip'
+    /** Burn a spell slot on this blow. Paladins, from 2nd level. */
+    smite?: boolean
+    /** Injectable so a test can pin the swing. */
+    rng?: Rng
+  }) => AttackOutcome | null
   /** Spends the paladin's oath charge. Costs no action, so the turn continues. */
   channel: (args: { power: 'sacredWeapon' | 'vowOfEnmity'; targetId?: string }) => void
   /** Spends a second action, handing back the one already used this turn. */
@@ -80,13 +88,15 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
     return true
   },
 
-  attack: ({ targetId, attackId, maneuverId }) => {
+  attack: ({ targetId, attackId, maneuverId, smite, rng }) => {
     const { encounter } = get()
     if (encounter === null) return null
     const result = attackWith(encounter, {
       targetId,
       attackId,
       ...(maneuverId === undefined ? {} : { maneuverId }),
+      ...(smite === undefined ? {} : { smite }),
+      ...(rng === undefined ? {} : { rng }),
     })
     set({
       encounter: result.encounter,
