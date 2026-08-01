@@ -207,11 +207,15 @@ Supabase, accounts, and multiplayer — nobody else is at the table, though the
 tutorial does field one NPC ally so an area spell has somebody to spare.
 
 Levels past 2. The rules for taking a level live in `lib/dnd/leveling.ts` and
-stop there for a specific reason: at 3rd level a full caster gains **2nd-level
-spell slots**, and `Character.spellSlots` is a single number meaning first-level
-slots. A level-3 wizard here would be missing half their magic. The slot table
-is written out past the cap because the rules are correct further than the app
-can play them — lifting it means giving slots a table, then one constant.
+stop there because at 3rd level a full caster gains **2nd-level spell slots**,
+and `Character.spellSlots` is a single number meaning first-level slots.
+
+Raising the cap is a bigger job than it first looks, and this paragraph used to
+understate it. `Spell.level` is `0 | 1`, `spellsFor` is typed the same, and the
+registry holds nothing above 1st level — so a level-3 caster would gain slots
+with nothing to spend them on, which is the inert-content problem this project
+keeps finding, one layer up. The order is: write 2nd-level spells, widen
+`Spell.level`, give slots a table, then move the constant.
 
 The bestiary is the goblin, the practice dummy, a giant bat, a skeleton and a
 giant spider. The giant spider is the only one that does not appear yet — it is

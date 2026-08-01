@@ -30,9 +30,19 @@ import { actionSurgesFor } from './actionSurge.ts'
  * the action bar. A level-3 wizard here would be a wizard missing half their
  * magic, which is worse than a wizard who cannot exist.
  *
- * `SPELL_SLOTS_BY_LEVEL` below is written out past the cap on purpose. The rules
- * are correct further than the app can currently play them, so lifting this is
- * a slot table on `Character` and then this one constant — not a research task.
+ * `SPELL_SLOTS_BY_LEVEL` below is written out past the cap on purpose: the rules
+ * are correct further than the app can play them.
+ *
+ * Lifting the cap is **not** just a slot table and this constant, which is what
+ * this comment used to claim. `Spell.level` is `0 | 1` and `spellsFor` is typed
+ * the same, and the registry holds nothing above 1st level — so a level-3 caster
+ * would get two 2nd-level slots with literally nothing to spend them on. That is
+ * the same inert-content failure this codebase keeps catching, one layer up.
+ *
+ * The real order of work: 2nd-level spells for both casting classes first, then
+ * widen `Spell.level`, then give `Character.spellSlots` a table, and only then
+ * this number. The cleric's SRD list at that level also leans on effect kinds
+ * the engine does not have.
  */
 export const MAX_LEVEL = 2
 

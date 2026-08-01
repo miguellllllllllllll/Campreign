@@ -23,6 +23,18 @@ both are aesthetic edits that change no behaviour, so a genuine collision shows
 up as an ordinary merge conflict rather than as two people disagreeing about
 what the code should do.
 
+**The table maps a role to a branch, not to a person.** More than one session
+can hold the same role, and when that happens the table cannot tell you which
+checkout is yours — so a direct statement from another session about where they
+are sitting outranks this document. That is not hypothetical: a second rules
+session read "rules works in `Campreign-rules`" here, took it over the plain
+statement that the worktree was already occupied, and wrote its work into
+somebody else's tree. The document was accurate and still caused the collision,
+because it answered a question nobody should have been asking it.
+
+If you are the second session in a role: take a branch of your own off `main`,
+and say so.
+
 `Campreign` on `main` is the integration checkout. Every session works on its
 own branch in its own worktree and merges to `main`; nobody edits `main`
 directly. That is not bureaucracy — the rules session lived in the `main`
@@ -120,6 +132,21 @@ git diff -- <explicit paths> > /tmp/mine.patch  # lift your own work, read-only
 
 Both are read-only on every checkout, which is the property that matters when
 you are not the only writer.
+
+## A file mid-write in another worktree looks exactly like a bug
+
+Twice now a session has started debugging a failure that was another session
+saving a file. Once it was a preset referencing a spell that existed in one read
+and not the next; once it was a test whose imports had not landed yet.
+
+The tell is that the evidence does not hold still. Before hunting a failure you
+cannot explain, check whether the file is changing:
+
+```sh
+md5 -q <file>; sleep 15; md5 -q <file>   # same twice = the ground is stable
+```
+
+If it moved, you are reading somebody's half-finished thought, not a defect.
 
 ## `npm test` cannot see type errors
 
