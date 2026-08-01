@@ -6,6 +6,7 @@ import { characterToCombatant } from '../lib/dnd/combatants.ts'
 import { LOYAL_SQUIRE, spawnCompanion } from '../lib/dnd/data/companions.ts'
 import { GIANT_BAT, GIANT_SPIDER, GOBLIN, SKELETON, spawnMonster } from '../lib/dnd/data/monsters.ts'
 import { levelUp, spellSlotsAt, type LevelUpGains } from '../lib/dnd/leveling.ts'
+import { arcaneRecoveryBudget, recoverSlots } from '../lib/dnd/arcaneRecovery.ts'
 import type { Character } from '../types/character.ts'
 import type { Combatant } from '../types/combat.ts'
 import { SPELLS_BY_ID } from '../content/spells.ts'
@@ -180,6 +181,9 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
       if (destination === undefined) return
       const arrived = stepById(destination)
       set({ stepId: destination, finished: arrived?.next === null, resolution: null })
+      if (arrived?.onEnter?.some((effect) => effect.kind === 'levelUp') === true) {
+        set({ levelGains: null })
+      }
       for (const effect of arrived?.onEnter ?? []) applyEffect(effect, set, get)
       return
     }
@@ -207,6 +211,11 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
     // Effects run after the state has settled, never inside the updater, so a
     // combat action can never see a half-advanced tutorial.
     const arrived = next === null ? undefined : stepById(next)
+    // A new level-up moment starts from nothing; only levels gained *here*
+    // accumulate, so gains cannot leak from an earlier step into this panel.
+    if (arrived?.onEnter?.some((effect) => effect.kind === 'levelUp') === true) {
+      set({ levelGains: null })
+    }
     for (const effect of arrived?.onEnter ?? []) applyEffect(effect, set, get)
   },
 
@@ -278,6 +287,27 @@ function rosterFor(encounterId: string, character: Character): Combatant[] {
   return [hero, squire, spawnMonster(GOBLIN, { id: GOBLIN_ID, position: GOBLIN_START })]
 }
 
+/**
+ * Folds a second level-up into the first, so one panel can report both.
+ *
+ * Hit points add up because the player wants the total they gained; the level,
+ * maximum and slots are simply the latest; features accumulate, because a
+ * feature earned at 2nd level is not less earned for having 3rd arrive in the
+ * same breath.
+ */
+function mergeGains(
+  previous: LevelUpGains | null,
+  next: LevelUpGains | null,
+): LevelUpGains | null {
+  if (next === null) return previous
+  if (previous === null) return next
+  return {
+    ...next,
+    hitPointsGained: previous.hitPointsGained + next.hitPointsGained,
+    features: [...previous.features, ...next.features],
+  }
+}
+
 type Setter = (partial: Partial<TutorialStore>) => void
 type Getter = () => TutorialStore
 
@@ -308,20 +338,42 @@ function applyEffect(effect: EffectSpec, set: Setter, get: Getter): void {
       // Refuses at the cap rather than clamping, so a second run of this effect
       // leaves the hero alone instead of quietly doing nothing twice.
       if (result.refusal !== null) return
-      set({ character: result.character, levelGains: result.gains })
+      /*
+       * Merged rather than replaced, because a step can level more than once.
+       * The tutorial jumps from 1 to 3 in a single beat, and replacing meant
+       * the panel showed only what third level gave — so a fighter gained
+       * Action Surge and a rogue gained Cunning Action, and neither was told.
+       * Everything earned on the way has to survive the trip.
+       */
+      set({ character: result.character, levelGains: mergeGains(get().levelGains, result.gains) })
       return
     }
 
     case 'shortRest': {
       const character = get().character
       if (character === null) return
+
+      /*
+       * Hit points come back; spells do not. That is the SRD's short rest, and
+       * the difference is the lesson — what you spent in the first fight is
+       * gone in the second, so spending it was a decision.
+       *
+       * Hit points are restored because the alternative is an unwinnable second
+       * encounter for anybody who finished the first at two of them, which
+       * teaches nothing except that the tutorial is unfair. Slots carry no such
+       * risk: the second fight was measured at a 90% win with no spells cast
+       * at all.
+       */
+      const recovered = recoverSlots(
+        character.spellSlots,
+        spellSlotsAt(character.classId, character.level),
+        arcaneRecoveryBudget(character.classId, character.level),
+      )
       set({
         character: {
           ...character,
           currentHp: character.maxHp,
-          ...(character.spellSlots === undefined
-            ? {}
-            : { spellSlots: spellSlotsAt(character.classId, character.level) }),
+          ...(recovered === undefined ? {} : { spellSlots: recovered }),
         },
       })
       return

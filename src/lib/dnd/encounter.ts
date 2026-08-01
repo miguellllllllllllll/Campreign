@@ -28,6 +28,7 @@ import {
   narrateActionSurge,
   spendActionSurge,
 } from './actionSurge.ts'
+import { canDash, narrateDash } from './cunningAction.ts'
 import { checkConcentration, dropConcentration } from './concentration.ts'
 import { isDead, isDying, narrateDeathSave, rollDeathSave } from './dying.ts'
 import { availableReactions, canShield, resolveShield, resolveWardingFlare } from './reactions.ts'
@@ -758,6 +759,40 @@ export function resolveReaction(
       log,
     },
     outcome,
+    refusal: null,
+  }
+}
+
+export interface DashResult {
+  encounter: Encounter
+  refusal: string | null
+}
+
+/**
+ * Buys a second move with the bonus action.
+ *
+ * Adds a full speed rather than resetting to it, so dashing after you have
+ * already walked two squares is worth the same as dashing before — the SRD's
+ * behaviour, and the only version where the button does not punish you for
+ * pressing it in the wrong order.
+ */
+export function dash(encounter: Encounter): DashResult {
+  const actor = activeCombatant(encounter)
+  if (actor === undefined) return { encounter, refusal: 'Nobody is taking a turn.' }
+  if (actor.hasCunningAction !== true) {
+    return { encounter, refusal: 'You have no way to move that fast.' }
+  }
+  if (!canDash(actor, encounter.bonusActionSpent)) {
+    return { encounter, refusal: 'You have already used your bonus action this turn.' }
+  }
+
+  return {
+    encounter: {
+      ...encounter,
+      movementRemaining: encounter.movementRemaining + actor.speedSquares,
+      bonusActionSpent: true,
+      log: [...encounter.log, narrateDash(actor.name, actor.speedSquares)],
+    },
     refusal: null,
   }
 }

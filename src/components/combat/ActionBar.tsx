@@ -14,6 +14,7 @@ import { isInRange } from '../../lib/dnd/combat.ts'
 import { totalSlots } from '../../lib/dnd/slots.ts'
 import { canActionSurge } from '../../lib/dnd/actionSurge.ts'
 import { SMITE_SLOT_LEVEL, canSmite } from '../../lib/dnd/divineSmite.ts'
+import { canDash } from '../../lib/dnd/cunningAction.ts'
 import { slotsAt } from '../../lib/dnd/slots.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { HintTooltip } from '../ui/rules-tooltip.tsx'
@@ -46,6 +47,8 @@ export interface ActionBarProps {
   onChannel?: (power: 'sacredWeapon' | 'vowOfEnmity') => void
   /** Undefined for everyone who cannot take a second action. */
   onSurge?: () => void
+  /** Undefined for everyone who cannot buy a second move. */
+  onDash?: () => void
   onEndTurn: () => void
 }
 
@@ -65,6 +68,7 @@ export function ActionBar({
   oathPower,
   onChannel,
   onSurge,
+  onDash,
   onEndTurn,
 }: ActionBarProps) {
   /*
@@ -114,6 +118,7 @@ export function ActionBar({
   // `canSmite` carries both halves — the feature and a slot to spend — so this
   // never has to ask what class or subclass anybody picked.
   const canSmiteNow = canSmite(active) && attackEnabled
+  const canDashNow = onDash !== undefined && canDash(active, bonusActionSpent) && attackEnabled
 
   return (
     <div className="border-gold-ornate rounded-card p-4">
@@ -216,6 +221,19 @@ export function ActionBar({
             {oathPower === 'sacredWeapon' ? 'Sacred Weapon' : 'Vow of Enmity'}
             <span className="font-mono text-xs font-normal">{charges} left</span>
           </FantasyButton>
+          </HintTooltip>
+        )}
+
+        {canDashNow && (
+          <HintTooltip
+            title="Cunning Action: Dash"
+            body="A second move on your bonus action, so you can cross the room and still act. Disengage and Hide are the other two in the rules; neither changes anything on a board this small."
+          >
+            <FantasyButton variant="iron" onClick={onDash}>
+              <SuperiorityDieIcon size={16} />
+              Dash
+              <span className="font-mono text-xs font-normal">+{active.speedSquares}</span>
+            </FantasyButton>
           </HintTooltip>
         )}
 

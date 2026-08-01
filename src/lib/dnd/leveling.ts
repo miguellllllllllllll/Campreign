@@ -14,6 +14,7 @@ import {
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import { actionSurgesFor } from './actionSurge.ts'
 import { hasDivineSmiteAt } from './divineSmite.ts'
+import { hasCunningActionAt } from './cunningAction.ts'
 import { getSpellcastingLimits } from './spellcasting.ts'
 import { spellsFor } from '../../content/spells.ts'
 
@@ -153,7 +154,7 @@ const FEATURES_AT_LEVEL_2: Readonly<Record<ClassId, readonly LevelFeature[]>> = 
       id: 'cunningAction',
       name: 'Cunning Action',
       description:
-        'Dash, Disengage or Hide as a bonus action. You stop having to choose between moving well and doing something.',
+        'Dash on a bonus action — a second move, so you can cross the room and still act. Disengage and Hide are the other two in the rules, and neither changes anything on a board this small.',
     },
   ],
   wizard: [
@@ -161,7 +162,7 @@ const FEATURES_AT_LEVEL_2: Readonly<Record<ClassId, readonly LevelFeature[]>> = 
       id: 'arcaneRecovery',
       name: 'Arcane Recovery',
       description:
-        'Once a day, take a short rest and get a spell slot back. Your magic no longer runs out quite so finally.',
+        'Resting gives everyone their hit points back and nobody their spells. You are the exception: once a day you read your way to a spell slot the others do not get.',
     },
   ],
   cleric: [
@@ -188,9 +189,39 @@ const FEATURES_AT_LEVEL_2: Readonly<Record<ClassId, readonly LevelFeature[]>> = 
   ],
 }
 
+/**
+ * Third level, where the only thing that changes for anyone is magic.
+ *
+ * The SRD hands out subclasses here — archetype, oath, tradition — but this
+ * build already grants them at 2nd, so there is nothing left to give a fighter
+ * or a rogue. They gain hit points and a wider crit range from what they
+ * already chose, and this list says nothing rather than inventing something.
+ *
+ * A full caster gains a genuinely new kind of thing, and it is worth naming:
+ * spells a first-level slot cannot pay for.
+ */
+const SECOND_TIER_SPELLS: LevelFeature = {
+  id: 'secondLevelSpells',
+  name: 'Second-level spells',
+  description:
+    'A new tier of magic, and slots that only it can spend. Bigger than anything a first-level slot buys — and there are only two of them, so they are worth saving.',
+}
+
+const FEATURES_AT_LEVEL_3: Readonly<Record<ClassId, readonly LevelFeature[]>> = {
+  fighter: [],
+  rogue: [],
+  wizard: [SECOND_TIER_SPELLS],
+  cleric: [SECOND_TIER_SPELLS],
+  // A half caster waits until 5th for a second tier, so a paladin's third level
+  // is hit points and nothing else. Saying so beats saying something invented.
+  paladin: [],
+}
+
 /** What this class gains on reaching `level`, which is nothing for most levels. */
 export function featuresGainedAt(classId: ClassId, level: number): readonly LevelFeature[] {
-  return level === 2 ? (FEATURES_AT_LEVEL_2[classId] ?? []) : []
+  if (level === 2) return FEATURES_AT_LEVEL_2[classId] ?? []
+  if (level === 3) return FEATURES_AT_LEVEL_3[classId] ?? []
+  return []
 }
 
 /** Everything that changed, for a screen that has to explain it. */
@@ -318,6 +349,7 @@ export function levelUp(character: Character): LevelUpResult {
    */
   const surges = actionSurgesFor(character.classId, level)
   const smites = hasDivineSmiteAt(character.classId, level)
+  const dashes = hasCunningActionAt(character.classId, level)
   const prepared = preparedSpellsOnUnlock(character, level)
   const newTier = spellsForNewTier(character, nowSlots)
   const subclassId = character.subclassId
@@ -335,6 +367,7 @@ export function levelUp(character: Character): LevelUpResult {
     maxHp,
     ...(surges === undefined ? {} : { actionSurges: surges }),
     ...(smites ? { hasDivineSmite: true } : {}),
+    ...(dashes ? { hasCunningAction: true } : {}),
     ...(prepared === undefined ? {} : { preparedSpells: prepared }),
     ...(newTier === undefined ? {} : { preparedSpells: newTier }),
     ...(critOn === undefined ? {} : { critOn }),

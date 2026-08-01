@@ -283,6 +283,10 @@ export function TutorialRunner() {
     useCombatStore.getState().surge()
   }
 
+  function dash() {
+    useCombatStore.getState().dash()
+  }
+
   function react(choice: ReactionKind | 'pass') {
     useCombatStore.getState().dispatchReaction(choice)
   }
@@ -387,6 +391,7 @@ export function TutorialRunner() {
               bonusActionSpent={encounter?.bonusActionSpent ?? false}
               {...(oathPower === undefined ? {} : { oathPower, onChannel: channel })}
               {...((hero.actionSurges ?? 0) > 0 ? { onSurge: surge } : {})}
+              {...(hero.hasCunningAction === true ? { onDash: dash } : {})}
               onEndTurn={endTurn}
             />
           )}

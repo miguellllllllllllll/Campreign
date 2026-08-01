@@ -160,9 +160,19 @@ test('every class gains something nameable at second level', () => {
 })
 
 test('levels that grant nothing say so rather than inventing something', () => {
+  /*
+   * This asserted that third level grants nobody anything, which was true when
+   * it was written and stopped being true once second-tier spells arrived. The
+   * rule it was really protecting is the one below: a level with nothing to
+   * give says nothing, rather than having a feature invented to fill the panel.
+   */
   for (const classId of CLASS_IDS) {
-    assert.deepEqual(featuresGainedAt(classId, 1), [])
-    assert.deepEqual(featuresGainedAt(classId, 3), [])
+    assert.deepEqual(featuresGainedAt(classId, 1), [], `${classId} gains nothing at 1`)
+  }
+  // A subclass is granted at 2 in this build, so 3 leaves a martial with only
+  // hit points — and a half caster's second tier does not open until 5th.
+  for (const classId of ['fighter', 'rogue', 'paladin'] as const) {
+    assert.deepEqual(featuresGainedAt(classId, 3), [], `${classId} gains nothing at 3`)
   }
 })
 

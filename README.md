@@ -227,6 +227,21 @@ Flagged rather than hidden, all of them in service of a first-time player:
   finish the last enemy while you are on the floor; if you were only *dying*
   the rest brings you back, and that is a good story. If you are dead, the
   tutorial stops rather than marching a corpse into a harder fight.
+- **A short rest gives hit points back and spells not at all.** That is the
+  SRD's rule and the lesson is the point: what you spend in the first fight is
+  gone in the second, so spending it was a decision. Hit points *are* restored,
+  because the alternative is an unwinnable encounter for anyone who finished the
+  last one at two of them. Slots carry no such risk — the second fight was
+  measured at a 90% win with no spells cast at all.
+
+  A wizard is the exception, which is what Arcane Recovery is for. Before this
+  the rest returned every slot to everybody, so the feature described something
+  the game already did for free, for every class.
+- **Cunning Action is Dash, and only Dash.** The SRD adds Disengage and Hide;
+  nothing on a five-square board threatens an opportunity attack and there is
+  nothing to hide behind, so both would be buttons that change no number.
+  Shipping three options where two do nothing teaches a beginner that most of
+  their class feature is decoration.
 - **A monster at 0 hit points is dead; a hero at 0 is dying.** The SRD says the
   same, and the difference is the single most important thing a beginner can
   learn about dropping. Death saves are the real ones — a flat d20 at the start

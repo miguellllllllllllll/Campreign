@@ -177,6 +177,8 @@ export interface Character {
   actionSurges?: number
   /** Whether a slot can be burned on a blow. Paladins, from 2nd level. */
   hasDivineSmite?: boolean
+  /** Whether a bonus action buys a second move. Rogues, from 2nd level. */
+  hasCunningAction?: boolean
   /** True when this hero opens a fight with advantage. */
   hasAmbush?: boolean
   /** Potions carried into the fight. */

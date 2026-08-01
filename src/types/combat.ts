@@ -142,6 +142,8 @@ export interface Combatant {
   actionSurges?: number
   /** Whether this combatant can burn a slot on a blow. Paladins, from 2nd level. */
   hasDivineSmite?: boolean
+  /** Whether a bonus action can buy a second move. Rogues, from 2nd level. */
+  hasCunningAction?: boolean
   /**
    * Whether this creature was once a person and is not any more. Absent means
    * living, which is everything except the skeleton — read by Divine Smite,
