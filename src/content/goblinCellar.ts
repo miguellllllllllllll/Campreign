@@ -181,6 +181,30 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     guidance:
       'Fight them the same way — move, act, end turn — but choose a target each round. Your spells and your new hit points are both worth spending here.',
     completion: { when: 'enemyDefeated' },
+    victory: 'rafters',
+    next: 'rafters',
+  },
+  {
+    id: 'rafters',
+    phase: 'combat',
+    title: 'Something was watching all of it',
+    narration:
+      'The rattling stops and the cellar is quiet, and that is when you notice the silk. It comes down from the rafters on a line of its own making, unhurried, because it has been waiting for the noise to end.',
+    guidance:
+      'One enemy, and the most dangerous thing down here. Its bite carries venom — when it lands you will roll a saving throw yourself, which is the one kind of roll you have not made yet.',
+    completion: { when: 'acknowledged' },
+    onEnter: [{ kind: 'startCombat', encounterId: 'rafters' }],
+    next: 'venom',
+  },
+  {
+    id: 'venom',
+    phase: 'combat',
+    title: 'Rolling to resist',
+    narration:
+      'Every save so far has been rolled against you — the goblin ducking your spell, the skeleton shrugging it off. This one is yours. The fangs land first and the poison comes after, and Constitution decides how much of it you keep.',
+    guidance:
+      'A save is a d20 plus one ability modifier against a fixed number. Beat the DC and you take half; miss it and you take all of it. There is nothing to press — it happens when the bite lands.',
+    completion: { when: 'enemyDefeated' },
     victory: 'finish',
     next: 'finish',
   },

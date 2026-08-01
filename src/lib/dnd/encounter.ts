@@ -1,4 +1,4 @@
-import type { AttackAction } from '../../types/action.ts'
+import type { AttackAction, OnHitSave } from '../../types/action.ts'
 import type {
   AttackOutcome,
   Combatant,
@@ -34,6 +34,7 @@ import { castAreaSpell, castBlessing, castSpell } from './casting.ts'
 import { SPELLS_BY_ID } from '../../content/spells.ts'
 import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
 import { roll } from './dice.ts'
+import { ABILITY_LABELS, abilityModifier, formatModifier } from './stats.ts'
 import { narrateAttackFully } from './narrate.ts'
 
 /** The tutorial board. Small enough to read at a glance on a phone. */
@@ -273,6 +274,54 @@ export interface AttackResult {
   maneuver?: TripAttackResult
 }
 
+export interface OnHitSaveResult {
+  saveTotal: number
+  saveSuccessful: boolean
+  rolled: number
+  damageTaken: number
+}
+
+/**
+ * The target's own roll against a rider, after the attack has already hit.
+ *
+ * Damage is rolled whether or not the save lands, because half of something is
+ * the SRD's answer and halving a number you never rolled is not the same
+ * arithmetic a player can follow on the log.
+ */
+export function resolveOnHitSave(
+  target: Combatant,
+  rider: OnHitSave,
+  rng: Rng = Math.random,
+): OnHitSaveResult {
+  const mod = abilityModifier(target.scores[rider.ability])
+  const save = roll(`1d20${formatModifier(mod)}`, { rng })
+  const rolled = roll(rider.damage, { rng }).total
+  const saveSuccessful = save.total >= rider.dc
+  return {
+    saveTotal: save.total,
+    saveSuccessful,
+    rolled,
+    damageTaken: saveSuccessful ? (rider.halfOnSuccess ? Math.floor(rolled / 2) : 0) : rolled,
+  }
+}
+
+/** One line, in the same register as the attack narration above it. */
+export function narrateOnHitSave(
+  targetName: string,
+  rider: OnHitSave,
+  result: OnHitSaveResult,
+): string {
+  const label = ABILITY_LABELS[rider.ability]
+  const head =
+    `${targetName} rolls ${result.saveTotal} on a ${label} save against DC ${rider.dc}`
+  if (!result.saveSuccessful) {
+    return `${head} and fails — ${result.damageTaken} ${rider.damageType} damage.`
+  }
+  return rider.halfOnSuccess
+    ? `${head} and resists it — half damage, ${result.damageTaken} ${rider.damageType}.`
+    : `${head} and shrugs it off entirely.`
+}
+
 export function attackWith(
   encounter: Encounter,
   args: { targetId: string; attackId: string; maneuverId?: 'trip'; rng?: Rng },
@@ -355,7 +404,21 @@ export function attackWith(
     }
   }
 
-  const totalDamage = landed ? outcome.damage + (maneuver?.bonusDamage.total ?? 0) : 0
+  /*
+   * The rider, rolled by the target once the blow has already landed. Folded
+   * into the same damage application rather than applied after it, so the
+   * concentration check sees one total — taking a bite and its venom as two
+   * separate hits would give a caster two chances to lose a spell for one
+   * attack, which is not what the rules say happened.
+   */
+  const rider =
+    landed && attack.onHitSave !== undefined
+      ? resolveOnHitSave(target, attack.onHitSave, args.rng ?? Math.random)
+      : null
+
+  const totalDamage = landed
+    ? outcome.damage + (maneuver?.bonusDamage.total ?? 0) + (rider?.damageTaken ?? 0)
+    : 0
   const hit = damageAndConcentration(
     encounter.combatants,
     target,
@@ -383,6 +446,9 @@ export function attackWith(
         + `${target.name} rolls ${maneuver.save.total} against DC ${maneuver.save.dc} and `
         + (maneuver.knockedProne ? 'goes down.' : 'stays on their feet.'),
     )
+  }
+  if (rider !== null) {
+    log.push(narrateOnHitSave(target.name, attack.onHitSave!, rider))
   }
   if (isDefeated(damaged) && !isDefeated(target)) {
     log.push(narrateDrop(damaged))
