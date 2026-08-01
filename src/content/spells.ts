@@ -105,7 +105,7 @@ export interface Spell {
   /** 0 is a cantrip, which never runs out; 1 and 2 cost a slot of that level. */
   level: 0 | 1 | 2
   school: SpellSchool
-  classes: readonly ('wizard' | 'cleric')[]
+  classes: readonly ('wizard' | 'cleric' | 'paladin')[]
   /** Range in feet with the grid equivalent, since the game is played on squares. */
   range: string
   damageOrEffect: string
@@ -450,6 +450,22 @@ export const SPELLS: readonly Spell[] = [
     effect: { kind: 'stabilise' },
   },
 
+  // --- Paladin 1st-level ---------------------------------------------------
+  {
+    id: 'divineFavor',
+    name: 'Divine Favor',
+    level: 1,
+    school: 'Evocation',
+    classes: ['paladin'],
+    range: 'Self',
+    damageOrEffect: '+1d4 radiant on every hit',
+    description:
+      'Your weapon catches light. Every blow you land while you hold the spell adds radiant damage on top of the usual roll — small each time, and it adds up over a fight.',
+    isConcentration: true,
+    castingCost: 'bonusAction',
+    effect: { kind: 'wardTarget', condition: 'favoured' },
+  },
+
   // --- Cleric 1st-level ---------------------------------------------------
   {
     id: 'healingWord',
@@ -496,9 +512,11 @@ export const SPELLS: readonly Spell[] = [
     name: 'Cure Wounds',
     level: 1,
     school: 'Evocation',
-    classes: ['cleric'],
+    classes: ['cleric', 'paladin'],
     range: 'Touch',
-    damageOrEffect: '1d8 + Wis Healing',
+    // Wisdom for a cleric, Charisma for a paladin — the engine reads it off
+    // the caster, so the headline names the ability rather than a stat.
+    damageOrEffect: '1d8 + your casting ability, healed',
     effect: { kind: 'heal', dice: '1d8', addsAbility: true },
     description:
       'Lay a hand on a wounded ally and knit them back together. The single most valuable thing a level 1 party can have.',
@@ -509,7 +527,7 @@ export const SPELLS: readonly Spell[] = [
     name: 'Bless',
     level: 1,
     school: 'Enchantment',
-    classes: ['cleric'],
+    classes: ['cleric', 'paladin'],
     range: '30 ft (6 squares)',
     damageOrEffect: '+1d4 to attacks and saves, 3 allies',
     effect: { kind: 'blessAllies', maxTargets: 3 },
@@ -549,7 +567,7 @@ export const SPELLS: readonly Spell[] = [
     name: 'Shield of Faith',
     level: 1,
     school: 'Abjuration',
-    classes: ['cleric'],
+    classes: ['cleric', 'paladin'],
     range: '60 ft (12 squares)',
     damageOrEffect: '+2 AC to one ally',
     effect: { kind: 'wardTarget', condition: 'warded' },
@@ -564,7 +582,7 @@ export const SPELLS_BY_ID: Readonly<Record<string, Spell>> = Object.fromEntries(
   SPELLS.map((spell) => [spell.id, spell]),
 )
 
-export function spellsFor(classId: 'wizard' | 'cleric', level: 0 | 1 | 2): readonly Spell[] {
+export function spellsFor(classId: 'wizard' | 'cleric' | 'paladin', level: 0 | 1 | 2): readonly Spell[] {
   return SPELLS.filter((spell) => spell.classes.includes(classId) && spell.level === level)
 }
 

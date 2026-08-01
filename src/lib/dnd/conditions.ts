@@ -12,6 +12,15 @@ export interface ConditionInfo {
   incomingAttacks: RollMode
   preventsActions: boolean
   /**
+   * Extra damage this condition adds to the sufferer's own weapon hits.
+   *
+   * The damage twin of `acBonus`, and carried the same way and for the same
+   * reason: derived while the condition lasts rather than written into the
+   * weapon, so losing it takes the die with it and nothing has to remember
+   * what the weapon used to do.
+   */
+  damageDice?: string
+  /**
    * Armour this condition lends while it lasts.
    *
    * Carried here rather than written into `ac` so that removing the condition
@@ -31,6 +40,15 @@ export const CONDITIONS: Record<ConditionId, ConditionInfo> = {
     incomingAttacks: 'normal',
     preventsActions: false,
     acBonus: 2,
+  },
+  favoured: {
+    id: 'favoured',
+    label: 'Divine Favour',
+    plain: 'Your weapon is burning with holy light. Every hit you land adds 1d4 radiant damage on top.',
+    ownAttacks: 'normal',
+    incomingAttacks: 'normal',
+    preventsActions: false,
+    damageDice: '1d4',
   },
   blessed: {
     id: 'blessed',

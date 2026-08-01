@@ -1,5 +1,6 @@
 import { abilityModifier } from './stats.ts'
 import type { AbilityName, AbilityScores, ClassId } from '../../types/character.ts'
+import { spellsFor } from '../../content/spells.ts'
 
 /**
  * How much magic a class has at 1st level. Kept pure and separate from the spell
@@ -46,6 +47,8 @@ export function getSpellcastingLimits(
   wisdomMod: number,
   _intMod: number,
   level = 1,
+  /** Optional so every caller written before paladins had spells still works. */
+  chaMod = 0,
 ): SpellcastingLimits {
   switch (classId) {
     case 'wizard':
@@ -71,8 +74,17 @@ export function getSpellcastingLimits(
        * been here since before levels were, so the picker could say "at level 2"
        * rather than show an empty list — this is that promise being kept.
        */
+      /*
+       * The SRD's "Charisma modifier + half your paladin level, rounded down".
+       * It used to be the half-level alone, which handed every paladin the same
+       * one spell whatever they had built — and Charisma is the ability the
+       * class is *about*, so leaving it out made the choice feel decorative.
+       */
       return level >= 2
-        ? { cantripsCount: 0, preparedSpellsCount: Math.max(1, Math.floor(level / 2)) }
+        ? {
+            cantripsCount: 0,
+            preparedSpellsCount: Math.max(1, chaMod + Math.floor(level / 2)),
+          }
         : { cantripsCount: 0, preparedSpellsCount: 0, unlocksAtLevel: 2 }
     case 'fighter':
     case 'rogue':
@@ -170,47 +182,31 @@ export interface PaladinSpellPreview {
 }
 
 /**
- * The four 1st-level paladin spells previewed at level 1, one per pillar of the
- * class: smiting, healing, buffing, and staying on your feet.
+ * The 1st-level paladin spells previewed at level 1, derived from the registry.
+ *
+ * This was a hand-written list of four, and it drifted exactly as a parallel
+ * list will: it promised Divine Favor, Searing Smite, Cure Wounds and Heroism
+ * while the registry held no paladin spells whatsoever. A player read that card
+ * at level 1, levelled up, and got none of them.
+ *
+ * Two of the four are gone rather than faked. Searing Smite needs damage that
+ * keeps ticking on later turns and Heroism needs temporary hit points; neither
+ * subsystem exists, so writing them would have put two inert spells on the
+ * sheet to keep a promise that was itself the mistake. What is here now is what
+ * a paladin is actually handed, because it is read from the same place they are
+ * handed it from.
  */
-export const PALADIN_LEVEL_2_PREVIEW: readonly PaladinSpellPreview[] = [
-  {
-    id: 'divineFavor',
-    name: 'Divine Favor',
-    school: 'Evocation',
-    effect: '+1d4 radiant',
-    description:
-      'Your weapon glows with holy power. Every hit you land adds radiant damage on top of the usual roll.',
-    isConcentration: true,
-  },
-  {
-    id: 'searingSmite',
-    name: 'Searing Smite',
-    school: 'Evocation',
-    effect: '1d6 fire + burn',
-    description:
-      'Your next hit sets the target alight. It keeps burning on its own turns until someone puts it out.',
-    isConcentration: true,
-  },
-  {
-    id: 'cureWounds',
-    name: 'Cure Wounds',
-    school: 'Evocation',
-    effect: 'Heal 1d8 + CHA',
-    description:
-      'Touch a wounded ally and close the wound. The single most useful thing you will learn to do.',
-    isConcentration: false,
-  },
-  {
-    id: 'heroism',
-    name: 'Heroism',
-    school: 'Enchantment',
-    effect: 'Temp HP + no fear',
-    description:
-      'An ally becomes briefly fearless and gains a cushion of temporary hit points every turn.',
-    isConcentration: true,
-  },
-]
+export const PALADIN_LEVEL_2_PREVIEW: readonly PaladinSpellPreview[] = spellsFor(
+  'paladin',
+  1,
+).map((spell) => ({
+  id: spell.id,
+  name: spell.name,
+  school: spell.school,
+  effect: spell.damageOrEffect,
+  description: spell.description,
+  isConcentration: spell.isConcentration,
+}))
 
 
 /* ---------------------------------------------------------------------------

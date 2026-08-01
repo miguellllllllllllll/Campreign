@@ -43,7 +43,11 @@ test('a level-2 paladin has slots, and smite is what they are for', () => {
    */
   const grown = levelUp(paladin()).character
   assert.equal(slotsAt(grown.spellSlots, 1), 2)
-  assert.equal(grown.preparedSpells, undefined, 'still no paladin spell list')
+  assert.ok(
+    (grown.preparedSpells ?? []).length > 0,
+    'and a list to cast — which they did not have when this module was written, '
+      + 'which is exactly why it exists',
+  )
   assert.equal(canSmite(characterToCombatant(grown, { position: { x: 0, y: 0 } })), true)
 })
 
@@ -201,12 +205,11 @@ test('the level-up promises the paladin only what the build can give', () => {
   assert.ok(gains !== null)
   const spellcasting = gains.features.find((one) => one.id === 'paladinSpellcasting')
   assert.ok(spellcasting !== undefined)
-  assert.doesNotMatch(spellcasting.description, /prepared spells/)
-  assert.match(spellcasting.description, /Divine Smite/, 'it says what the slots are for')
+  assert.match(spellcasting.description, /Divine Smite/, 'it still says what else a slot is for')
+  assert.match(spellcasting.description, /prepared spells/, 'and now there is a list to promise')
 
-  assert.equal(
-    SPELLS.filter((spell) => spell.classes.includes('paladin' as never)).length,
-    0,
-    'if paladin spells ever land, this promise can be widened again',
+  assert.ok(
+    SPELLS.filter((spell) => spell.classes.includes('paladin' as never)).length > 0,
+    'the promise is only safe to make because the registry now keeps it',
   )
 })

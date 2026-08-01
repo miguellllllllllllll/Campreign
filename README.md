@@ -150,12 +150,22 @@ Flagged rather than hidden, all of them in service of a first-time player:
   so no single written-down list fits every cleric. Styles are written at the
   larger size and cut to the cap in `resolveSpellSelection`, leading with the
   spells that make them that style. A hand-picked list is never trimmed.
-- **A paladin's spell slots buy Divine Smite, not spells.** They gain two at 2nd
-  level, and the registry holds no paladin spells at all — so the slots arrived
-  with nothing to spend them on until Smite existed. That is the same
-  inert-resource failure this project keeps catching, and it shipped once.
-  Burning a slot on a blow is what a paladin does with them at a real table
-  anyway, so the mechanic is the honest fix rather than a stopgap.
+- **A paladin's spell slots buy spells *and* Divine Smite.** They gain two at
+  2nd level along with a short prepared list — Charisma modifier plus half
+  level, which is the SRD's. Before either existed the slots arrived with
+  nothing at all to spend them on, which is the inert-resource failure this
+  project keeps catching, and it shipped once.
+
+  A paladin has no magic at 1st level, so there is no creation step in which to
+  choose a list; levelling hands them one. Given rather than chosen, matching
+  the fast-track ethos the creation flow already uses.
+
+  **Searing Smite and Heroism are not here, and the level-1 preview no longer
+  claims them.** One needs damage that keeps ticking on later turns and the
+  other needs temporary hit points; neither subsystem exists, so writing them
+  would have put two inert spells on the sheet to keep a promise that was itself
+  the mistake. That preview is now derived from the registry rather than
+  hand-written beside it, so it cannot drift again.
 
   The smite is armed *before* the swing and spent only if it lands, which
   diverges from the SRD's decide-after-you-know. It follows the Trip Attack

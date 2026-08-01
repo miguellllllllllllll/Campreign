@@ -14,6 +14,8 @@ import {
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import { actionSurgesFor } from './actionSurge.ts'
 import { hasDivineSmiteAt } from './divineSmite.ts'
+import { getSpellcastingLimits } from './spellcasting.ts'
+import { spellsFor } from '../../content/spells.ts'
 
 /**
  * Taking a level.
@@ -175,7 +177,7 @@ const FEATURES_AT_LEVEL_2: Readonly<Record<ClassId, readonly LevelFeature[]>> = 
       id: 'paladinSpellcasting',
       name: 'Spell slots',
       description:
-        'Your oath starts answering, and you gain two spell slots. There are no paladin spells in this build yet, so what you have them for is Divine Smite.',
+        'Your oath starts answering. You gain two spell slots and a short list of prepared spells, powered by Charisma — and Divine Smite, which is the other thing a slot is for.',
     },
     {
       id: 'divineSmite',
@@ -208,6 +210,39 @@ export interface LevelUpResult {
   gains: LevelUpGains | null
   /** Why nothing happened, when nothing did. */
   refusal: string | null
+}
+
+/**
+ * The spells a class is handed the moment its magic switches on.
+ *
+ * Only the paladin needs this, and only once. Wizards and clerics choose their
+ * list during creation, but a paladin has no magic at all at 1st level — so
+ * there is no creation step to choose in, and levelling has to hand them
+ * something or the slots arrive empty. That was the shape of the last bug here:
+ * two slots and nothing to spend them on.
+ *
+ * Given rather than chosen, which matches the fast-track ethos the creation
+ * flow already uses. Trimmed to what they can prepare, and ordered so the
+ * signature spell survives the trim.
+ */
+function preparedSpellsOnUnlock(
+  character: Character,
+  level: number,
+): string[] | undefined {
+  if (character.classId !== 'paladin') return undefined
+  if (character.preparedSpells !== undefined) return undefined
+
+  const limits = getSpellcastingLimits(
+    character.classId,
+    abilityModifier(character.scores.wis),
+    abilityModifier(character.scores.int),
+    level,
+    abilityModifier(character.scores.cha),
+  )
+  if (limits.preparedSpellsCount <= 0) return undefined
+
+  const list = spellsFor('paladin', 1).map((spell) => spell.id)
+  return list.length === 0 ? undefined : list.slice(0, limits.preparedSpellsCount)
 }
 
 /**
@@ -249,6 +284,7 @@ export function levelUp(character: Character): LevelUpResult {
    */
   const surges = actionSurgesFor(character.classId, level)
   const smites = hasDivineSmiteAt(character.classId, level)
+  const prepared = preparedSpellsOnUnlock(character, level)
   const subclassId = character.subclassId
   const critOn = critThresholdFor(subclassId, level)
   const superiorityDice = superiorityDiceFor(subclassId, level)
@@ -264,6 +300,7 @@ export function levelUp(character: Character): LevelUpResult {
     maxHp,
     ...(surges === undefined ? {} : { actionSurges: surges }),
     ...(smites ? { hasDivineSmite: true } : {}),
+    ...(prepared === undefined ? {} : { preparedSpells: prepared }),
     ...(critOn === undefined ? {} : { critOn }),
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),

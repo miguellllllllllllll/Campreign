@@ -12,6 +12,7 @@ export type TokenId = ClassId | 'goblin' | 'dummy' | 'squire' | 'bat' | 'skeleto
 export type ConditionId =
   | 'blessed'
   | 'warded'
+  | 'favoured'
   | 'dazzled'
   | 'poisoned'
   | 'prone'

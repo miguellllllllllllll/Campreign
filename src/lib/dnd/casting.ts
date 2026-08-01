@@ -419,10 +419,27 @@ export function castSpell(args: {
     ...(warded === undefined ? {} : { arcaneWardHp: warded }),
   }
 
-  // Healing yourself means the caster and target are one combatant; the target
-  // copy is the one carrying the new hit points, so it wins.
+  /*
+   * Casting on yourself means the caster and the target are one combatant, and
+   * the two copies have to be reconciled rather than one chosen.
+   *
+   * This used to spread the caster over the target and then rescue `currentHp`
+   * and `ac` by name — a whitelist, which meant every spell that touched a new
+   * field on the target had to remember to extend it. Divine Favor touched
+   * `conditions`, nobody extended it, and the spell spent a slot and granted
+   * nothing.
+   *
+   * So the target is the base now: it carries every change the spell made to
+   * the body. Only the three pieces of caster bookkeeping go on top, and they
+   * are the same three used to build `nextCaster` above.
+   */
   if (target.id === caster.id) {
-    nextCaster = { ...nextTarget, ...nextCaster, currentHp: nextTarget.currentHp, ac: nextTarget.ac }
+    nextCaster = {
+      ...nextTarget,
+      ...(concentrating === undefined ? {} : { concentratingOn: concentrating }),
+      ...(spent === undefined ? {} : { spellSlots: spent }),
+      ...(warded === undefined ? {} : { arcaneWardHp: warded }),
+    }
     return { caster: nextCaster, target: nextCaster, lines, refusal: null }
   }
 

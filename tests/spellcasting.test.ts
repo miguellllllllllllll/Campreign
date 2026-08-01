@@ -10,6 +10,8 @@ import {
 import { SPELLS, SPELLS_BY_ID, spellsByIds, spellsFor } from '../src/content/spells.ts'
 import { MAGIC_STYLE_PRESETS, magicStyleById, magicStylesFor } from '../src/content/spellPresets.ts'
 import type { AbilityScores } from '../src/types/character.ts'
+import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
+import { levelUp } from '../src/lib/dnd/leveling.ts'
 
 function scores(overrides: Partial<AbilityScores> = {}): AbilityScores {
   return { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...overrides }
@@ -121,9 +123,32 @@ test("Lay on Hands is the pool the card's Long Rest tooltip hangs off", () => {
 
 // --- The level 2 preview --------------------------------------------------
 
-test('the preview covers all four paladin pillars', () => {
-  const names = PALADIN_LEVEL_2_PREVIEW.map((spell) => spell.name)
-  assert.deepEqual(names, ['Divine Favor', 'Searing Smite', 'Cure Wounds', 'Heroism'])
+test('the preview shows the spells a paladin is actually handed', () => {
+  /*
+   * This used to pin four names — Divine Favor, Searing Smite, Cure Wounds,
+   * Heroism — and it stayed green while the registry held no paladin spells at
+   * all. It was testing that a hardcoded list matched itself.
+   *
+   * The preview is now derived from the registry, so the assertion that matters
+   * is that it agrees with what levelling actually grants. Searing Smite and
+   * Heroism are gone rather than faked: one needs damage that ticks on later
+   * turns, the other needs temporary hit points, and neither subsystem exists.
+   */
+  const previewed = PALADIN_LEVEL_2_PREVIEW.map((spell) => spell.id).sort()
+  const real = spellsFor('paladin', 1).map((spell) => spell.id).sort()
+  assert.deepEqual(previewed, real, 'the card promises exactly the registry')
+  assert.ok(previewed.length > 0, 'and the registry is not empty')
+
+  const granted = levelUp(
+    buildCharacter(
+      { classId: 'paladin', raceId: 'human', backgroundId: 'noble', flawId: 'obeyed',
+        equipmentChoice: 'offensive', auraId: 'amber' } as never,
+      'Oath', { id: 'preview', now: 0 },
+    ),
+  ).character.preparedSpells
+  for (const id of granted ?? []) {
+    assert.ok(previewed.includes(id), `${id} is granted but never previewed`)
+  }
 })
 
 test('every previewed spell can fill a card without a blank field', () => {
@@ -144,11 +169,13 @@ test('preview spell ids are unique, so React keys cannot collide', () => {
 
 test('concentration is recorded per spell rather than assumed', () => {
   const byName = new Map(PALADIN_LEVEL_2_PREVIEW.map((spell) => [spell.name, spell]))
-  // Cure Wounds is the one instantaneous spell of the four; the rest hold.
+  // Cure Wounds lands and is done; Divine Favor has to be held together.
   assert.equal(byName.get('Cure Wounds')?.isConcentration, false)
   assert.equal(byName.get('Divine Favor')?.isConcentration, true)
-  assert.equal(byName.get('Searing Smite')?.isConcentration, true)
-  assert.equal(byName.get('Heroism')?.isConcentration, true)
+  // And the flag is the registry's, not a second copy that could disagree.
+  for (const preview of PALADIN_LEVEL_2_PREVIEW) {
+    assert.equal(preview.isConcentration, SPELLS_BY_ID[preview.id]?.isConcentration)
+  }
 })
 
 test('the preview never overlaps the level 1 features it sits beneath', () => {
@@ -206,7 +233,7 @@ test('Bless is an Enchantment spell and needs concentration', () => {
 
 test('only the spells that genuinely need concentration are flagged', () => {
   const concentrating = SPELLS.filter((spell) => spell.isConcentration).map((spell) => spell.id)
-  assert.deepEqual(concentrating.sort(), ['bless', 'guidance', 'shieldOfFaith'])
+  assert.deepEqual(concentrating.sort(), ['bless', 'divineFavor', 'guidance', 'shieldOfFaith'])
 })
 
 test('an aimed cantrip carries a real attack, a utility one does not', () => {

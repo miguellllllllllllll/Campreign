@@ -36,6 +36,17 @@ export function effectiveAc(combatant: Combatant): number {
   )
 }
 
+/**
+ * The extra damage dice a combatant's own conditions lend to their hits, or
+ * null when they have none — which is everybody, almost always.
+ */
+export function damageRiderFor(combatant: Combatant): string | null {
+  const dice = combatant.conditions
+    .map((condition) => CONDITIONS[condition.id].damageDice)
+    .filter((notation): notation is string => notation !== undefined)
+  return dice.length === 0 ? null : dice.join('+')
+}
+
 /** The die a blessing lends to an attack roll. */
 export const BLESS_DIE = '1d4'
 
@@ -151,8 +162,17 @@ export function resolveAttack(args: {
 
   const baseDamage = damageNotation(attack, attacker.scores)
 
+  /*
+   * A condition can lend damage the way `warded` lends armour. Appended to the
+   * notation rather than rolled separately, unlike Bless: this rides on the
+   * *damage* roll, which has no single-d20 keep-rule to disturb, so the dice
+   * panel shows one honest expression instead of two numbers to add up.
+   */
+  const rider = damageRiderFor(attacker)
+  const withRider = rider === null ? baseDamage : `${baseDamage}+${rider}`
+
   if (attackRoll.crit === 'hit') {
-    const damageRoll = roll(toCriticalNotation(baseDamage), { rng })
+    const damageRoll = roll(toCriticalNotation(withRider), { rng })
     return {
       kind: 'crit',
       breakdown,
@@ -163,7 +183,7 @@ export function resolveAttack(args: {
   }
 
   if (total >= effectiveAc(target)) {
-    const damageRoll = roll(baseDamage, { rng })
+    const damageRoll = roll(withRider, { rng })
     return {
       kind: 'hit',
       breakdown,
