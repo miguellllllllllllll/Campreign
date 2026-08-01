@@ -84,12 +84,38 @@ test('at least one choice needs no roll, so the player is never blocked by bad l
   assert.ok(parley?.choices?.some((choice) => choice.check === undefined))
 })
 
-test('combat is started exactly once, by an effect on entering a step', () => {
-  const starters = GOBLIN_CELLAR.filter((step) =>
-    step.onEnter?.some((effect) => effect.kind === 'startCombat'),
+test('each fight is started once, by an effect on entering a step', () => {
+  const starters = GOBLIN_CELLAR.flatMap((step) =>
+    (step.onEnter ?? [])
+      .filter((effect) => effect.kind === 'startCombat')
+      .map((effect) => ({ step, encounterId: effect.encounterId })),
   )
-  assert.equal(starters.length, 1)
-  assert.equal(starters[0]?.phase, 'combat')
+  assert.equal(starters.length, 2, 'one cellar goblin, then whatever came through the drain')
+  for (const { step } of starters) assert.equal(step.phase, 'combat')
+
+  /*
+   * Distinct ids, or the second fight silently respawns the first. The opening
+   * encounter deliberately names none — it predates there being a choice, and
+   * `startCombat` with no id still means "the one at the start".
+   */
+  const ids = starters.map((one) => one.encounterId)
+  assert.equal(new Set(ids).size, ids.length, 'two starts, two rosters')
+  assert.equal(ids[0], undefined)
+})
+
+test('every fight has somewhere to go when it is won', () => {
+  /*
+   * The bug this exists to catch: a combat step with no `victory` swallows the
+   * win, and the player stands on a cleared board with nothing to press. It was
+   * a single hard-coded jump to the ending until there were two fights.
+   */
+  for (const step of GOBLIN_CELLAR) {
+    if (step.phase !== 'combat') continue
+    const canBeWonHere = step.completion.when !== 'acknowledged'
+    if (!canBeWonHere) continue
+    assert.ok(step.victory !== undefined, `${step.id} can be won and goes nowhere`)
+    assert.ok(stepById(step.victory), `${step.id} points at a step that does not exist`)
+  }
 })
 
 test('the combat phase teaches movement, then action, then ending the turn', () => {
@@ -102,5 +128,12 @@ test('the combat phase teaches movement, then action, then ending the turn', () 
   assert.ok(moved >= 0 && acted >= 0 && ended >= 0, 'all three lessons are present')
   assert.ok(moved < acted, 'movement is taught before the action')
   assert.ok(acted < ended, 'the action is taught before ending the turn')
-  assert.equal(combat.at(-1)?.completion.when, 'enemyDefeated', 'the tutorial ends on a win')
+  /*
+   * The ending is now a step of its own rather than the winning step itself.
+   * With two fights, "somebody won" and "the tutorial is over" are different
+   * events, so what matters is that the last thing before the ending is a win.
+   */
+  const ending = combat.at(-1)
+  assert.equal(ending?.next, null, 'the last combat step is the ending')
+  assert.equal(combat.at(-2)?.completion.when, 'enemyDefeated', 'and it is reached by winning')
 })

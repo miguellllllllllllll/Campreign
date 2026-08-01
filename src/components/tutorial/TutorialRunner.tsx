@@ -13,7 +13,8 @@ import {
   turnOrder,
 } from '../../lib/dnd/encounter.ts'
 import { spellTargetsDying, spellTargetsEnemies } from '../../lib/dnd/casting.ts'
-import { isDying } from '../../lib/dnd/dying.ts'
+import { isDead, isDying } from '../../lib/dnd/dying.ts'
+import { LevelUpSummary } from './LevelUpSummary.tsx'
 import { channelDivinityPowerFor } from '../../content/subclasses.ts'
 import { useActiveCharacter, useRosterHydrated } from '../../stores/characterStore.ts'
 import { useCombatStore } from '../../stores/combatStore.ts'
@@ -103,10 +104,25 @@ export function TutorialRunner() {
 
   const winner = encounter === null ? null : encounterWinner(encounter)
 
+  /*
+   * Whether the hero is gone for good, rather than merely down.
+   *
+   * `encounterWinner` answers "is either side wiped out", which is not the same
+   * question. The squire can finish the last enemy while the player's own hero
+   * is on the floor — and if they were only dying, that is a fine story and the
+   * rest between fights brings them back. If they are dead, marching a corpse
+   * into a harder encounter is not a story, so the lesson ends here instead.
+   */
+  const heroOnBoard =
+    encounter === null || character === null ? undefined : encounter.combatants[character.id]
+  const heroDead = heroOnBoard !== undefined && isDead(heroOnBoard)
+
   // The engine decides the fight is over; the tutorial hears about it here.
   useEffect(() => {
-    if (winner === 'party') dispatch({ type: 'enemyDefeated' })
-  }, [winner, dispatch])
+    if (winner === 'party' && !heroDead) dispatch({ type: 'enemyDefeated' })
+  }, [winner, heroDead, dispatch])
+
+  const levelGains = useTutorialStore((state) => state.levelGains)
 
   if (!hydrated) {
     return <p className="text-sm text-muted">Loading your hero…</p>
@@ -147,8 +163,29 @@ export function TutorialRunner() {
   // team and plays itself.
   const playerTurn = active?.id === character.id
 
-  // Every combat step past the initiative roll hands the board over.
-  const inCombat = encounter !== null && step.phase === 'combat' && step.id !== 'initiative'
+  /*
+   * A step that puts a roster on the board does not also hand it over — the
+   * player is meant to read the turn order first. Asked of the step's effects
+   * rather than matched against the id 'initiative', because there are two of
+   * these now and the second one is not called that.
+   */
+  const startsFight = step.onEnter?.some((effect) => effect.kind === 'startCombat') === true
+  const inCombat = encounter !== null && step.phase === 'combat' && !startsFight
+  /*
+   * The steps that just say "keep going until you win" rather than teaching one
+   * move. They are exactly the steps that complete on a win, so ask that — the
+   * previous test for `id === 'finish'` silently stopped matching the moment
+   * that step was renamed, taking End Turn off the bar with it.
+   */
+  const freeFight = step.completion.when === 'enemyDefeated'
+  /*
+   * The beat between the two fights. The board is hidden here on purpose: it
+   * still holds the finished encounter, where the hero may well be lying at 0
+   * hit points, and showing that beside a panel reading "+7 (now 17)" tells the
+   * player two contradictory things at the moment they are meant to learn what
+   * levelling up means.
+   */
+  const levelsUp = step.onEnter?.some((effect) => effect.kind === 'levelUp') === true
   const boardLive = inCombat && playerTurn && winner === null
   // Out of movement and out of reach: ending the turn is the only move left, so
   // it has to be offered even though this step was teaching something else.
@@ -263,6 +300,13 @@ export function TutorialRunner() {
 
           <p className="text-sm leading-relaxed text-muted">{step.narration}</p>
 
+          {/*
+            * Shown on whichever step levelled the hero, asked of the step's own
+            * data rather than matched by id — adding a beat to this tutorial is
+            * supposed to mean editing content, never a component.
+            */}
+          {levelGains !== null && levelsUp && <LevelUpSummary gains={levelGains} />}
+
           {finished ? (
             <div className="rounded-card border border-moss/50 bg-moss/10 p-5 shadow-[0_0_30px_rgb(122_163_95/0.15)]">
               <h2 className="flex items-center gap-2 font-display text-lg text-moss">
@@ -282,15 +326,16 @@ export function TutorialRunner() {
                 </FantasyButton>
               </div>
             </div>
-          ) : winner === 'foes' ? (
+          ) : winner === 'foes' || heroDead ? (
             <div className="rounded-card border border-blood/50 bg-blood/10 p-5 shadow-[0_0_30px_rgb(192_70_59/0.15)]">
               <h2 className="flex items-center gap-2 font-display text-lg text-blood">
                 <Skull aria-hidden className="size-5" />
                 You went down
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-parchment">
-                Dropping to zero hit points is not the end of a character at a real table, but
-                it is the end of this lesson. Take it from the top.
+                {heroDead
+                  ? 'Three failed death saves is the end of a character, at this table and at any other. It is not the end of you — take it from the top.'
+                  : 'Everyone on your side is on the floor. At a real table somebody would be rolling death saves right now and the story would go on; here it is the end of the lesson. Take it from the top.'}
               </p>
               <FantasyButton variant="iron" className="mt-4" onClick={restart}>
                 Try again
@@ -308,9 +353,7 @@ export function TutorialRunner() {
               movementRemaining={playerTurn ? encounter.movementRemaining : 0}
               hasActed={encounter.hasActed}
               attackEnabled={boardLive && step.id !== 'move'}
-              endTurnEnabled={
-                boardLive && (step.id === 'endTurn' || step.id === 'finish' || stranded)
-              }
+              endTurnEnabled={boardLive && (step.id === 'endTurn' || freeFight || stranded)}
               stranded={stranded}
               onAttack={attack}
               onCast={cast}
@@ -322,7 +365,7 @@ export function TutorialRunner() {
           )}
         </div>
 
-        {encounter !== null && (
+        {encounter !== null && !levelsUp && (
           <aside className="flex flex-col gap-4">
             <CombatGrid
               combatants={Object.values(encounter.combatants)}

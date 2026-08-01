@@ -30,6 +30,9 @@ const EVERY_TOKEN: readonly TokenId[] = [
   'goblin',
   'dummy',
   'squire',
+  'bat',
+  'skeleton',
+  'spider',
 ]
 
 const CLASS_IDS: readonly ClassId[] = ['fighter', 'wizard', 'rogue', 'cleric', 'paladin']
@@ -61,8 +64,15 @@ test('every class is a token in its own right', () => {
 
 test('the token list has no duplicates and nothing spare', () => {
   assert.equal(new Set(EVERY_TOKEN).size, EVERY_TOKEN.length)
-  // Five classes plus the three creatures that are not one.
-  assert.equal(EVERY_TOKEN.length, CLASS_IDS.length + 3)
+  /*
+   * Five classes plus everything that is not one: the goblin, the practice
+   * dummy, the squire, and the three the bestiary added.
+   *
+   * Written as a number rather than derived on purpose. This is the assertion
+   * that makes somebody widening TokenId come and look at this file, which is
+   * where they will find the silhouette they also have to draw.
+   */
+  assert.equal(EVERY_TOKEN.length, CLASS_IDS.length + 6)
 })
 
 // --- Presets resolve ------------------------------------------------------

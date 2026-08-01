@@ -13,7 +13,19 @@ export type Completion =
   | { when: 'enemyDefeated' }
 
 /** Something the step does to the world on arrival. Interpreted by the UI, never by the data. */
-export type EffectSpec = { kind: 'startCombat' }
+export type EffectSpec =
+  /**
+   * Puts a roster on the board. `encounterId` names which one; absent means the
+   * first, so the step that predates second encounters reads exactly as it did.
+   */
+  | { kind: 'startCombat'; encounterId?: string }
+  /** Takes the hero up a level, and records what changed so a step can say so. */
+  | { kind: 'levelUp' }
+  /**
+   * Hit points and spell slots back. Between two fights this is the difference
+   * between a second encounter and an unwinnable one.
+   */
+  | { kind: 'shortRest' }
 
 /** A dialogue option in the social phase. */
 export interface TutorialChoice {
@@ -43,6 +55,15 @@ export interface TutorialStep {
   /** Rendered verbatim in the guidance banner — never recomputed elsewhere. */
   guidance: string
   completion: Completion
+  /**
+   * Where to go if the fight is won while this step is on screen.
+   *
+   * A win can land on any lesson — the goblin can drop to a lucky first hit,
+   * before End Turn has ever been taught. Steps name their own destination
+   * because with two encounters there is no single one: winning the first fight
+   * goes to the aftermath, winning the second ends the tutorial.
+   */
+  victory?: string
   onEnter?: EffectSpec[]
   check?: TutorialCheck
   choices?: TutorialChoice[]

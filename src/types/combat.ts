@@ -7,7 +7,7 @@ import type { DiceRoll } from './dice.ts'
  * is not a hero — a union of its own rather than a reused `ClassId`, so a
  * goblin never has to pretend to have a class in order to be visible.
  */
-export type TokenId = ClassId | 'goblin' | 'dummy' | 'squire'
+export type TokenId = ClassId | 'goblin' | 'dummy' | 'squire' | 'bat' | 'skeleton' | 'spider'
 
 export type ConditionId =
   | 'blessed'

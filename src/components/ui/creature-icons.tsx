@@ -124,6 +124,51 @@ const SHAPES: Record<TokenId, ReactNode> = {
       <path d="M7.1 4.6h12.7l-3.6 4.2 3.6 4.2H7.1V4.6Z" />
     </>
   ),
+
+  /**
+   * Wings edge to edge, which no other token here does — that span is the whole
+   * identification, and it survives being shrunk further than any of the others.
+   *
+   * Drawn as a rat first, and it failed twice for the reason recorded above: an
+   * ear circle on top of a body blob reads as a second head, and a tail thin
+   * enough to be a tail is thin enough to vanish. Rodent and goblin also compete
+   * for the same silhouette, and the goblin was here first.
+   */
+  bat: (
+    <>
+      <path d="M11 11.2 1.4 6.6c1.2 2.8.8 5.8-.8 8.8l4-1.6.4 3 2.8-2.4 2.6 2.2Z" />
+      <path d="M13 11.2 22.6 6.6c-1.2 2.8-.8 5.8.8 8.8l-4-1.6-.4 3-2.8-2.4-2.6 2.2Z" />
+      <path d="M9.9 6.4 11 9.4h2l1.1-3-1.5 1.2h-1.2Z" />
+      <ellipse cx="12" cy="12.6" rx="2.3" ry="4.6" />
+      <circle cx="12" cy="9" r="2.4" />
+    </>
+  ),
+
+  /**
+   * A skull: round sockets, a triangular nose, a jaw with two teeth cut out of
+   * it. Nothing else on the board is a skull, and at token size the two black
+   * sockets do all the work on their own.
+   */
+  skeleton: (
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M12 2.2c5 0 8.6 3.6 8.6 8.4 0 3-1.4 5.4-3.4 6.8v3.2A1.4 1.4 0 0 1 15.8 22H8.2a1.4 1.4 0 0 1-1.4-1.4v-3.2c-2-1.4-3.4-3.8-3.4-6.8 0-4.8 3.6-8.4 8.6-8.4ZM8.4 8.2a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4Zm7.2 0a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4ZM12 14.6l-1.6 2.8h3.2L12 14.6Zm-2.8 4.2h1.2V22H9.2v-3.2Zm4.4 0h1.2V22h-1.2v-3.2Z"
+    />
+  ),
+
+  /**
+   * Eight legs radiating off a body, and they are wedges rather than sticks:
+   * an even-width leg is exactly the 1.5px stroke this file opens by warning
+   * about, and the spider is the one shape here that is mostly legs.
+   */
+  spider: (
+    <>
+      <path d="M9.4 9.6 3.6 4.2 1.6 6.4l6.2 4.8ZM8.6 11.6l-7-2.4-.7 2.8 7.1 1.4ZM8.6 14l-7.2 2.2.8 2.8 6.7-3.4ZM9.8 15.8l-5 4.8 2.1 2 4.1-5.4ZM14.6 9.6l5.8-5.4 2 2.2-6.2 4.8ZM15.4 11.6l7-2.4.7 2.8-7.1 1.4ZM15.4 14l7.2 2.2-.8 2.8-6.7-3.4ZM14.2 15.8l5 4.8-2.1 2-4.1-5.4Z" />
+      <circle cx="12" cy="8" r="2.6" />
+      <ellipse cx="12" cy="14" rx="4.6" ry="5.2" />
+    </>
+  ),
 }
 
 export function CreatureToken({ token, size = 24, ...props }: CreatureTokenProps) {
