@@ -22,7 +22,7 @@ function StatTile({
   bar?: ReactNode
 }) {
   return (
-    <div className="group relative flex flex-col items-center gap-1 overflow-hidden rounded-lg border border-edge bg-surface-raised/80 px-3 py-3 transition-colors hover:border-gold-border/50">
+    <div className="group relative flex flex-col items-center gap-1 overflow-hidden rounded-lg border-2 border-edge bg-surface-raised/80 panel-sunken px-3 py-3 transition-colors hover:border-gold-border/50">
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold-border/50 to-transparent"
@@ -89,7 +89,7 @@ export function StatBlock({ character }: { character: Character }) {
             return (
               <div
                 key={ability}
-                className="flex flex-col items-center rounded-lg border border-edge bg-surface-raised/80 py-2 transition-colors hover:border-gold-border/50"
+                className="flex flex-col items-center rounded-lg border-2 border-edge bg-surface-raised/80 panel-sunken py-2 transition-colors hover:border-gold-border/50"
               >
                 <span className="heading-small-caps text-[11px] font-semibold">
                   <Explain k={ability} className="no-underline decoration-transparent">
