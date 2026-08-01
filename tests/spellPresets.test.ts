@@ -220,6 +220,14 @@ test('no two styles of a class are the same character', () => {
    * cantrips, and the same prepared spells for every ancestry. Two of three
    * choices would have collapsed into one, which is a worse bug than the one
    * being fixed.
+   *
+   * Note what this does *not* catch, because it took another session to point
+   * out: the check is `!(sameCantrips && samePrepared)`, so two styles that
+   * share a prepared list but differ by one cantrip pass. That is exactly the
+   * shape the wizard styles were in — three styles, one shared prepared
+   * constant, different cantrips — and this test stayed green through all of
+   * it. "The same character" and "a choice that changes nothing" are different
+   * claims; the test below makes the second one.
    */
   const key = (ids: readonly string[]) => [...ids].sort().join(',')
   for (const classId of ['cleric', 'wizard'] as const) {

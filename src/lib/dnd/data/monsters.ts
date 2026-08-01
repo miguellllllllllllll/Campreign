@@ -9,6 +9,8 @@ export interface MonsterPreset {
   blurb: string
   /** Which silhouette stands in the square when this one is spawned. */
   tokenId: TokenId
+  /** Set only for the creatures a paladin's smite bites harder on. */
+  undead?: boolean
   level: number
   scores: AbilityScores
   maxHp: number
@@ -137,6 +139,7 @@ export const SKELETON: MonsterPreset = {
   name: 'Skeleton',
   blurb: 'Bones held together by something that is not muscle, gripping a rusted shortsword.',
   tokenId: 'skeleton',
+  undead: true,
   level: 1,
   scores: { str: 10, dex: 14, con: 15, int: 6, wis: 8, cha: 5 },
   maxHp: 13,
@@ -236,6 +239,7 @@ export function spawnMonster(
     attacks: preset.attacks.map((attack) => ({ ...attack })),
     conditions: [],
     tokenId: preset.tokenId,
+    ...(preset.undead === true ? { undead: true } : {}),
     initiative: args.initiative ?? 0,
   }
 }

@@ -150,6 +150,17 @@ Flagged rather than hidden, all of them in service of a first-time player:
   so no single written-down list fits every cleric. Styles are written at the
   larger size and cut to the cap in `resolveSpellSelection`, leading with the
   spells that make them that style. A hand-picked list is never trimmed.
+- **A paladin's spell slots buy Divine Smite, not spells.** They gain two at 2nd
+  level, and the registry holds no paladin spells at all — so the slots arrived
+  with nothing to spend them on until Smite existed. That is the same
+  inert-resource failure this project keeps catching, and it shipped once.
+  Burning a slot on a blow is what a paladin does with them at a real table
+  anyway, so the mechanic is the honest fix rather than a stopgap.
+
+  The smite is armed *before* the swing and spent only if it lands, which
+  diverges from the SRD's decide-after-you-know. It follows the Trip Attack
+  precedent beside it: a second prompt in the middle of an attack is the
+  reaction-shaped problem that machinery exists to avoid.
 - **Your specialisation switches on at 2nd level, not at creation.** You pick it
   during creation and the choice is remembered; the numbers arrive when you
   level. Everything used to work from level 1, which handed a beginner the whole
@@ -207,11 +218,15 @@ Supabase, accounts, and multiplayer — nobody else is at the table, though the
 tutorial does field one NPC ally so an area spell has somebody to spare.
 
 Levels past 2. The rules for taking a level live in `lib/dnd/leveling.ts` and
-stop there for a specific reason: at 3rd level a full caster gains **2nd-level
-spell slots**, and `Character.spellSlots` is a single number meaning first-level
-slots. A level-3 wizard here would be missing half their magic. The slot table
-is written out past the cap because the rules are correct further than the app
-can play them — lifting it means giving slots a table, then one constant.
+stop there because at 3rd level a full caster gains **2nd-level spell slots**,
+and `Character.spellSlots` is a single number meaning first-level slots.
+
+Raising the cap is a bigger job than it first looks, and this paragraph used to
+understate it. `Spell.level` is `0 | 1`, `spellsFor` is typed the same, and the
+registry holds nothing above 1st level — so a level-3 caster would gain slots
+with nothing to spend them on, which is the inert-content problem this project
+keeps finding, one layer up. The order is: write 2nd-level spells, widen
+`Spell.level`, give slots a table, then move the constant.
 
 The bestiary is the goblin, the practice dummy, a giant bat, a skeleton and a
 giant spider. The giant spider is the only one that does not appear yet — it is

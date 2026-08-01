@@ -56,6 +56,7 @@ export function characterToCombatant(
     ...(character.potions === undefined ? {} : { potions: character.potions }),
     ...(character.spellSlots === undefined ? {} : { spellSlots: character.spellSlots }),
     ...(character.actionSurges === undefined ? {} : { actionSurges: character.actionSurges }),
+    ...(character.hasDivineSmite === true ? { hasDivineSmite: true } : {}),
     ...(character.preparedSpells === undefined
       ? {}
       : { preparedSpells: [...character.preparedSpells] }),

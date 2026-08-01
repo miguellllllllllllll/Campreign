@@ -12,6 +12,7 @@ import {
 import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
 import { canActionSurge } from '../../lib/dnd/actionSurge.ts'
+import { canSmite } from '../../lib/dnd/divineSmite.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { HintTooltip } from '../ui/rules-tooltip.tsx'
 import { Explain } from '../Explain.tsx'
@@ -26,7 +27,7 @@ export interface ActionBarProps {
   endTurnEnabled: boolean
   /** No movement and nothing in reach — say so, rather than leaving them hunting. */
   stranded?: boolean
-  onAttack: (attackId: string, maneuverId?: 'trip') => void
+  onAttack: (attackId: string, maneuverId?: 'trip', smite?: boolean) => void
   /** Undefined when this hero prepares no spells at all. */
   onCast?: (spellId: string) => void
   /**
@@ -71,6 +72,13 @@ export function ActionBar({
    * up front and only actually spent if the attack lands.
    */
   const [tripArmed, setTripArmed] = useState(false)
+  /*
+   * Armed before the swing like the superiority die beside it, and for the same
+   * reason: the SRD lets a paladin decide once they know they hit, but a second
+   * prompt mid-attack is the reaction-shaped problem that machinery avoids.
+   * The slot is only actually spent if the blow lands.
+   */
+  const [smiteArmed, setSmiteArmed] = useState(false)
   const dice = active.superiorityDice ?? 0
   const canTrip = dice > 0
 
@@ -93,6 +101,10 @@ export function ActionBar({
    */
   const surges = active.actionSurges ?? 0
   const canSurge = onSurge !== undefined && canActionSurge(active, hasActed) && attackEnabled
+
+  // `canSmite` carries both halves — the feature and a slot to spend — so this
+  // never has to ask what class or subclass anybody picked.
+  const canSmiteNow = canSmite(active) && attackEnabled
 
   return (
     <div className="border-gold-ornate rounded-card p-4">
@@ -134,7 +146,11 @@ export function ActionBar({
               variant="brass"
               aria-disabled={!usable}
               onClick={() => {
-                onAttack(attack.id, tripArmed && attack.kind === 'weapon' ? 'trip' : undefined)
+                onAttack(
+                  attack.id,
+                  tripArmed && attack.kind === 'weapon' ? 'trip' : undefined,
+                  smiteArmed && attack.kind === 'weapon' ? true : undefined,
+                )
                 setTripArmed(false)
               }}
             >
@@ -183,6 +199,23 @@ export function ActionBar({
             {oathPower === 'sacredWeapon' ? 'Sacred Weapon' : 'Vow of Enmity'}
             <span className="font-mono text-xs font-normal">{charges} left</span>
           </FantasyButton>
+          </HintTooltip>
+        )}
+
+        {canSmiteNow && (
+          <HintTooltip
+            title="Divine Smite"
+            body="Burn a spell slot as you strike for 2d8 radiant damage — and an extra die against the undead. Armed before the swing; the slot is only spent if it lands."
+          >
+            <FantasyButton
+              variant={smiteArmed ? 'crimson' : 'iron'}
+              aria-pressed={smiteArmed}
+              onClick={() => setSmiteArmed((armed) => !armed)}
+            >
+              <ChannelDivinityIcon size={16} />
+              {smiteArmed ? 'Smite armed' : 'Divine Smite'}
+              <span className="font-mono text-xs font-normal">{slots} left</span>
+            </FantasyButton>
           </HintTooltip>
         )}
 

@@ -139,6 +139,14 @@ export interface Combatant {
    * 2nd-level fighter, so no caller has to ask what class somebody is.
    */
   actionSurges?: number
+  /** Whether this combatant can burn a slot on a blow. Paladins, from 2nd level. */
+  hasDivineSmite?: boolean
+  /**
+   * Whether this creature was once a person and is not any more. Absent means
+   * living, which is everything except the skeleton — read by Divine Smite,
+   * and the hook anything else that cares about undead will hang off.
+   */
+  undead?: boolean
   /** Potions still unopened. */
   potions?: number
   /** Whether using an item costs this combatant a bonus action instead. */

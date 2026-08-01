@@ -12,6 +12,7 @@ import {
 } from '../../content/subclasses.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 import { actionSurgesFor } from './actionSurge.ts'
+import { hasDivineSmiteAt } from './divineSmite.ts'
 
 /**
  * Taking a level.
@@ -30,9 +31,19 @@ import { actionSurgesFor } from './actionSurge.ts'
  * the action bar. A level-3 wizard here would be a wizard missing half their
  * magic, which is worse than a wizard who cannot exist.
  *
- * `SPELL_SLOTS_BY_LEVEL` below is written out past the cap on purpose. The rules
- * are correct further than the app can currently play them, so lifting this is
- * a slot table on `Character` and then this one constant — not a research task.
+ * `SPELL_SLOTS_BY_LEVEL` below is written out past the cap on purpose: the rules
+ * are correct further than the app can play them.
+ *
+ * Lifting the cap is **not** just a slot table and this constant, which is what
+ * this comment used to claim. `Spell.level` is `0 | 1` and `spellsFor` is typed
+ * the same, and the registry holds nothing above 1st level — so a level-3 caster
+ * would get two 2nd-level slots with literally nothing to spend them on. That is
+ * the same inert-content failure this codebase keeps catching, one layer up.
+ *
+ * The real order of work: 2nd-level spells for both casting classes first, then
+ * widen `Spell.level`, then give `Character.spellSlots` a table, and only then
+ * this number. The cleric's SRD list at that level also leans on effect kinds
+ * the engine does not have.
  */
 export const MAX_LEVEL = 2
 
@@ -144,15 +155,15 @@ const FEATURES_AT_LEVEL_2: Readonly<Record<ClassId, readonly LevelFeature[]>> = 
   paladin: [
     {
       id: 'paladinSpellcasting',
-      name: 'Spellcasting',
+      name: 'Spell slots',
       description:
-        'Your oath starts answering. You gain spell slots and a list of prepared spells, powered by Charisma.',
+        'Your oath starts answering, and you gain two spell slots. There are no paladin spells in this build yet, so what you have them for is Divine Smite.',
     },
     {
       id: 'divineSmite',
       name: 'Divine Smite',
       description:
-        'Spend a spell slot as you hit to add radiant damage. The reason paladins hoard slots rather than casting them.',
+        'Spend a spell slot as you land a blow for 2d8 radiant damage, and an extra die against the undead. The reason paladins hoard slots rather than casting them.',
     },
   ],
 }
@@ -214,6 +225,7 @@ export function levelUp(character: Character): LevelUpResult {
    * rather than toggled, so the grant and the gate can never disagree.
    */
   const surges = actionSurgesFor(character.classId, level)
+  const smites = hasDivineSmiteAt(character.classId, level)
   const subclassId = character.subclassId
   const critOn = critThresholdFor(subclassId, level)
   const superiorityDice = superiorityDiceFor(subclassId, level)
@@ -228,6 +240,7 @@ export function levelUp(character: Character): LevelUpResult {
     level,
     maxHp,
     ...(surges === undefined ? {} : { actionSurges: surges }),
+    ...(smites ? { hasDivineSmite: true } : {}),
     ...(critOn === undefined ? {} : { critOn }),
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),
