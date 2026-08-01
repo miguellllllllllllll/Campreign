@@ -17,73 +17,125 @@ export interface IconProps extends SVGProps<SVGSVGElement> {
   size?: number | string
 }
 
-/** Shared so every icon lines up on the same grid and stroke weight. */
+/**
+ * Shared so every icon lines up on the same grid and stroke weight.
+ *
+ * 1.8 rather than the 1.5 these were drawn at. Nothing here is ever rendered at
+ * the 24 the viewBox implies — the call sites ask for 12 to 18, and at 16 a 1.5
+ * stroke lands on one device pixel and greys out. The grid is 24 and the icons
+ * are not: everything below is drawn for two thirds of it.
+ */
 const base = {
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
-  strokeWidth: 1.5,
+  strokeWidth: 1.8,
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
 } as const
 
-/** A d20 — attacks, saves and checks. */
+/**
+ * A d20 — attacks, saves and checks.
+ *
+ * The six faces it used to draw all met at the centre, and five lines
+ * converging inside a ten-pixel hexagon is a knot, not a die. One inscribed
+ * triangle says icosahedron on its own, and it is the only interior mark that
+ * still has room to be seen at 14.
+ */
 export function D20Icon({ size = 24, ...props }: IconProps) {
   return (
     <svg width={size} height={size} aria-hidden {...base} {...props}>
-      <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5" />
-      <polyline points="12 2 12 22" />
-      <polyline points="12 12 22 8.5" />
-      <polyline points="12 12 2 8.5" />
-      <polyline points="12 12 22 15.5" />
-      <polyline points="12 12 2 15.5" />
+      <polygon points="12 2 21 7.25 21 16.75 12 22 3 16.75 3 7.25" />
+      <polygon points="12 6.6 17.4 15.6 6.6 15.6" />
     </svg>
   )
 }
 
-/** The Battle Master's spendable die. */
+/**
+ * The Battle Master's spendable die — a d8 on its point.
+ *
+ * It had a full cross through it and a pip in each half, and at the 12 the
+ * ActionBar asks for, the pips sat on the crossbar and the whole interior went
+ * solid. The horizontal alone is what makes a rhombus read as a die; the
+ * vertical was drawing the one edge you cannot see from this angle anyway.
+ */
 export function SuperiorityDieIcon({ size = 24, ...props }: IconProps) {
   return (
     <svg width={size} height={size} aria-hidden {...base} {...props}>
-      <polygon points="12 2 20 12 12 22 4 12" />
-      <line x1="12" y1="2" x2="12" y2="22" />
+      <polygon points="12 2.5 20 12 12 21.5 4 12" />
       <line x1="4" y1="12" x2="20" y2="12" />
-      <circle cx="12" cy="7" r="1" fill="currentColor" />
-      <circle cx="12" cy="17" r="1" fill="currentColor" />
     </svg>
   )
 }
 
-/** A paladin's oath, channelled. */
+/**
+ * A paladin's oath, channelled.
+ *
+ * This was the worst of them. Eight dashed rays crossed the whole grid at
+ * stroke 1, and a 1-unit dash with a 2-unit gap is a third of a pixel at the
+ * size it ships — not faint, but a grey haze over everything, and the cross at
+ * the middle was lost inside it.
+ *
+ * The rays are now four, short, outside the disc and at full weight, so they
+ * fade out cleanly at 12 instead of muddying what they surround. The cross and
+ * the disc are the icon; the rays are what it gains when there is room.
+ */
 export function ChannelDivinityIcon({ size = 24, ...props }: IconProps) {
   return (
     <svg width={size} height={size} aria-hidden {...base} {...props}>
-      <path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" strokeWidth={1} strokeDasharray="1 2" />
-      <circle cx="12" cy="12" r="5" className="fill-current/10" />
-      <path d="M12 7v10M9 10h6" strokeWidth={2} />
+      <circle cx="12" cy="12" r="6.2" className="fill-current/15" />
+      <path d="M12 8.6v6.8M9.2 11.2h5.6" strokeWidth={2.2} />
+      <path d="M17.7 6.3 19.5 4.5M6.3 6.3 4.5 4.5M17.7 17.7l1.8 1.8M6.3 17.7l-1.8 1.8" />
     </svg>
   )
 }
 
-/** A warded shield — defensive magic and reactions. */
+/**
+ * A warded shield — defensive magic and reactions.
+ *
+ * The star inside was five-pointed and outlined, which is five concavities in
+ * about six pixels; it filled in solid and the shield read as having a smudge
+ * in it. A boss is one closed curve and degrades to a dot, which is still a
+ * shield with something lit in the middle of it.
+ *
+ * Deliberately not a four-point sparkle, tempting as that was — SpellFlare is
+ * already that shape, and two icons in one bar cannot share a silhouette.
+ */
 export function WardingShieldIcon({ size = 24, ...props }: IconProps) {
   return (
     <svg width={size} height={size} aria-hidden {...base} {...props}>
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path
-        d="M12 6l1.5 3.5L17 10l-2.5 2.5.5 3.5-3-1.8-3 1.8.5-3.5L7 10l3.5-.5L12 6z"
-        className="fill-current/20"
-      />
+      <circle cx="12" cy="11.2" r="2.9" className="fill-current/25" />
     </svg>
   )
 }
 
-/** A blade sweeping low — Trip Attack. */
+/**
+ * A sweep along the floor — Trip Attack.
+ *
+ * The old one drew a blade and its two motion marks as four near-parallel
+ * diagonals, and at 16 they merged into a single stroke: it read as a pencil,
+ * and at 12 as a tick. Nothing about it said the target ends up prone.
+ *
+ * What carries that is the ground, so the ground is now in the icon — a bar
+ * along the bottom with the sweep curving into it and a head on the end to say
+ * which way it travels. The floor line is also what keeps the arc from being
+ * the undo arrow, which is what it is without one.
+ *
+ * Two things tried on the way, both rendered before being believed. A bar
+ * toppling onto the floor reads as a tick at 14, which is worse than vague. A
+ * boot — the obvious answer to "trip", and the reason to write this down — is
+ * a lab flask in outline: shaft, shoulder, splayed foot, and nothing in the
+ * silhouette that says the wearer is upright. A solid triangle for the blade
+ * tip is also out; at this weight it merges into the floor bar and the whole
+ * lower left goes to mass.
+ */
 export function TripAttackIcon({ size = 24, ...props }: IconProps) {
   return (
     <svg width={size} height={size} aria-hidden {...base} {...props}>
-      <path d="M14.5 17.5L6.5 9.5M6.5 9.5V6.5h3L17.5 14.5" />
-      <path d="M4 19l4-2M16 21l3-5" strokeWidth={2} />
+      <path d="M19.6 4.4c0 7.4-3.6 11.6-9.8 12.8" strokeWidth={2.2} />
+      <path d="M12.6 13.4 8.6 17.2l4 2.6" strokeWidth={2.2} />
+      <path d="M3 22h18" strokeWidth={2.4} />
     </svg>
   )
 }
