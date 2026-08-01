@@ -37,11 +37,11 @@ export function ParchmentCard({
   return (
     <div
       className={cn(
-        'group relative rounded-card border bg-surface/70 backdrop-blur-sm',
-        'shadow-[0_10px_30px_-12px_rgb(0_0_0/0.8)] transition-all duration-300',
+        'group relative rounded-card border-2 bg-surface/70 texture-grain panel-carved backdrop-blur-sm',
+        'transition-all duration-300',
         selected
           ? 'border-amber-torch/80 bg-amber-torch/[0.07] shadow-torch'
-          : 'border-edge',
+          : 'border-edge-bright',
         interactive && !selected && 'hover:-translate-y-0.5 hover:border-gold-border/70 hover:shadow-torch',
         className,
       )}

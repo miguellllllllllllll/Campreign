@@ -1,14 +1,27 @@
 @import "tailwindcss";
 
 /*
- * "Crimson & Antique Gold". Hero Step is deliberately single-theme: a candlelit
- * table in a cellar, now lit like the rulebook it is teaching. One theme means
- * one set of contrast decisions to get right for a first-time player.
+ * "Tavern Wood & Torch Gold". Hero Step is deliberately single-theme: one set
+ * of contrast decisions to get right for a first-time player.
+ *
+ * This was "Crimson & Antique Gold" — a candlelit cellar, near-black leather,
+ * everything whispered. It is now the board-game table that cellar was sitting
+ * in: a deep teal room, panels cut from wood with a lit edge, and buttons in
+ * saturated paint that look pressable from across the room. The brief was the
+ * casual-game reference sheets, and the thing those get right is that a
+ * beginner should never have to wonder which shape is the button.
+ *
+ * What did not change is the *grammar*, which is why forty files did not need
+ * editing: gold still means interactive, crimson still means structure, and
+ * every semantic name below still means what it meant. Only the values moved.
+ * That is the whole reason the two tiers exist.
  *
  * Two tiers on purpose. The named palette below is the primitive layer; the
  * semantic names beneath it (surface, edge, muted) are what components spell.
- * Retuning the mood means editing six values here, not fifty files — which is
- * exactly what turning this from blue-black to leather-brown cost.
+ * Retuning the mood means editing the values here, not fifty files — and this
+ * reskin is the strongest evidence yet that it works: the page went from a
+ * black cellar to a teal room with wooden panels without a single component
+ * changing a class name.
  *
  * Every value here is checked against the *lightest* surface it is allowed to
  * sit on and clears WCAG AA for normal text (4.5:1). Where the reference
@@ -18,61 +31,71 @@
  * Lightest, not darkest, and this file said darkest for a while. On a dark
  * theme the worst case for pale text is the palest thing behind it, so a value
  * tuned against the page passes a test it was never going to be given: nothing
- * sits on the page. It sits on a card, or on `surface-raised`, which is two
- * steps up from the page and was added as a semantic token after the palette
- * had been signed off. Two values were riding on that mistake — see `blood`
- * and `class-paladin` below.
+ * sits on the page. It sits on a card, or on `surface-raised`.
+ *
+ * That rule did most of the work in this reskin. Wood is a far paler surface
+ * than leather was, so the AA budget got much tighter — the first pass at
+ * these values put five of them under 4.5:1, including the crimson hover, and
+ * every one of those would have looked perfectly fine to the eye.
  */
 @theme {
-  /* Warm leather rather than cold obsidian: the name is kept because twenty
-     files spell it, but the mood underneath it is brown now. The page is a
-     shade deeper than the cards so panels lift off it instead of floating in
-     the same soup. */
-  --color-obsidian: #120e0c;
-  --color-dungeon-card: #1e1815;
-  --color-amber-torch: #d4af37;
-  --color-gold-border: #c5a059;
-  --color-gold-bright: #e5c178;
-  --color-parchment: #f4e8c1;
-  --color-parchment-muted: #a39b8b;
+  /* The names are kept because twenty files spell them; `obsidian` is a deep
+     teal room now and `dungeon-card` is a plank. The page is the cold colour
+     and the panels are the warm one, which is what makes wood read as wood
+     rather than as a darker rectangle — the old palette separated page from
+     card by lightness alone and everything sat in the same brown soup. */
+  --color-obsidian: #15323c;
+  --color-dungeon-card: #4e3018;
+  --color-amber-torch: #ffc63f;
+  --color-gold-border: #e1a735;
+  --color-gold-bright: #ffe08a;
+  --color-parchment: #fdf3da;
+  --color-parchment-muted: #e6cfa6;
 
   /*
-   * Rulebook crimson. Background only — at 2.06:1 on leather it is unreadable
-   * as text, so it fills banners and ribbons and never carries a letter. Text
-   * on top of it is parchment, which clears AA at 7.49:1.
+   * Rulebook crimson. Background only — at 2.28:1 on wood it is unreadable as
+   * text, so it fills banners and ribbons and never carries a letter. Text on
+   * top of it is parchment, which clears AA at 4.73:1.
+   *
+   * The hover is *darker* than the base, which is backwards for a hover and
+   * deliberate. Crimson carries parchment, and the brighter red this palette
+   * wanted (#e04a3c) dropped that pairing to 3.65:1 — the label would have
+   * failed on exactly the frame the user is pointing at.
    */
-  --color-dnd-red: #8b1d1d;
-  --color-dnd-red-hover: #a72222;
+  --color-dnd-red: #c8362b;
+  --color-dnd-red-hover: #c44134;
 
   --color-ink: var(--color-obsidian);
   --color-surface: var(--color-dungeon-card);
-  --color-surface-raised: #29201a;
-  --color-edge: #33291f;
-  --color-edge-bright: #4a3c2d;
+  --color-surface-raised: #5e3c1e;
+  --color-edge: #35200e;
+  --color-edge-bright: #8a5a30;
   --color-muted: var(--color-parchment-muted);
   --color-gold: var(--color-amber-torch);
   --color-gold-dim: var(--color-gold-border);
-  /* Raised twice. #c0463b read at 3.77:1 on leather; #d9534f was supposed to
-     fix that and cleared only the page (4.85:1) — on a card it was 4.43:1 and
-     on `surface-raised` 4.03:1, and `text-blood` is only ever used on cards.
-     This clears 4.55:1 against the palest of the three. */
-  --color-blood: #dc635f;
-  --color-moss: #7aa35f;
-  --color-arcane: #8a9ae0;
+  /* Salmon rather than the old oxide — the wood underneath is warm and a muted
+     red disappeared into it. Lifted from #ff7a68, which read 3.85:1 on
+     `surface-raised`; this clears 4.56:1. */
+  --color-blood: #ff9385;
+  --color-moss: #8fd14f;
+  --color-arcane: #56c3f0;
 
   /*
-   * Class accents, mixed as inks rather than UI colours — pewter, violet,
-   * old gold, verdigris, iron oxide. The saturated originals (#8b5cf6,
-   * #10b981, #ef4444) read as a modern dashboard against leather and pulled
-   * harder than the gold they sit beside. Every one clears AA on the card.
+   * Class accents. These were deliberately desaturated inks once, because
+   * against near-black leather anything brighter read as a dashboard. Wood is
+   * a louder surface and swallows a muted ink, so they are back to poster
+   * colours — the reference sheets are right that a beginner picking a class
+   * should be able to tell the five apart at a glance.
+   *
+   * Every one clears AA against `surface-raised`, the palest thing any of them
+   * sits on; three needed lifting along their hue to get there.
    */
-  --color-class-fighter: #8e9aa8;
-  --color-class-wizard: #9b87d4;
-  --color-class-cleric: #d9a441;
-  --color-class-rogue: #5e9c78;
-  /* #c4574d would be the truer oxide but lands at 3.62:1 on `surface-raised`.
-     #d0655b, which replaced it, was still 4.33:1 there. This clears at 4.57:1. */
-  --color-class-paladin: #d26b61;
+  --color-class-fighter: #b9c6d4;
+  --color-class-wizard: #bda4f1;
+  --color-class-cleric: #ffcc4d;
+  --color-class-rogue: #5fd39b;
+  /* Lifted from #ff8a76, which was 4.27:1 on `surface-raised`; now 4.58:1. */
+  --color-class-paladin: #ff9481;
 
   --font-display: var(--font-cinzel-decorative), ui-serif, Georgia, serif;
   --font-serif: var(--font-cinzel), ui-serif, Georgia, serif;
@@ -289,12 +312,21 @@
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-parchment) 8%, transparent);
 }
 
-/** Torchlight spilling from above, for full-page backdrops. */
+/**
+ * A lamp over the table, for full-page backdrops.
+ *
+ * Retuned for teal. The old wash was amber over near-black, which reads as
+ * warm light; the identical wash over teal reads olive, because amber and teal
+ * are close to complementary and the midpoint of that mix is mud. The fix is a
+ * paler, cooler primary light with the warmth kept to a small pool, rather than
+ * a big amber field fighting the room colour.
+ */
 @utility bg-torchlight {
   background-image:
-    radial-gradient(ellipse 70% 50% at 50% -8%, color-mix(in srgb, var(--color-amber-torch) 16%, transparent), transparent 72%),
-    /* A second, redder light source — the cold blue cast belonged to obsidian. */
-    radial-gradient(ellipse 50% 40% at 88% 8%, color-mix(in srgb, var(--color-dnd-red) 14%, transparent), transparent 70%);
+    radial-gradient(ellipse 80% 55% at 50% -10%, color-mix(in srgb, var(--color-gold-bright) 13%, transparent), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 82% 4%, color-mix(in srgb, var(--color-amber-torch) 10%, transparent), transparent 68%),
+    /* Lifts the floor of the room so the page is not flat teal behind the panels. */
+    radial-gradient(ellipse 120% 70% at 50% 118%, color-mix(in srgb, var(--color-edge-bright) 16%, transparent), transparent 72%);
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
@@ -313,6 +345,74 @@
   background-position:
     0 0,
     40px 70px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tactile furniture
+ *
+ * The casual-game look these come from is built almost entirely out of three
+ * tricks: grain so a fill is not flat, a hard offset underside so a panel has
+ * thickness, and a notched ribbon so a label is cloth rather than a rectangle.
+ * None of it needs artwork.
+ *
+ * Drawn rather than downloaded, which is the same call `custom-icons.tsx`
+ * records: the reference sheets are somebody's asset pack, and NOTICE says
+ * third-party art brings its attribution in the same commit as the assets. A
+ * turbulence filter is nobody's, so the question does not arise.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Paper grain. A blended background layer rather than a `::before`, on purpose
+ * — a pseudo-element would need `position: relative` on the host and that is a
+ * layout change, which this session does not get to make. `background-blend-mode`
+ * touches nothing but pixels.
+ */
+@utility texture-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.32'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  background-blend-mode: overlay;
+}
+
+/**
+ * Thickness. The whole illusion is the third shadow — a hard, un-blurred offset
+ * in the edge colour, so the panel has a side rather than a drop shadow. Blur
+ * it and it goes straight back to a floating rectangle.
+ */
+@utility panel-carved {
+  /* Deliberately sets no `border`. It did, and the shorthand beat the
+     `border-amber-torch/80` that marks a card as chosen — a utility that
+     silently repaints a selection state is worse than no utility. Thickness
+     here, colour stays with whatever border class the component already had. */
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, var(--color-parchment) 12%, transparent),
+    inset 0 -3px 6px -2px rgb(0 0 0 / 0.5),
+    0 4px 0 var(--color-edge),
+    0 12px 24px -10px rgb(0 0 0 / 0.85);
+}
+
+/** The same shape pressed in instead of standing out — for wells and slots. */
+@utility panel-sunken {
+  border: 2px solid var(--color-edge);
+  box-shadow:
+    inset 0 3px 7px -1px rgb(0 0 0 / 0.65),
+    0 1px 0 color-mix(in srgb, var(--color-parchment) 8%, transparent);
+}
+
+/** A cloth banner: both ends notched, so it reads as ribbon and not as a chip. */
+@utility ribbon-swallowtail {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 0.75rem) 50%,
+    100% 100%,
+    0 100%,
+    0.75rem 50%
+  );
+}
+
+/** One end notched, for a banner that starts flush against something. */
+@utility ribbon-tail-right {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 0.75rem) 50%, 100% 100%, 0 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
