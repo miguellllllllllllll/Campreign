@@ -15,6 +15,7 @@ import { abilityModifier, proficiencyBonus } from './stats.ts'
 import { actionSurgesFor } from './actionSurge.ts'
 import { hasDivineSmiteAt } from './divineSmite.ts'
 import { hasCunningActionAt } from './cunningAction.ts'
+import { sneakAttackDiceAt } from './sneakAttack.ts'
 import { getSpellcastingLimits } from './spellcasting.ts'
 import { spellsFor } from '../../content/spells.ts'
 
@@ -193,12 +194,17 @@ const FEATURES_AT_LEVEL_2: Readonly<Record<ClassId, readonly LevelFeature[]>> = 
  * Third level, where the only thing that changes for anyone is magic.
  *
  * The SRD hands out subclasses here — archetype, oath, tradition — but this
- * build already grants them at 2nd, so there is nothing left to give a fighter
- * or a rogue. They gain hit points and a wider crit range from what they
- * already chose, and this list says nothing rather than inventing something.
+ * build already grants them at 2nd, so there is nothing left to give a fighter.
+ * They gain hit points and a wider crit range from what they already chose, and
+ * this list says nothing rather than inventing something.
  *
  * A full caster gains a genuinely new kind of thing, and it is worth naming:
  * spells a first-level slot cannot pay for.
+ *
+ * A rogue gains a number instead of a thing, and that is exactly why it has to
+ * be named. Sneak Attack quietly goes from 1d6 to 2d6 here — the biggest single
+ * jump in damage anyone gets in this build — and a level-up screen that listed
+ * only hit points would leave the player to discover it by noticing the log.
  */
 const SECOND_TIER_SPELLS: LevelFeature = {
   id: 'secondLevelSpells',
@@ -207,9 +213,16 @@ const SECOND_TIER_SPELLS: LevelFeature = {
     'A new tier of magic, and slots that only it can spend. Bigger than anything a first-level slot buys — and there are only two of them, so they are worth saving.',
 }
 
+const SHARPER_SNEAK_ATTACK: LevelFeature = {
+  id: 'sneakAttack2d6',
+  name: 'Sneak Attack 2d6',
+  description:
+    'The opening you look for is worth a second die now. Still once a turn, still only when you have advantage or a friend is already in their face — but when it lands it is twice what it was.',
+}
+
 const FEATURES_AT_LEVEL_3: Readonly<Record<ClassId, readonly LevelFeature[]>> = {
   fighter: [],
-  rogue: [],
+  rogue: [SHARPER_SNEAK_ATTACK],
   wizard: [SECOND_TIER_SPELLS],
   cleric: [SECOND_TIER_SPELLS],
   // A half caster waits until 5th for a second tier, so a paladin's third level
@@ -350,6 +363,10 @@ export function levelUp(character: Character): LevelUpResult {
   const surges = actionSurgesFor(character.classId, level)
   const smites = hasDivineSmiteAt(character.classId, level)
   const dashes = hasCunningActionAt(character.classId, level)
+  // Recomputed rather than incremented, for the same reason the subclass numbers
+  // below are: a grant and its table can never drift apart if the table is the
+  // only thing that ever answers.
+  const sneakAttackDice = sneakAttackDiceAt(character.classId, level)
   const prepared = preparedSpellsOnUnlock(character, level)
   const newTier = spellsForNewTier(character, nowSlots)
   const subclassId = character.subclassId
@@ -368,6 +385,7 @@ export function levelUp(character: Character): LevelUpResult {
     ...(surges === undefined ? {} : { actionSurges: surges }),
     ...(smites ? { hasDivineSmite: true } : {}),
     ...(dashes ? { hasCunningAction: true } : {}),
+    ...(sneakAttackDice === 0 ? {} : { sneakAttackDice }),
     ...(prepared === undefined ? {} : { preparedSpells: prepared }),
     ...(newTier === undefined ? {} : { preparedSpells: newTier }),
     ...(critOn === undefined ? {} : { critOn }),

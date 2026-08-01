@@ -147,13 +147,25 @@ test('third level names the only thing that actually changes', () => {
    * honest answer — inventing a feature to fill the panel would be worse.
    */
   assert.deepEqual(featuresGainedAt('fighter', 3), [])
-  assert.deepEqual(featuresGainedAt('rogue', 3), [])
   assert.deepEqual(featuresGainedAt('paladin', 3), [], 'a half caster waits until fifth')
 
   for (const classId of ['wizard', 'cleric'] as const) {
     const names = featuresGainedAt(classId, 3).map((one) => one.name)
     assert.deepEqual(names, ['Second-level spells'])
   }
+
+  // The rogue used to be listed beside the fighter here. Sneak Attack doubling
+  // is a number rather than a new button, which is precisely why the panel has
+  // to say it out loud.
+  assert.deepEqual(featuresGainedAt('rogue', 3).map((one) => one.name), ['Sneak Attack 2d6'])
+})
+
+test('what third level promises a rogue is what it hands them', () => {
+  const grown = levelUp(levelUp(hero('rogue', 1)).character)
+  assert.ok(grown.gains !== null)
+  const named = grown.gains.features.some((one) => one.id === 'sneakAttack2d6')
+  assert.equal(named, true, 'the panel names it')
+  assert.equal(grown.character.sneakAttackDice, 2, 'and the character actually has it')
 })
 
 test('what third level promises is what it hands over', () => {

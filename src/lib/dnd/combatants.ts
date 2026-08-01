@@ -52,6 +52,9 @@ export function characterToCombatant(
     deathSaves: { successes: 0, failures: 0 },
     ...(character.hasReaction === true ? { hasWardingFlare: true } : {}),
     ...(character.hasAmbush === true ? { hasAmbush: true } : {}),
+    ...(character.sneakAttackDice === undefined
+      ? {}
+      : { sneakAttackDice: character.sneakAttackDice }),
     ...(character.hasFastHands === true ? { hasFastHands: true } : {}),
     ...(character.potions === undefined ? {} : { potions: character.potions }),
     ...(character.spellSlots === undefined ? {} : { spellSlots: character.spellSlots }),

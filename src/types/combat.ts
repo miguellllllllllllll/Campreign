@@ -119,6 +119,8 @@ export interface Combatant {
   hasActedThisCombat?: boolean
   /** Whether this combatant strikes with advantage on their opening turn. */
   hasAmbush?: boolean
+  /** How many d6 Sneak Attack lends this combatant. Absent for everyone but a rogue. */
+  sneakAttackDice?: number
   /**
    * Whether this combatant has Warding Flare specifically. Distinct from
    * reactionAvailable, which is only the budget — everyone has a reaction, and
@@ -210,8 +212,11 @@ export interface AttackBreakdown {
 }
 
 export type AttackOutcome =
-  | { kind: 'hit'; breakdown: AttackBreakdown; attackRoll: DiceRoll; damageRoll: DiceRoll; damage: number }
-  | { kind: 'crit'; breakdown: AttackBreakdown; attackRoll: DiceRoll; damageRoll: DiceRoll; damage: number }
+  /* `sneakAttackDice` is how many d6 of the damage roll were Sneak Attack's, so
+   * the log can name them. Absent whenever it did not apply, which is almost
+   * every swing in the game. */
+  | { kind: 'hit'; breakdown: AttackBreakdown; attackRoll: DiceRoll; damageRoll: DiceRoll; damage: number; sneakAttackDice?: number }
+  | { kind: 'crit'; breakdown: AttackBreakdown; attackRoll: DiceRoll; damageRoll: DiceRoll; damage: number; sneakAttackDice?: number }
   | { kind: 'miss'; breakdown: AttackBreakdown; attackRoll: DiceRoll }
   | { kind: 'fumble'; breakdown: AttackBreakdown; attackRoll: DiceRoll }
 

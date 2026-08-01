@@ -83,6 +83,15 @@ export function narrateAttackFully(
   }
   if (outcome.kind === 'hit' || outcome.kind === 'crit') {
     lines.push(narrateDamage(outcome.damageRoll, damageType))
+    /*
+     * Named after the damage rather than before it, because the number is the
+     * surprise and this is the explanation. A rogue whose hit suddenly doubles
+     * should be told which dice did it and what earned them.
+     */
+    const sneak = outcome.sneakAttackDice ?? 0
+    if (sneak > 0) {
+      lines.push(`${sneak}d6 of that was Sneak Attack — you found the gap in their guard.`)
+    }
   }
 
   return lines.join(' ')
