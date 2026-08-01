@@ -98,6 +98,9 @@ It is the colour map only, desaturated, remapped to a mean of mid-grey and
 scaled to 512px — the other maps in that material (normal, roughness, ambient
 occlusion, displacement) are for 3D lighting and have no use here.
 
+`public/ui/fantasy-map.svg` is not third-party: the coastline, ranges, forests,
+river and compass rose are generated for this project and owe nothing to anyone.
+
 The unmodified source packs are kept in `design-assets/`, together with Kenney's
 "UI Pack (RPG Expansion)" (also CC0), which is stored but not used — see the
 README there. Nothing in that directory is served or built; it is a shelf to
