@@ -172,11 +172,12 @@ test('the second fight puts two foes on the board, not another goblin', () => {
   assert.equal(store.stepId, 'swarm')
 })
 
-test('the hero arrives at the second fight levelled and rested', () => {
+test('the hero arrives at the second fight rested, and no stronger than they were', () => {
   /*
-   * The reason the roster is rebuilt rather than stored once at the start: a
-   * level-2 hero has hit points and slots that a roster built before the first
-   * fight cannot know about.
+   * The second fight is fought at first level. Killing one goblin used to hand
+   * out a level, which made the beat between the fights a reward rather than a
+   * breather — every level the tutorial gives now lands before the spider,
+   * where second-tier magic has something to be spent on.
    */
   begin()
   const before = useTutorialStore.getState().character
@@ -185,26 +186,41 @@ test('the hero arrives at the second fight levelled and rested', () => {
   walkToSecondFight()
   const after = useTutorialStore.getState().character
   assert.ok(after !== null)
-  assert.equal(after.level, 2)
-  assert.ok(after.maxHp > before.maxHp, 'levelling gave hit points')
-  assert.equal(after.currentHp, after.maxHp, 'and the rest gave them back')
+  assert.equal(after.level, 1, 'the goblin is not worth a level')
+  assert.equal(after.maxHp, before.maxHp, 'and grants no hit points')
+  assert.equal(after.currentHp, after.maxHp, 'but the rest gave what was lost back')
 
   const hero = useCombatStore.getState().encounter?.combatants[after.id]
   assert.equal(hero?.maxHp, after.maxHp, 'the board agrees with the sheet')
-  assert.equal(hero?.level, 2)
+  assert.equal(hero?.level, 1)
 })
 
-test('what changed is recorded so the aftermath step can say it', () => {
+test('beating the goblin records no gains, because there are none', () => {
   begin()
-  const store = useTutorialStore.getState()
-  assert.equal(store.levelGains, null)
+  assert.equal(useTutorialStore.getState().levelGains, null)
 
   walkToRout()
   useTutorialStore.getState().dispatch({ type: 'enemyDefeated' })
 
-  const gains = useTutorialStore.getState().levelGains
-  assert.equal(gains?.level, 2)
-  assert.ok((gains?.hitPointsGained ?? 0) > 0)
+  assert.equal(
+    useTutorialStore.getState().levelGains,
+    null,
+    'the aftermath step is a rest, and must not claim otherwise',
+  )
+})
+
+test('both levels land before the spider, where the magic is spendable', () => {
+  /*
+   * Third level is not decoration here: a full caster only gains second-tier
+   * slots there, and Shatter and Blindness are unreachable content without
+   * them. If this drops to 2, those two spells go back to being scenery.
+   */
+  begin()
+  walkToSpider()
+  const hero = useTutorialStore.getState().character
+  assert.equal(hero?.level, 3, 'the spider is met at third level')
+  assert.ok((hero?.spellSlots?.[2] ?? 0) > 0 || hero?.classId === 'fighter',
+    'a caster arrives holding second-level slots')
 })
 
 test('killing the goblin early goes to the aftermath, not nowhere', () => {
@@ -232,8 +248,8 @@ test('playing it again starts from the hero who walked in, not the levelled one'
    */
   begin()
   const original = useTutorialStore.getState().character
-  walkToSecondFight()
-  assert.equal(useTutorialStore.getState().character?.level, 2)
+  walkToSpider()
+  assert.equal(useTutorialStore.getState().character?.level, 3)
 
   useTutorialStore.getState().restart()
   const after = useTutorialStore.getState()
@@ -253,6 +269,15 @@ function walkToRout() {
   store.dispatch({ type: 'moved' })
   store.dispatch({ type: 'attackResolved' })
   store.dispatch({ type: 'turnEnded' })
+  return useTutorialStore.getState()
+}
+
+/** Everything up to and including the spider fight, where the levels land. */
+function walkToSpider() {
+  walkToSecondFight()
+  // Win the second fight; `swarm.victory` sends the player to the rafters.
+  useTutorialStore.getState().dispatch({ type: 'enemyDefeated' })
+  useTutorialStore.getState().dispatch({ type: 'acknowledged' })
   return useTutorialStore.getState()
 }
 

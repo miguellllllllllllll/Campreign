@@ -151,13 +151,15 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
   {
     id: 'aftermath',
     phase: 'combat',
-    title: 'You levelled up',
+    title: 'The goblin stops moving',
     narration:
-      'The goblin stops moving. You catch your breath, bind what needs binding, and something settles — you are better at this than you were an hour ago.',
+      'You catch your breath and bind what needs binding. Nothing about you has changed — you are the same hero who came down the stairs, and the cellar is not finished with you.',
     guidance:
-      'Read what changed, then press Continue. Levelling up in D&D is exactly this: your numbers go up, and you get something new to do with them.',
+      'Press Continue. A short rest puts your hit points back; it does not make you better at this.',
     completion: { when: 'acknowledged' },
-    onEnter: [{ kind: 'levelUp' }, { kind: 'shortRest' }],
+    // Deliberately only a rest. The level that used to land here now lands
+    // before the spider, where the magic it grants has something to be spent on.
+    onEnter: [{ kind: 'shortRest' }],
     next: 'deeper',
   },
   {
@@ -179,7 +181,7 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     narration:
       'Two enemies is not twice one enemy. The bat is fast and fragile; the skeleton is slow and keeps coming. Dropping one of them halves what is being thrown at you, so most of the time the answer is to finish one rather than wound both.',
     guidance:
-      'Fight them the same way — move, act, end turn — but choose a target each round. Your spells and your new hit points are both worth spending here.',
+      'Fight them the same way — move, act, end turn — but choose a target each round. You are still first level, so what you have is what you brought.',
     completion: { when: 'enemyDefeated' },
     victory: 'rafters',
     next: 'rafters',
@@ -191,11 +193,19 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     narration:
       'The rattling stops and the cellar is quiet. You bind what needs binding and something settles again — third level, and for a caster that means a second tier of magic you have never had before. Then you notice the silk. It comes down from the rafters on a line of its own making, unhurried, because it has been waiting for the noise to end.',
     guidance:
-      'You levelled again first — check your slots. One enemy this time, and the most dangerous thing down here: its bite carries venom, so when it lands you roll a saving throw yourself, which is the one kind of roll you have not made yet.',
+      'Two levels at once — check your slots before you start. One enemy this time, and the most dangerous thing down here: its bite carries venom, so when it lands you roll a saving throw yourself, which is the one kind of roll you have not made yet.',
     completion: { when: 'acknowledged' },
-    // The level lands before the fight rather than after it, because second-level
-    // slots that arrive once the spider is dead are slots nobody ever spends.
+    /*
+     * Every level the tutorial hands out, landing here rather than spread
+     * across the run. Twice, because the first fight no longer levels anybody
+     * and a caster still has to reach third to own a second tier of magic —
+     * without that, Shatter and Blindness are content nothing can reach.
+     *
+     * Before the fight rather than after it, for the same reason as always:
+     * slots that arrive once the spider is dead are slots nobody spends.
+     */
     onEnter: [
+      { kind: 'levelUp' },
       { kind: 'levelUp' },
       { kind: 'shortRest' },
       { kind: 'startCombat', encounterId: 'rafters' },
