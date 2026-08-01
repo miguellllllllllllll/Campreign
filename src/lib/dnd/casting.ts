@@ -21,6 +21,7 @@ import {
 } from './spellcasting.ts'
 
 export { FIRST_LEVEL_SLOTS }
+import { hasSculptSpellsFor, subclassFeatureActive } from '../../content/subclasses.ts'
 import { SPELLS_BY_ID, type Spell } from '../../content/spells.ts'
 import type { Combatant } from '../../types/combat.ts'
 import type { AbilityName } from '../../types/character.ts'
@@ -205,7 +206,18 @@ export interface CastResult {
 }
 
 function carrierFor(caster: Combatant, subclassId: string | undefined): SubclassFeatureCarrier {
-  const feature = subclassId === undefined ? undefined : FEATURE_BY_SUBCLASS[subclassId]
+  /*
+   * The level gate lives here rather than inside the hook, because this is the
+   * only place that knows which subclass is asking. `resolveSpellCastHook`
+   * gates cantrips and nothing else, so without this line Disciple of Life and
+   * Arcane Ward both fired at 1st level while Champion, Battle Master, Thief,
+   * Assassin and Light all correctly waited — the five that resolve through the
+   * accessors in `subclasses.ts`, which have gated all along.
+   */
+  const feature =
+    subclassId === undefined || !subclassFeatureActive(caster.level)
+      ? undefined
+      : FEATURE_BY_SUBCLASS[subclassId]
   return {
     level: caster.level,
     intMod: abilityModifier(caster.scores.int),
@@ -569,7 +581,9 @@ export function castAreaSpell(args: {
   // Rolled once for the whole blast, per the SRD.
   const damageRoll = roll(effect.dice, { rng })
   const saveDc = spellSaveDcFor(caster)
-  const sculpts = args.subclassId === 'evocation'
+  // Asked of the registry rather than by id. Hard-coding 'evocation' here was
+  // how this one skipped the level gate its siblings all honour.
+  const sculpts = hasSculptSpellsFor(args.subclassId, caster.level)
 
   const lines = [
     `${caster.name} casts ${spell.name}. `

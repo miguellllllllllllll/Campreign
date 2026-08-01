@@ -295,6 +295,11 @@ export function hasReactionFor(id: string | undefined, level = 1): boolean {
   return subclassFeatureActive(level) && subclassById(id)?.effect?.kind === 'reaction'
 }
 
+/** Whether this subclass spares its allies from its own area spells. */
+export function hasSculptSpellsFor(id: string | undefined, level = 1): boolean {
+  return subclassFeatureActive(level) && subclassById(id)?.effect?.kind === 'areaShaping'
+}
+
 /** The Channel Divinity charges this subclass grants, or undefined for none. */
 export function channelDivinityFor(id: string | undefined, level = 1): number | undefined {
   if (!subclassFeatureActive(level)) return undefined

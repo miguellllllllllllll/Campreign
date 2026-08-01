@@ -12,6 +12,7 @@ import { castFromActive, createEncounter } from '../src/lib/dnd/encounter.ts'
 import { SUBCLASSES } from '../src/content/subclasses.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
+import { grown } from './helpers/levels.ts'
 
 const meta = { id: 'caster', now: 1_700_000_000_000 }
 
@@ -34,6 +35,19 @@ function caster(subclassId?: string, over: Partial<CreationAnswers> = {}) {
     'Caster',
     meta,
   )
+  return { hero, combatant: characterToCombatant(hero, { position: { x: 0, y: 0 } }) }
+}
+
+/**
+ * The same caster, one level on — which is where a subclass feature switches on.
+ *
+ * Both cast-path features used to be tested at level 1 and passed, because the
+ * cast path was the one place that never checked the gate. A fixture that has
+ * grown into its specialisation is the only honest way to ask what the feature
+ * does; asking at level 1 tests that the gate is broken.
+ */
+function grownCaster(subclassId?: string, over: Partial<CreationAnswers> = {}) {
+  const hero = grown(caster(subclassId, over).hero)
   return { hero, combatant: characterToCombatant(hero, { position: { x: 0, y: 0 } }) }
 }
 
@@ -142,9 +156,27 @@ test('a caster with no slots is refused and pays nothing', () => {
   assert.equal(result.caster, empty, 'a refusal must not change the caster')
 })
 
-test('Disciple of Life adds its bonus to a real cast', () => {
+test('Disciple of Life adds nothing until the feature is earned', () => {
   const plain = caster()
   const life = caster('life')
+  const rng = () => faceValue(5, 8)
+  const room = { currentHp: 1, maxHp: 50 }
+
+  const heal = (who: typeof plain, subclassId?: string) =>
+    castSpell({
+      caster: { ...who.combatant, ...room },
+      target: { ...who.combatant, ...room },
+      spellId: 'cureWounds',
+      rng,
+      ...(subclassId === undefined ? {} : { subclassId }),
+    }).target.currentHp
+
+  assert.equal(heal(life, 'life'), heal(plain), 'a 1st-level cleric heals like anyone else')
+})
+
+test('Disciple of Life adds its bonus to a real cast', () => {
+  const plain = grownCaster()
+  const life = grownCaster('life')
   const rng = () => faceValue(5, 8)
 
   // Deliberately roomy. A level 1 cleric healing themselves usually hits their
@@ -172,8 +204,20 @@ test('Disciple of Life adds its bonus to a real cast', () => {
 
 // --- Arcane Ward ----------------------------------------------------------
 
-test('an abjuration spell raises the ward, and damage drains it first', () => {
+test('no ward until the abjurer has grown into it', () => {
   const { combatant } = caster(undefined, { classId: 'wizard', magicStyleId: 'guardianMage' })
+  const cast = castSpell({
+    caster: combatant,
+    target: combatant,
+    spellId: 'mageArmor',
+    subclassId: 'abjuration',
+  })
+  assert.equal(cast.refusal, null, 'the spell still works — only the subclass is withheld')
+  assert.equal(cast.caster.arcaneWardHp, undefined)
+})
+
+test('an abjuration spell raises the ward, and damage drains it first', () => {
+  const { combatant } = grownCaster(undefined, { classId: 'wizard', magicStyleId: 'guardianMage' })
   assert.ok((combatant.preparedSpells ?? []).includes('mageArmor'), 'the style prepares it')
   const wizard = combatant
 
