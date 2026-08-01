@@ -1,6 +1,6 @@
 # Agent 4 — Pure design, visual system and graphic assets
 
-Branch `feature/design-system`, worktree `.worktrees/agent-4-design`.
+Branch `feature/design-system`, worktree `/Users/miguelvinluan/Campreign-design`.
 The authoritative contract is `AGENTS.md` on `main`; this is the working brief.
 
 ## What you own
