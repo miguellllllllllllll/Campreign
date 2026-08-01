@@ -4,18 +4,25 @@ import type { ComponentProps } from 'react'
 import { cn } from '../../lib/utils.ts'
 
 /**
- * Corner flourishes, drawn as four L-shaped brackets. Two borders on an absolutely
- * positioned box costs nothing and scales with the card; a corner image would be
- * four more requests and would blur when the card grows.
+ * Corner filigree, masked out of one CC0 frame — see NOTICE and the
+ * `corner-filigree` utility.
+ *
+ * These were four L-shaped brackets built from CSS borders, and the note here
+ * said a corner image would be four more requests and would blur as the card
+ * grew. Both objections are answered rather than ignored: it is one request,
+ * not four, because a single 48×48 frame is held at its native size and each
+ * corner shows a different window into it; and nothing blurs, because the
+ * corners stay 16px however large the card gets — filigree is a fixed detail
+ * on a panel, not something that scales with it.
  */
 function Flourishes() {
-  const corner = 'pointer-events-none absolute size-3 border-amber-torch/50 transition-colors duration-300 group-hover:border-amber-torch'
+  const corner = 'pointer-events-none absolute size-4 corner-filigree text-amber-torch/60 transition-colors duration-300 group-hover:text-amber-torch'
   return (
     <span aria-hidden>
-      <span className={cn(corner, '-top-px -left-px rounded-tl-[0.6rem] border-t border-l')} />
-      <span className={cn(corner, '-top-px -right-px rounded-tr-[0.6rem] border-t border-r')} />
-      <span className={cn(corner, '-bottom-px -left-px rounded-bl-[0.6rem] border-b border-l')} />
-      <span className={cn(corner, '-right-px -bottom-px rounded-br-[0.6rem] border-r border-b')} />
+      <span className={cn(corner, 'corner-at-tl -top-px -left-px')} />
+      <span className={cn(corner, 'corner-at-tr -top-px -right-px')} />
+      <span className={cn(corner, 'corner-at-bl -bottom-px -left-px')} />
+      <span className={cn(corner, 'corner-at-br -right-px -bottom-px')} />
     </span>
   )
 }

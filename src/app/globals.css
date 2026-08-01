@@ -455,6 +455,50 @@
   mask-position: center;
 }
 
+/**
+ * Corner filigree for panels, from the same CC0 set — see NOTICE.
+ *
+ * One asset serves all four corners and nothing was cropped to do it. The
+ * source is a complete 48×48 frame; the mask is held at its native 48px while
+ * the element is 16px, so each corner shows a different sixteen-pixel window
+ * into the same picture. `mask-position` chooses which. Four files would have
+ * been the obvious way and this is better: one request, and a different frame
+ * can be swapped in by changing one URL.
+ *
+ * Masked rather than drawn as an image for the reason on `rule-ornament` — it
+ * keeps `currentColor`, so the filigree brightens with the card on hover
+ * instead of being a fixed-colour picture sitting on top of one.
+ */
+@utility corner-filigree {
+  background-color: currentColor;
+  -webkit-mask-image: url("/ui/frame-corner.png");
+  mask-image: url("/ui/frame-corner.png");
+  -webkit-mask-size: 3rem 3rem;
+  mask-size: 3rem 3rem;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@utility corner-at-tl {
+  -webkit-mask-position: left top;
+  mask-position: left top;
+}
+
+@utility corner-at-tr {
+  -webkit-mask-position: right top;
+  mask-position: right top;
+}
+
+@utility corner-at-bl {
+  -webkit-mask-position: left bottom;
+  mask-position: left bottom;
+}
+
+@utility corner-at-br {
+  -webkit-mask-position: right bottom;
+  mask-position: right bottom;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
