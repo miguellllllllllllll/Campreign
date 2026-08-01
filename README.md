@@ -111,6 +111,18 @@ a modal. A modal that opens on hover traps focus, fires on accidental passes, an
 unusable on a phone; the tooltip carries the same sentence with `aria-describedby`
 and none of that.
 
+## Who you were, and what is wrong with you
+
+Six backgrounds — Guild Artisan, Street Urchin, Noble, Acolyte, Soldier,
+Outlander — each training two skills and carrying three weaknesses of its own.
+
+**A weakness is not chained to a background.** Each background's own three come
+first, because they are the obvious answer and a beginner should find it at the
+top. After them sit eight anyone can carry, marked as such. Nothing mechanical
+hangs off a flaw — it is pure personality — so there was never a reason a street
+urchin could not also be a coward, and chaining them kept the whole cast to nine
+possible people. It is sixty-six now, and none of it needed a new mechanic.
+
 ## Deliberate divergences from the SRD
 
 Flagged rather than hidden, all of them in service of a first-time player:

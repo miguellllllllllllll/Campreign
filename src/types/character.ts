@@ -8,7 +8,13 @@ export type ClassId = 'fighter' | 'wizard' | 'rogue' | 'cleric' | 'paladin'
 
 export type RaceId = 'dwarf' | 'elf' | 'human' | 'halfling' | 'tiefling'
 
-export type BackgroundId = 'guildArtisan' | 'streetUrchin' | 'noble'
+export type BackgroundId =
+  | 'guildArtisan'
+  | 'streetUrchin'
+  | 'noble'
+  | 'acolyte'
+  | 'soldier'
+  | 'outlander'
 
 /** Fight harder or survive longer — the fork every class loadout offers. */
 export type EquipmentChoice = 'offensive' | 'defensive'

@@ -3,6 +3,7 @@ import {
   BACKGROUND_PRESETS,
   CLASS_PRESETS,
   RACE_PRESETS,
+  flawsFor,
 } from '../lib/dnd/presets.ts'
 import { magicStylesFor } from './spellPresets.ts'
 import { FEATS, cantripChoicesFor } from './feats.ts'
@@ -205,10 +206,16 @@ export function loadoutChoices(classId: ClassId | undefined): readonly CreationC
 
 export function flawChoices(backgroundId: BackgroundId | undefined): readonly CreationChoice[] {
   if (backgroundId === undefined) return []
-  return BACKGROUND_PRESETS[backgroundId].flaws.map((flaw) => ({
+  const background = BACKGROUND_PRESETS[backgroundId]
+  /*
+   * The background's own three first, then the ones anyone can own. Order is
+   * the whole of the guidance here: a player who wants the obvious answer finds
+   * it at the top, and a player who wants to build somebody specific reads on.
+   */
+  return flawsFor(background).map((flaw) => ({
     id: flaw.id,
     label: flaw.text,
-    tagline: '',
+    tagline: background.flaws.some((own) => own.id === flaw.id) ? '' : 'Anyone can carry this one.',
   }))
 }
 

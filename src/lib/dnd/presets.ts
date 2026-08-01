@@ -487,6 +487,29 @@ export interface BackgroundFlaw {
   text: string
 }
 
+/**
+ * Weaknesses anyone can own, whatever they did before this.
+ *
+ * Each background keeps its own three, because "I owe money to people who hurt
+ * debtors" is a noble's problem and reads as one. But a flaw is pure
+ * personality — nothing mechanical hangs off it — so there is no reason a
+ * street urchin cannot also be a coward, or a soldier vain.
+ *
+ * The point is the arithmetic. Three backgrounds with three flaws apiece gave
+ * nine possible people. Six backgrounds with three of their own plus these
+ * eight gives sixty-six, and none of them needed a new mechanic.
+ */
+export const UNIVERSAL_FLAWS: readonly BackgroundFlaw[] = [
+  { id: 'coward', text: 'I talk a great deal about courage and have never once tested mine.' },
+  { id: 'liar', text: 'I lie when the truth would do, out of habit rather than need.' },
+  { id: 'grudge', text: 'I have never forgiven anything, and I remember all of it.' },
+  { id: 'reckless', text: 'I would rather do something stupid than stand still and think.' },
+  { id: 'greedy', text: 'I have turned down help because there was no coin in it.' },
+  { id: 'lonely', text: 'I push people away first, so that I am the one who left.' },
+  { id: 'stubborn', text: 'Once I have said a thing out loud I will not take it back, ever.' },
+  { id: 'haunted', text: 'Somebody died because I was slow, and I have told nobody.' },
+]
+
 export interface BackgroundPreset {
   id: BackgroundId
   label: string
@@ -566,6 +589,69 @@ export const BACKGROUND_PRESETS: Record<BackgroundId, BackgroundPreset> = {
     ],
     blurb: 'carrying a ruined name back into the light',
   },
+
+  acolyte: {
+    id: 'acolyte',
+    label: 'Acolyte',
+    tagline: 'You kept a temple, and it kept you.',
+    description:
+      'You swept the floors and learned the words, and somewhere in the repetition you started meaning them. You are used to people bringing you their worst news.',
+    skills: ['insight', 'religion'],
+    trinket: {
+      name: 'A prayer book with a broken spine',
+      description: 'Held together with thread. You know which pages fall out.',
+    },
+    ideal: 'What is broken can be mended, including people.',
+    bond: 'The temple that raised you is still standing, and you owe it more than you have paid.',
+    flaws: [
+      { id: 'judging', text: 'I decide what people are worth within a minute of meeting them.' },
+      { id: 'literal', text: 'I quote scripture at people who wanted comfort, not a citation.' },
+      { id: 'doubting', text: 'I have stopped believing and cannot admit it to anyone.' },
+    ],
+    blurb: 'raised in a temple and still counting the hours by its bells',
+  },
+
+  soldier: {
+    id: 'soldier',
+    label: 'Soldier',
+    tagline: 'You have done this before, for worse reasons.',
+    description:
+      'Somebody paid you to stand in a line and hold it. You are calm about things that frighten other people and strange about things that do not.',
+    skills: ['athletics', 'intimidation'],
+    trinket: {
+      name: 'A rank insignia you no longer have the right to wear',
+      description: 'You keep it in a pocket rather than on your chest.',
+    },
+    ideal: 'The line holds because somebody decides to hold it.',
+    bond: 'The people you served with are scattered, and you would still go for any of them.',
+    flaws: [
+      { id: 'orders', text: 'I follow an order before I have worked out whether it was a good one.' },
+      { id: 'flinching', text: 'Loud noises put me somewhere else for a second, and I cannot stop it.' },
+      { id: 'hardened', text: 'I am comfortable with violence in a way that unsettles people.' },
+    ],
+    blurb: 'a soldier who is still deciding what to be instead',
+  },
+
+  outlander: {
+    id: 'outlander',
+    label: 'Outlander',
+    tagline: 'Towns are the strange place, not the wild.',
+    description:
+      'You grew up where the weather was the only authority. You read ground and sky the way other people read faces, and you find rooms exhausting.',
+    skills: ['athletics', 'survival'],
+    trinket: {
+      name: 'A stone from the last river you crossed going the other way',
+      description: 'Smooth, dull, and the only thing you took with you.',
+    },
+    ideal: 'The land does not lie to you, which is more than most people manage.',
+    bond: 'There is a valley you have not gone back to, and you will have to eventually.',
+    flaws: [
+      { id: 'blunt', text: 'I say the true thing at the moment it will do the most damage.' },
+      { id: 'restless', text: 'I cannot stay under a roof for long without needing to be outside.' },
+      { id: 'distrustful', text: 'I assume anyone comfortable in a town is soft, and I show it.' },
+    ],
+    blurb: 'more at home in weather than in company',
+  }
 }
 
 export interface AuraPreset {
@@ -607,8 +693,15 @@ export const AURA_PRESETS: Record<AuraId, AuraPreset> = {
 }
 
 /** The full personality, with the one flaw the player owned up to. */
+/** Every weakness this background can be paired with: its own, then anyone's. */
+export function flawsFor(background: BackgroundPreset): readonly BackgroundFlaw[] {
+  return [...background.flaws, ...UNIVERSAL_FLAWS]
+}
+
 export function personalityOf(background: BackgroundPreset, flawId: string): Personality {
-  const flaw = background.flaws.find((candidate) => candidate.id === flawId)
+  // Looked up across both pools, because a flaw is no longer necessarily one
+  // this background brought with it.
+  const flaw = flawsFor(background).find((candidate) => candidate.id === flawId)
   return {
     ideal: background.ideal,
     flaw: flaw?.text ?? background.flaws[0]?.text ?? '',
