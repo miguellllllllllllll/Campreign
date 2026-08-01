@@ -35,12 +35,12 @@ export default function Home() {
       />
 
       <header className="flex flex-col items-start gap-5">
-        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-gold-border/50 bg-amber-torch/10 px-3 py-1 font-serif text-xs font-semibold tracking-widest text-amber-torch uppercase">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full banner-dnd-red ribbon-tail-right border border-gold-border/60 px-4 py-1 font-serif text-xs font-semibold tracking-widest uppercase">
           <Sparkles size={13} className="animate-rune-pulse" aria-hidden />
           D&amp;D for absolute beginners
         </span>
 
-        <h1 className="font-display bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-5xl leading-tight font-black text-transparent drop-shadow-[0_2px_12px_rgba(212,175,55,0.25)] sm:text-6xl">
+        <h1 className="font-display text-table-ink text-5xl leading-tight font-black drop-shadow-[0_1px_0_rgb(255_255_255/0.35)] sm:text-6xl">
           Hero Step
         </h1>
 
@@ -52,16 +52,16 @@ export default function Home() {
             running into a terminal at one end, so a single copy sits lopsided
             between the two rules. Butted together, the terminals meet and make
             one symmetrical medallion. */}
-        <div aria-hidden className="flex w-full max-w-md items-center gap-3 text-gold-border">
-          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold-border/60" />
+        <div aria-hidden className="flex w-full max-w-md items-center gap-3 text-edge">
+          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-edge/70" />
           <span className="flex shrink-0 items-center">
             <span className="rule-ornament h-5 w-20" />
             <span className="rule-ornament h-5 w-20 -scale-x-100" />
           </span>
-          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold-border/60" />
+          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-edge/70" />
         </div>
 
-        <p className="max-w-2xl font-serif text-lg leading-relaxed text-parchment/80">
+        <p className="max-w-2xl font-serif text-lg leading-relaxed text-table-ink/85">
           Learn to play D&amp;D by actually playing it. Build a hero in three questions, then fight
           your first goblin with the rules explained one step at a time.
         </p>
