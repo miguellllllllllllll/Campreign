@@ -1,6 +1,7 @@
 import { critFor, roll, toCriticalNotation } from './dice.ts'
 import { effectiveAc } from './combat.ts'
 import { damageNotation } from './characterBuilder.ts'
+import { hasSlot } from './slots.ts'
 import type { AttackAction } from '../../types/action.ts'
 import type { AttackOutcome, Combatant, ReactionKind } from '../../types/combat.ts'
 import type { Rng } from '../../types/dice.ts'
@@ -42,7 +43,7 @@ export function canShield(target: Combatant): boolean {
   return (
     target.reactionAvailable === true
     && (target.preparedSpells ?? []).includes('shield')
-    && (target.spellSlots ?? 0) > 0
+    && hasSlot(target.spellSlots, 1)
   )
 }
 

@@ -1,8 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { slotsAt } from '../src/lib/dnd/slots.ts'
 import {
   MAX_LEVEL,
-  SPELL_SLOTS_BY_LEVEL,
+  SECOND_LEVEL_SLOTS_BY_LEVEL,
   castingProgressionFor,
   featuresGainedAt,
   hitPointsGainedAt,
@@ -11,6 +12,7 @@ import {
 } from '../src/lib/dnd/leveling.ts'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { getSpellcastingLimits } from '../src/lib/dnd/spellcasting.ts'
+import { spellsFor } from '../src/content/spells.ts'
 import { CLASS_PRESETS } from '../src/lib/dnd/presets.ts'
 import { abilityModifier, proficiencyBonus } from '../src/lib/dnd/stats.ts'
 import type { ClassId, CreationAnswers } from '../src/types/character.ts'
@@ -91,15 +93,18 @@ test('a full caster goes from the tutorial-s one slot to the SRD-s three', () =>
    * One at 1st level is this app's divergence, made so that spending it is a
    * decision. From 2nd level the SRD's table takes over.
    */
-  assert.equal(spellSlotsAt('cleric', 1), 1)
-  assert.equal(spellSlotsAt('cleric', 2), 3)
-  assert.equal(spellSlotsAt('wizard', 2), 3)
+  assert.equal(slotsAt(spellSlotsAt('cleric', 1), 1), 1)
+  assert.equal(slotsAt(spellSlotsAt('cleric', 2), 1), 3)
+  assert.equal(slotsAt(spellSlotsAt('wizard', 2), 1), 3)
+  // And the reason the cap could move: third level opens a second tier.
+  assert.equal(slotsAt(spellSlotsAt('wizard', 3), 2), 2)
 })
 
 test('a paladin has no magic at all until second level, then has some', () => {
   // The half-caster's whole shape, and the promise `unlocksAtLevel` was making.
-  assert.equal(spellSlotsAt('paladin', 1), 0)
-  assert.equal(spellSlotsAt('paladin', 2), 2)
+  assert.equal(slotsAt(spellSlotsAt('paladin', 1), 1), 0)
+  assert.equal(slotsAt(spellSlotsAt('paladin', 2), 1), 2)
+  assert.equal(slotsAt(spellSlotsAt('paladin', 3), 2), 0, 'a half caster waits until fifth')
   assert.equal(getSpellcastingLimits('paladin', 1, 1, 1).unlocksAtLevel, 2)
   assert.equal(getSpellcastingLimits('paladin', 1, 1, 2).unlocksAtLevel, undefined)
   assert.ok(getSpellcastingLimits('paladin', 1, 1, 2).preparedSpellsCount > 0)
@@ -108,7 +113,9 @@ test('a paladin has no magic at all until second level, then has some', () => {
 test('classes without magic never acquire any', () => {
   for (const classId of ['fighter', 'rogue'] as const) {
     assert.equal(castingProgressionFor(classId), 'none')
-    for (let level = 1; level <= 5; level += 1) assert.equal(spellSlotsAt(classId, level), 0)
+    for (let level = 1; level <= 5; level += 1) {
+      assert.deepEqual(spellSlotsAt(classId, level), [], 'no table at all, not a table of zeroes')
+    }
     assert.equal(levelUp(hero(classId)).character.spellSlots, undefined)
   }
 })
@@ -116,17 +123,18 @@ test('classes without magic never acquire any', () => {
 test('a level past the written table does not fall off the end', () => {
   // Guards the index clamp rather than the numbers: no undefined, no crash.
   for (const classId of CLASS_IDS) {
-    assert.equal(Number.isInteger(spellSlotsAt(classId, 99)), true)
-    assert.ok(spellSlotsAt(classId, 99) >= 0)
+    const slots = spellSlotsAt(classId, 99)
+    assert.ok(Array.isArray(slots), 'slots are a table indexed by spell level')
+    assert.ok(slots.every((count) => Number.isInteger(count) && count >= 0))
   }
 })
 
 test('levelling a cleric actually hands them the slots', () => {
   const before = hero('cleric')
-  assert.equal(before.spellSlots, 1)
+  assert.equal(slotsAt(before.spellSlots, 1), 1)
   const after = levelUp(before)
-  assert.equal(after.character.spellSlots, 3)
-  assert.equal(after.gains?.spellSlots, 3)
+  assert.equal(slotsAt(after.character.spellSlots, 1), 3)
+  assert.equal(slotsAt(after.gains?.spellSlots, 1), 3)
 })
 
 test('a cleric prepares Wisdom plus level, which is what it always was at level 1', () => {
@@ -176,16 +184,31 @@ test('levelling refuses at the cap instead of silently doing nothing', () => {
   assert.equal(refused.character, character, 'and hands back exactly what it was given')
 })
 
-test('the cap sits exactly where second-level spell slots would start', () => {
+test('the cap sits where a level stops being a combat question', () => {
   /*
-   * This is the whole reason MAX_LEVEL is 2. `Character.spellSlots` is one
-   * number meaning first-level slots, so the first level that grants a second
-   * tier is the first level this app cannot represent. If someone raises the cap
-   * without giving slots a table, this is the test that should stop them.
+   * This test used to pin MAX_LEVEL to 2, and its reason was good: slots were
+   * one number meaning first-level slots, so 3rd level — where the SRD grants a
+   * second tier — was the first level the app could not represent. It did its
+   * job and refused to let the cap move on its own.
+   *
+   * That reason has been paid off rather than waived. Slots are a table now,
+   * and both casting classes have something to spend a second-level one on, so
+   * the assertion moves with the reason instead of being deleted.
+   *
+   * Three, because 4th level is an ability score improvement — a question about
+   * the creation flow rather than about a fight, and nothing in the tutorial
+   * knows how to ask it.
    */
-  assert.equal(MAX_LEVEL, 2)
-  assert.equal(SPELL_SLOTS_BY_LEVEL.full[MAX_LEVEL], 3, 'still first-level slots only')
-  assert.ok(MAX_LEVEL + 1 === 3, 'third level is where the SRD adds 2nd-level slots')
+  assert.equal(MAX_LEVEL, 3)
+  assert.equal(
+    SECOND_LEVEL_SLOTS_BY_LEVEL.full[MAX_LEVEL],
+    2,
+    'a full caster reaches the cap holding second-level slots',
+  )
+  assert.ok(
+    spellsFor('wizard', 2).length > 0 && spellsFor('cleric', 2).length > 0,
+    'both casting classes have somewhere to spend them',
+  )
 })
 
 test('proficiency does not move at second level, and the gains do not claim it did', () => {

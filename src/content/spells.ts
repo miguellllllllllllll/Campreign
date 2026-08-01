@@ -83,12 +83,27 @@ export type SpellEffect =
    * The condition carries the effect, so losing the spell takes it back.
    */
   | { kind: 'wardTarget'; condition: ConditionId }
+  /**
+   * One target rolls a save or takes a condition. No damage at all.
+   *
+   * The first spell effect whose whole worth is what it stops the target doing
+   * — Blindness deals nothing and is still one of the strongest things a
+   * 3rd-level caster owns, because blinded is disadvantage on their attacks and
+   * advantage on everyone else's. Distinct from `aoeSave`, which is damage
+   * across a radius, and from `wardTarget`, which lands on a friend.
+   */
+  | {
+      kind: 'saveOrCondition'
+      saveAbility: AbilityName
+      condition: ConditionId
+      rounds: number
+    }
 
 export interface Spell {
   id: string
   name: string
-  /** 0 is a cantrip, which never runs out; 1 costs a spell slot. */
-  level: 0 | 1
+  /** 0 is a cantrip, which never runs out; 1 and 2 cost a slot of that level. */
+  level: 0 | 1 | 2
   school: SpellSchool
   classes: readonly ('wizard' | 'cleric')[]
   /** Range in feet with the grid equivalent, since the game is played on squares. */
@@ -309,6 +324,67 @@ export const SPELLS: readonly Spell[] = [
     },
   },
 
+  {
+    id: 'shatter',
+    name: 'Shatter',
+    level: 2,
+    school: 'Evocation',
+    classes: ['wizard'],
+    range: '60 ft (12 squares)',
+    damageOrEffect: '3d8 Thunder, Con save',
+    /*
+     * The wizard's reason to want a second-level slot. Burning Hands is 3d6 on
+     * a Dexterity save; this is 3d8 on a Constitution one, which is the save
+     * the quick things on this board are worst at — the goblin dodges at +2 and
+     * shrugs at +0, the bat at +3 and +0.
+     *
+     * That is the same argument Thunderwave failed, and it survives here for a
+     * reason worth writing down: Thunderwave was 2d8 against Burning Hands' 3d6
+     * and lost on raw dice before the save mattered. 3d8 is ahead on both.
+     */
+    effect: {
+      kind: 'aoeSave',
+      dice: '3d8',
+      saveAbility: 'con',
+      damageType: 'thunder',
+      radiusSquares: 2,
+      halfOnSuccess: true,
+    },
+    description:
+      'A sudden ringing boom centred where you choose. Everything nearby braces against it rather than dodging, so it lands on quick, flimsy things that would duck a sheet of flame.',
+    isConcentration: false,
+  },
+  {
+    id: 'blindness',
+    name: 'Blindness',
+    level: 2,
+    school: 'Necromancy',
+    // On both SRD lists, which is the whole reason it is here: one spell gives
+    // both casting classes something to spend a second-level slot on.
+    classes: ['wizard', 'cleric'],
+    range: '30 ft (6 squares)',
+    damageOrEffect: 'Con save or blinded, 3 rounds',
+    /*
+     * No damage at all, and still the strongest thing a 3rd-level caster owns.
+     * Blinded is disadvantage on the target's attacks and advantage on every
+     * attack against them — two swings' worth of arithmetic on both sides of
+     * the board, for one slot.
+     *
+     * Three rounds rather than the SRD's minute: a fight here lasts four or
+     * five, so "one minute" would mean "the rest of the fight" and there would
+     * be no decision about when to cast it.
+     */
+    effect: {
+      kind: 'saveOrCondition',
+      saveAbility: 'con',
+      condition: 'blinded',
+      rounds: 3,
+    },
+    description:
+      'You take a creature\u2019s sight away. It deals no damage, and it is still often the best thing you can do with the slot \u2014 a blinded enemy swings at disadvantage while everyone hits it with advantage.',
+    isConcentration: false,
+  },
+
   // --- Cleric cantrips ----------------------------------------------------
   {
     id: 'sacredFlame',
@@ -488,7 +564,7 @@ export const SPELLS_BY_ID: Readonly<Record<string, Spell>> = Object.fromEntries(
   SPELLS.map((spell) => [spell.id, spell]),
 )
 
-export function spellsFor(classId: 'wizard' | 'cleric', level: 0 | 1): readonly Spell[] {
+export function spellsFor(classId: 'wizard' | 'cleric', level: 0 | 1 | 2): readonly Spell[] {
   return SPELLS.filter((spell) => spell.classes.includes(classId) && spell.level === level)
 }
 

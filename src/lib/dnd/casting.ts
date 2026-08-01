@@ -1,7 +1,8 @@
 import { roll } from './dice.ts'
-import { addCondition } from './conditions.ts'
+import { CONDITIONS, addCondition } from './conditions.ts'
 import { isDead, isDying, isStable, stabilise } from './dying.ts'
 import { narrateAttackFully } from './narrate.ts'
+import { hasSlot, spendSlot } from './slots.ts'
 import { abilityModifier, formatModifier, proficiencyBonus } from './stats.ts'
 import {
   applyDamage,
@@ -111,8 +112,17 @@ export function castableSpells(
       }
       // Cantrips never run out, so the slot count has no say over them. It used
       // to, harmlessly, because no cantrip could reach this function.
-      if (spell.level >= 1 && (combatant.spellSlots ?? 0) <= 0) {
-        return [{ spell, castable: false, reason: 'No spell slots left until you rest.' }]
+      if (!hasSlot(combatant.spellSlots, spell.level)) {
+        return [
+          {
+            spell,
+            castable: false,
+            reason:
+              spell.level > 1
+                ? `No level ${spell.level} slots left until you rest.`
+                : 'No spell slots left until you rest.',
+          },
+        ]
       }
       if (
         spell.effect.kind === 'stabilise'
@@ -216,7 +226,7 @@ export function castSpell(args: {
   if (spell.effect === undefined) {
     return { caster, target, lines: [], refusal: `${spell.name} is not ready to cast yet.` }
   }
-  if (spell.level >= 1 && (caster.spellSlots ?? 0) <= 0) {
+  if (!hasSlot(caster.spellSlots, spell.level)) {
     return { caster, target, lines: [], refusal: 'No spell slots left until you rest.' }
   }
 
@@ -356,6 +366,29 @@ export function castSpell(args: {
       lines: [],
       refusal: `${spell.name} helps with a skill check, and there are none in a fight.`,
     }
+  } else if (effect.kind === 'saveOrCondition') {
+    /*
+     * The target's own roll, and the only spell here that deals nothing. A
+     * failure lands the condition for a fixed number of rounds; a success is
+     * the whole spell wasted, which is the risk that makes it a decision.
+     */
+    const mod = abilityModifier(target.scores[effect.saveAbility])
+    const save = roll(`1d20${formatModifier(mod)}`, { rng })
+    const dc = spellSaveDcFor(caster)
+    if (save.total >= dc) {
+      lines.push(
+        `${target.name} rolls ${save.total} against DC ${dc} and shakes it off — nothing happens.`,
+      )
+    } else {
+      nextTarget = {
+        ...target,
+        conditions: addCondition(target.conditions, effect.condition, effect.rounds, caster.id),
+      }
+      lines.push(
+        `${target.name} rolls ${save.total} against DC ${dc} and fails — `
+          + `${CONDITIONS[effect.condition].label} for ${effect.rounds} rounds.`,
+      )
+    }
   } else {
     /*
      * Mage Armor replaces the armour outright rather than lending a bonus, and
@@ -378,11 +411,11 @@ export function castSpell(args: {
     lines.push(`Arcane Ward holds at ${warded} hit points.`)
   }
 
-  const spent = spell.level >= 1 ? (caster.spellSlots ?? 0) - 1 : (caster.spellSlots ?? 0)
+  const spent = spendSlot(caster.spellSlots, spell.level)
   let nextCaster: Combatant = {
     ...caster,
     ...(concentrating === undefined ? {} : { concentratingOn: concentrating }),
-    ...(caster.spellSlots === undefined ? {} : { spellSlots: Math.max(0, spent) }),
+    ...(spent === undefined ? {} : { spellSlots: spent }),
     ...(warded === undefined ? {} : { arcaneWardHp: warded }),
   }
 
@@ -489,7 +522,7 @@ export function castAreaSpell(args: {
   if (spell?.effect === undefined || spell.effect.kind !== 'aoeSave') {
     return { caster, affected: [], lines: [], refusal: 'That spell does not cover an area.' }
   }
-  if (spell.level >= 1 && (caster.spellSlots ?? 0) <= 0) {
+  if (!hasSlot(caster.spellSlots, spell.level)) {
     return { caster, affected: [], lines: [], refusal: 'No spell slots left until you rest.' }
   }
 
@@ -540,7 +573,9 @@ export function castAreaSpell(args: {
   return {
     caster: {
       ...caster,
-      ...(caster.spellSlots === undefined ? {} : { spellSlots: Math.max(0, caster.spellSlots - 1) }),
+      ...(spendSlot(caster.spellSlots, spell.level) === undefined
+        ? {}
+        : { spellSlots: spendSlot(caster.spellSlots, spell.level) }),
     },
     affected,
     lines,
@@ -574,7 +609,7 @@ export function castBlessing(args: {
   if (spell?.effect === undefined || spell.effect.kind !== 'blessAllies') {
     return { caster, blessed: [], lines: [], refusal: 'That spell does not bless anybody.' }
   }
-  if (spell.level >= 1 && (caster.spellSlots ?? 0) <= 0) {
+  if (!hasSlot(caster.spellSlots, spell.level)) {
     return { caster, blessed: [], lines: [], refusal: 'No spell slots left until you rest.' }
   }
 
@@ -591,7 +626,9 @@ export function castBlessing(args: {
   return {
     caster: {
       ...caster,
-      ...(caster.spellSlots === undefined ? {} : { spellSlots: Math.max(0, caster.spellSlots - 1) }),
+      ...(spendSlot(caster.spellSlots, spell.level) === undefined
+        ? {}
+        : { spellSlots: spendSlot(caster.spellSlots, spell.level) }),
       concentratingOn: spellId,
     },
     blessed,

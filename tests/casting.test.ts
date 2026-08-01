@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { slotsAt } from '../src/lib/dnd/slots.ts'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { applyDamage, resolveAttack } from '../src/lib/dnd/combat.ts'
@@ -40,7 +41,7 @@ function caster(subclassId?: string, over: Partial<CreationAnswers> = {}) {
 
 test('a caster gets a slot and a fighter does not', () => {
   const { hero } = caster()
-  assert.equal(hero.spellSlots, FIRST_LEVEL_SLOTS)
+  assert.equal(slotsAt(hero.spellSlots, 1), FIRST_LEVEL_SLOTS)
 
   const fighter = buildCharacter(
     { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
@@ -52,7 +53,7 @@ test('a caster gets a slot and a fighter does not', () => {
 
 test('the slot and the prepared list reach the board', () => {
   const { combatant } = caster()
-  assert.equal(combatant.spellSlots, 1)
+  assert.equal(slotsAt(combatant.spellSlots, 1), 1)
   assert.ok((combatant.preparedSpells ?? []).length > 0)
   assert.equal(combatant.castingAbility, 'wis')
 })
@@ -100,7 +101,7 @@ test('Cure Wounds is castable while a slot remains, and not after', () => {
   const withSlot = castableSpells(combatant).find((e) => e.spell.id === 'cureWounds')
   assert.equal(withSlot?.castable, true)
 
-  const spent = castableSpells({ ...combatant, spellSlots: 0 }).find((e) => e.spell.id === 'cureWounds')
+  const spent = castableSpells({ ...combatant, spellSlots: [0, 0] }).find((e) => e.spell.id === 'cureWounds')
   assert.equal(spent?.castable, false)
   assert.match(spent?.reason ?? '', /slot/i)
 })
@@ -130,12 +131,12 @@ test('casting spends the slot', () => {
     spellId: 'cureWounds',
     rng: () => faceValue(5, 8),
   })
-  assert.equal(result.caster.spellSlots, 0)
+  assert.equal(slotsAt(result.caster.spellSlots, 1), 0)
 })
 
 test('a caster with no slots is refused and pays nothing', () => {
   const { combatant } = caster()
-  const empty = { ...combatant, spellSlots: 0, currentHp: 1 }
+  const empty = { ...combatant, spellSlots: [0, 0], currentHp: 1 }
   const result = castSpell({ caster: empty, target: empty, spellId: 'cureWounds' })
   assert.match(result.refusal ?? '', /slot/i)
   assert.equal(result.caster, empty, 'a refusal must not change the caster')
@@ -304,7 +305,7 @@ test('a hit deals radiant damage, spends the slot, and leaves the target glowing
 
   assert.equal(result.refusal, null)
   assert.ok(result.target.currentHp < 40, 'the beam should hurt')
-  assert.equal(result.caster.spellSlots, 0, 'a levelled spell costs its slot')
+  assert.equal(slotsAt(result.caster.spellSlots, 1), 0, 'a levelled spell costs its slot')
   assert.ok(
     hasCondition(result.target.conditions, 'dazzled'),
     'the rider is what separates this from a cantrip',
@@ -331,7 +332,7 @@ test('a miss deals nothing and leaves no glow', () => {
 
   assert.equal(result.target.currentHp, target.currentHp)
   assert.equal(hasCondition(result.target.conditions, 'dazzled'), false)
-  assert.equal(result.caster.spellSlots, 0, 'the slot goes whether or not it connects')
+  assert.equal(slotsAt(result.caster.spellSlots, 1), 0, 'the slot goes whether or not it connects')
 })
 
 test('the glow actually makes the next attack easier', () => {
@@ -406,7 +407,7 @@ test('three darts land without any roll to stop them', () => {
 
   assert.equal(result.refusal, null)
   assert.equal(result.target.currentHp, 40 - 15, 'each dart is 1d4+1, thrown three times')
-  assert.equal(result.caster.spellSlots, 0)
+  assert.equal(slotsAt(result.caster.spellSlots, 1), 0)
 })
 
 test('the darts are rolled separately, not as one lump', () => {
@@ -459,7 +460,7 @@ test('darts that drop a target say so, like any other killing blow', () => {
 test('Magic Missile with no slot left is refused', () => {
   const { combatant } = evoker()
   const result = castSpell({
-    caster: { ...combatant, spellSlots: 0 },
+    caster: { ...combatant, spellSlots: [0, 0] },
     target: target(),
     spellId: 'magicMissile',
   })

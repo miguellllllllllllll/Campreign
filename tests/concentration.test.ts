@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { slotsAt } from '../src/lib/dnd/slots.ts'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { effectiveAc, resolveAttack } from '../src/lib/dnd/combat.ts'
@@ -126,7 +127,7 @@ test('Bless lands on the whole side and starts concentration', () => {
     assert.ok(hasCondition(c.conditions, 'blessed'))
   }
   assert.equal(result.caster.concentratingOn, 'bless')
-  assert.equal(result.caster.spellSlots, 0)
+  assert.equal(slotsAt(result.caster.spellSlots, 1), 0)
   assert.equal(result.caster.id, hero.id)
 })
 
@@ -140,7 +141,7 @@ test('it never blesses more than the spell allows', () => {
 test('a caster with no slot cannot bless', () => {
   const { combatant } = cleric()
   const result = castBlessing({
-    caster: { ...combatant, spellSlots: 0 },
+    caster: { ...combatant, spellSlots: [0, 0] },
     party: [combatant],
     spellId: 'bless',
   })
@@ -332,7 +333,7 @@ test('casting it wards the target and starts concentration', () => {
   assert.ok(hasCondition(result.target.conditions, 'warded'))
   assert.equal(effectiveAc(result.target), squire.ac + 2)
   assert.equal(result.caster.concentratingOn, 'shieldOfFaith')
-  assert.equal(result.caster.spellSlots, 0)
+  assert.equal(slotsAt(result.caster.spellSlots, 1), 0)
   assert.equal(result.caster.id, hero.id)
 })
 

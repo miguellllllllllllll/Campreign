@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { slotsAt } from '../src/lib/dnd/slots.ts'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { attackWith, createEncounter, endTurn, resolveReaction } from '../src/lib/dnd/encounter.ts'
@@ -414,7 +415,7 @@ test('Shield needs the slot as well as the reaction', () => {
   assert.ok((combatant.preparedSpells ?? []).includes('shield'), 'the style prepares it')
   assert.equal(canShield(combatant), true)
 
-  assert.equal(canShield({ ...combatant, spellSlots: 0 }), false, 'no slot, no barrier')
+  assert.equal(canShield({ ...combatant, spellSlots: [0, 0] }), false, 'no slot, no barrier')
   assert.equal(canShield({ ...combatant, reactionAvailable: false }), false, 'no reaction either')
 })
 
@@ -426,7 +427,7 @@ test('a wizard is offered Shield and a Light cleric is offered both', () => {
   const withFlare = {
     ...characterToCombatant(cleric, { position: { x: 0, y: 0 } }),
     preparedSpells: ['shield'],
-    spellSlots: 1,
+    spellSlots: [0, 1],
   }
   assert.deepEqual(availableReactions(withFlare), ['wardingFlare', 'shield'])
 })
@@ -497,7 +498,7 @@ test('casting Shield through the board spends the slot and the reaction', () => 
   const settled = resolveReaction(paused, 'shield')
   const after = settled.encounter.combatants[hero.id]
   assert.equal(after?.reactionAvailable, false, 'the reaction is spent')
-  assert.equal(after?.spellSlots, 0, 'and so is the slot')
+  assert.equal(slotsAt(after?.spellSlots, 1), 0, 'and so is the slot')
   assert.equal(settled.encounter.pendingReaction, undefined)
   assert.ok(settled.encounter.log.some((l) => /Shield/.test(l)))
 })

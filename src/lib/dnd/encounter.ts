@@ -35,6 +35,7 @@ import { castAreaSpell, castBlessing, castSpell } from './casting.ts'
 import { SPELLS_BY_ID } from '../../content/spells.ts'
 import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
 import { roll } from './dice.ts'
+import { spendSlot } from './slots.ts'
 import { ABILITY_LABELS, abilityModifier, formatModifier } from './stats.ts'
 import { narrateAttackFully } from './narrate.ts'
 
@@ -725,7 +726,7 @@ export function resolveReaction(
         reactionAvailable: false,
         ...(shield === undefined
           ? {}
-          : { spellSlots: Math.max(0, (target.spellSlots ?? 0) - 1) }),
+          : { spellSlots: spendSlot(target.spellSlots, 1) }),
       }
     : hurt
 

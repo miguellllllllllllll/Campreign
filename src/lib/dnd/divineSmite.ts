@@ -1,3 +1,4 @@
+import { hasSlot, spendSlot } from './slots.ts'
 import type { Combatant } from '../../types/combat.ts'
 import type { ClassId } from '../../types/character.ts'
 import type { Rng } from '../../types/dice.ts'
@@ -53,8 +54,18 @@ export function hasDivineSmiteAt(classId: ClassId, level: number): boolean {
  * advanced options got the slots and no way to spend them — the very hole this
  * module exists to fill, reopened for the players most likely to be beginners.
  */
+/**
+ * Smite burns a first-level slot, and only a first-level one.
+ *
+ * The SRD lets a paladin smite with any slot for more dice. That is a real
+ * choice and a second prompt mid-attack, which is the shape this slice
+ * deliberately avoided when reactions were built — so it spends the cheapest
+ * slot and says so.
+ */
+const SMITE_SLOT_LEVEL = 1
+
 export function canSmite(combatant: Pick<Combatant, 'spellSlots' | 'hasDivineSmite'>): boolean {
-  return combatant.hasDivineSmite === true && (combatant.spellSlots ?? 0) > 0
+  return combatant.hasDivineSmite === true && hasSlot(combatant.spellSlots, SMITE_SLOT_LEVEL)
 }
 
 /**
@@ -78,7 +89,7 @@ export function resolveSmite(args: {
   return {
     attacker: {
       ...args.attacker,
-      spellSlots: Math.max(0, (args.attacker.spellSlots ?? 0) - 1),
+      spellSlots: spendSlot(args.attacker.spellSlots, SMITE_SLOT_LEVEL),
     },
     damage: Math.max(0, damageRoll.total),
     damageRoll,

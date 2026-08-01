@@ -153,7 +153,11 @@ export interface Character {
   /** True when this hero has a feature that spends a reaction. */
   hasReaction?: boolean
   /** First-level spell slots. One at level 1 for a full caster. */
-  spellSlots?: number
+  /**
+   * Spell slots by the level they cast: index 1 is first-level, 2 is second.
+   * Absent for anyone who never had any, so a fighter carries no empty array.
+   */
+  spellSlots?: readonly number[]
   /** Action Surges left before a rest. Fighters, from 2nd level. */
   actionSurges?: number
   /** Whether a slot can be burned on a blow. Paladins, from 2nd level. */

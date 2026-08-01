@@ -252,8 +252,9 @@ export function buildCharacter(
   const hasAmbush = hasAmbushFor(answers.subclassId, level)
   const hasFastHands = hasFastHandsFor(answers.subclassId, level)
   // One 1st-level slot for anyone who prepares spells at all.
+  // Index 0 is the cantrip slot nobody spends, so a level indexes itself.
   const spellSlots = selectionHasLeveledSpells(answers, klass.spellcasting !== undefined)
-    ? FIRST_LEVEL_SLOTS
+    ? ([0, FIRST_LEVEL_SLOTS] as readonly number[])
     : undefined
   const trimmedName = name.trim()
   const spellcasting = spellcastingFor(klass.spellcasting, scores, level)

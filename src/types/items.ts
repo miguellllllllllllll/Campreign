@@ -26,6 +26,8 @@ export type DamageType =
   | 'necrotic'
   /** Venom in the blood, which is why Ray of Sickness leaves you poisoned. */
   | 'poison'
+  /** A concussive boom rather than a burn. Shatter. */
+  | 'thunder'
   /** Venom in the blood, which is why Ray of Sickness leaves you poisoned. */
   | 'poison'
 

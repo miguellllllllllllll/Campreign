@@ -178,7 +178,7 @@ test('Spare the Dying stops the rolling without restoring a hit point', () => {
   assert.equal(result.target.currentHp, 0, 'it is not healing')
   assert.ok(isStable(result.target))
   assert.equal(isDying(result.target), false)
-  assert.equal(result.caster.spellSlots, caster.spellSlots, 'a cantrip costs nothing')
+  assert.deepEqual(result.caster.spellSlots, caster.spellSlots, 'a cantrip costs nothing')
 })
 
 test('Spare the Dying is refused on somebody still standing', () => {
@@ -337,7 +337,7 @@ test('an enemy bleeding out is not your problem', () => {
 })
 
 test('a cantrip stays castable with every slot spent', () => {
-  const caster = { ...hero(), spellSlots: 0 }
+  const caster = { ...hero(), spellSlots: [0, 0] }
   const offered = castableSpells(caster, [caster, downed()])
   const cantrip = offered.find((one) => one.spell.id === 'spareTheDying')
   const levelled = offered.find((one) => one.spell.level >= 1)

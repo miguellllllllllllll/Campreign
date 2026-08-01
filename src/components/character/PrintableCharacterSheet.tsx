@@ -224,8 +224,12 @@ export function PrintableCharacterSheet({ character }: { character: Character })
             <div>
               <SectionTitle>
                 Spells
-                {character.spellSlots !== undefined &&
-                  ` — ${character.spellSlots} first-level slot${character.spellSlots === 1 ? '' : 's'} per long rest`}
+                {character.spellSlots !== undefined
+                  && ` — ${character.spellSlots
+                    .map((count, level) =>
+                      level === 0 ? null : `${count} level-${level}`)
+                    .filter(Boolean)
+                    .join(', ')} slots per long rest`}
               </SectionTitle>
               <table className="w-full border-collapse text-[8pt]">
                 <thead>

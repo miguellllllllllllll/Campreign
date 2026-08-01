@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { slotsAt } from '../src/lib/dnd/slots.ts'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { castAreaSpell, resolveAoeTargetSave, spellSaveDcFor } from '../src/lib/dnd/casting.ts'
@@ -181,7 +182,7 @@ test('everything in range saves separately against one damage roll', () => {
     near.currentHp - first.currentHp > alsoNear.currentHp - second.currentHp,
     'the one that failed its save took more than the one that made it',
   )
-  assert.equal(result.caster.spellSlots, 0, 'the slot is spent once, not per target')
+  assert.equal(slotsAt(result.caster.spellSlots, 1), 0, 'the slot is spent once, not per target')
   assert.equal(hero.id, result.caster.id)
 })
 
@@ -212,7 +213,7 @@ test('a blast with nobody in range is refused and costs no slot', () => {
 test('an area spell cast with no slots left is refused', () => {
   const { combatant } = wizard()
   const result = castAreaSpell({
-    caster: { ...combatant, spellSlots: 0 },
+    caster: { ...combatant, spellSlots: [0, 0] },
     candidates: [combatant, goblin('g1', 1)],
     spellId: 'burningHands',
   })
@@ -280,7 +281,7 @@ test('an Evoker on the real tutorial board spares the squire and burns the gobli
   const inRange = { ...goblin, position: { x: caster.position.x, y: caster.position.y - 2 } }
 
   const result = castAreaSpell({
-    caster: { ...caster, preparedSpells: ['burningHands'], spellSlots: 1 },
+    caster: { ...caster, preparedSpells: ['burningHands'], spellSlots: [0, 1] },
     candidates: [caster, squire, inRange],
     spellId: 'burningHands',
     subclassId: 'evocation',

@@ -98,7 +98,11 @@ export interface Combatant {
    * First-level spell slots left. Absent for anyone who never had any, so a
    * fighter is not carrying a zero around.
    */
-  spellSlots?: number
+  /**
+   * Spell slots by the level they cast: index 1 is first-level, 2 is second.
+   * Absent for anyone who never had any, so a fighter carries no empty array.
+   */
+  spellSlots?: readonly number[]
   /** Prepared spell ids this combatant may still cast from. */
   preparedSpells?: string[]
   /**

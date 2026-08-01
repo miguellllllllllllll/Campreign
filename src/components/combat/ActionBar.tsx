@@ -11,6 +11,7 @@ import {
 } from '../ui/custom-icons.tsx'
 import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
+import { totalSlots } from '../../lib/dnd/slots.ts'
 import { canActionSurge } from '../../lib/dnd/actionSurge.ts'
 import { canSmite } from '../../lib/dnd/divineSmite.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
@@ -89,7 +90,7 @@ export function ActionBar({
   const drinkCost = resolveItemUseCost(active)
   const drinkBlocked = drinkCost === 'action' ? hasActed : bonusActionSpent
   const canDrink = onDrink !== undefined && hasPotion(active) && !drinkBlocked
-  const slots = active.spellSlots ?? 0
+  const slots = active.spellSlots ?? []
 
   const canChannel =
     onChannel !== undefined && oathPower !== undefined && charges > 0 && oath === undefined
@@ -123,10 +124,18 @@ export function ActionBar({
             </span>
           </span>
         )}
-        {slots > 0 && (
+        {totalSlots(slots) > 0 && (
           <span>
             <Explain k="preparedSpell">Spell slots</Explain>:{' '}
-            <span className="font-mono text-parchment">{slots}</span>
+            {/* One figure per level once a caster has more than one kind. */}
+            <span className="font-mono text-parchment">
+              {slots.length > 2
+                ? slots
+                    .map((count, level) => (level === 0 ? null : `L${level} ${count}`))
+                    .filter(Boolean)
+                    .join(' · ')
+                : (slots[1] ?? 0)}
+            </span>
           </span>
         )}
         <span>

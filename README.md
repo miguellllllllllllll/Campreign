@@ -217,20 +217,22 @@ Flagged rather than hidden, all of them in service of a first-time player:
 Supabase, accounts, and multiplayer — nobody else is at the table, though the
 tutorial does field one NPC ally so an area spell has somebody to spare.
 
-Levels past 2. The rules for taking a level live in `lib/dnd/leveling.ts` and
-stop there because at 3rd level a full caster gains **2nd-level spell slots**,
-and `Character.spellSlots` is a single number meaning first-level slots.
+Levels past 3. Third level is the cap now, and the reason moved rather than
+vanished. It used to be that `Character.spellSlots` was a single number meaning
+first-level slots, so a 3rd-level caster could not be represented; slots are a
+table indexed by spell level now, and both casting classes have a second-level
+spell to spend one on — Shatter for the wizard, Blindness for either.
 
-Raising the cap is a bigger job than it first looks, and this paragraph used to
-understate it. `Spell.level` is `0 | 1`, `spellsFor` is typed the same, and the
-registry holds nothing above 1st level — so a level-3 caster would gain slots
-with nothing to spend them on, which is the inert-content problem this project
-keeps finding, one layer up. The order is: write 2nd-level spells, widen
-`Spell.level`, give slots a table, then move the constant.
+Four is out because 4th level is an ability score improvement, which is a
+question about the creation flow rather than about a fight, and nothing in the
+tutorial knows how to ask it. `SPELL_SLOTS_BY_LEVEL` is still written past the
+cap for the same reason as before: the rules are correct further than the app
+can play them.
 
 The bestiary is the goblin, the practice dummy, a giant bat, a skeleton and a
-giant spider. The giant spider is the only one that does not appear yet — it is
-the hardest thing written and there is nothing hard enough to need it.
+giant spider, and all five now appear. The spider closes the tutorial on its
+own: it is the hardest thing written, and its bite is the only attack that makes
+the player roll a saving throw rather than an enemy.
 
 Levelling is milestone-based and lives in the tutorial only: beating the goblin
 takes you to 2, and it is scoped to that run. `characterStore` is persisted, and

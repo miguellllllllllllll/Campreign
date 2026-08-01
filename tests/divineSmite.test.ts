@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { slotsAt } from '../src/lib/dnd/slots.ts'
 import {
   SMITE_DICE,
   canSmite,
@@ -41,7 +42,7 @@ test('a level-2 paladin has slots, and smite is what they are for', () => {
    * all, so they arrived with nothing to spend them on. Smite is the spend.
    */
   const grown = levelUp(paladin()).character
-  assert.equal(grown.spellSlots, 2)
+  assert.equal(slotsAt(grown.spellSlots, 1), 2)
   assert.equal(grown.preparedSpells, undefined, 'still no paladin spell list')
   assert.equal(canSmite(characterToCombatant(grown, { position: { x: 0, y: 0 } })), true)
 })
@@ -70,8 +71,8 @@ test('it rolls 2d8 and spends exactly one slot', () => {
   })
   assert.equal(result.damage, 11)
   assert.equal(result.againstUndead, false)
-  assert.equal(result.attacker.spellSlots, 1, 'two slots, one spent')
-  assert.equal(attacker.spellSlots, 2, 'nothing here mutates')
+  assert.equal(slotsAt(result.attacker.spellSlots, 1), 1, 'two slots, one spent')
+  assert.equal(slotsAt(attacker.spellSlots, 1), 2, 'nothing here mutates')
 })
 
 test('the undead take an extra die, and the log says why', () => {
@@ -95,10 +96,10 @@ test('the skeleton is undead and nothing else is', () => {
 })
 
 test('smiting with no slots left is not possible', () => {
-  const dry = { ...smiter(), spellSlots: 0 }
+  const dry = { ...smiter(), spellSlots: [0, 0] }
   assert.equal(canSmite(dry), false)
   // Floored rather than negative, if something calls it anyway.
-  assert.equal(resolveSmite({ attacker: dry, target: {} }).attacker.spellSlots, 0)
+  assert.equal(slotsAt(resolveSmite({ attacker: dry, target: {} }).attacker.spellSlots, 1), 0)
 })
 
 test('the die is the one the module declares', () => {
@@ -129,7 +130,7 @@ test('an armed smite adds its damage and burns the slot when the blow lands', ()
 
   assert.equal(swung.refusal, null)
   assert.ok(swung.smite !== undefined, 'the smite resolved')
-  assert.equal(swung.encounter.combatants[hero.id]?.spellSlots, 1)
+  assert.equal(slotsAt(swung.encounter.combatants[hero.id]?.spellSlots, 1), 1)
   assert.ok(swung.encounter.log.some((line) => /Divine Smite/.test(line)))
 
   const foe = swung.encounter.combatants['foe']
@@ -153,7 +154,7 @@ test('a missed swing costs no slot at all', () => {
     rng: () => faceValue(1, 20),
   })
   assert.equal(missed.smite, undefined)
-  assert.equal(missed.encounter.combatants[hero.id]?.spellSlots, 2, 'nothing spent on a miss')
+  assert.equal(slotsAt(missed.encounter.combatants[hero.id]?.spellSlots, 1), 2, 'nothing spent on a miss')
 })
 
 test('smiting a skeleton hits harder than smiting a goblin', () => {
@@ -176,7 +177,7 @@ test('a hero with no slots swings normally rather than being refused', () => {
     ...encounter,
     combatants: {
       ...encounter.combatants,
-      [hero.id]: { ...encounter.combatants[hero.id]!, spellSlots: 0 },
+      [hero.id]: { ...encounter.combatants[hero.id]!, spellSlots: [0, 0] },
     },
   }
   const swung = attackWith(dry, {

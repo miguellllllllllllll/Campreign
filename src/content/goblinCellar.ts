@@ -189,11 +189,17 @@ export const GOBLIN_CELLAR: readonly TutorialStep[] = [
     phase: 'combat',
     title: 'Something was watching all of it',
     narration:
-      'The rattling stops and the cellar is quiet, and that is when you notice the silk. It comes down from the rafters on a line of its own making, unhurried, because it has been waiting for the noise to end.',
+      'The rattling stops and the cellar is quiet. You bind what needs binding and something settles again — third level, and for a caster that means a second tier of magic you have never had before. Then you notice the silk. It comes down from the rafters on a line of its own making, unhurried, because it has been waiting for the noise to end.',
     guidance:
-      'One enemy, and the most dangerous thing down here. Its bite carries venom — when it lands you will roll a saving throw yourself, which is the one kind of roll you have not made yet.',
+      'You levelled again first — check your slots. One enemy this time, and the most dangerous thing down here: its bite carries venom, so when it lands you roll a saving throw yourself, which is the one kind of roll you have not made yet.',
     completion: { when: 'acknowledged' },
-    onEnter: [{ kind: 'startCombat', encounterId: 'rafters' }],
+    // The level lands before the fight rather than after it, because second-level
+    // slots that arrive once the spider is dead are slots nobody ever spends.
+    onEnter: [
+      { kind: 'levelUp' },
+      { kind: 'shortRest' },
+      { kind: 'startCombat', encounterId: 'rafters' },
+    ],
     next: 'venom',
   },
   {

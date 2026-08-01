@@ -1,3 +1,4 @@
+import { totalSlots } from './slots.ts'
 import type { Character, ClassId } from '../../types/character.ts'
 import { CLASS_PRESETS } from './presets.ts'
 import {
@@ -25,27 +26,19 @@ import { hasDivineSmiteAt } from './divineSmite.ts'
 /**
  * The highest level this app can honestly build.
  *
- * Two, and the reason is specific rather than arbitrary: at 3rd level a full
- * caster gains **2nd-level spell slots**, and `Character.spellSlots` is a single
- * number meaning first-level slots — read that way by the casting engine and by
- * the action bar. A level-3 wizard here would be a wizard missing half their
- * magic, which is worse than a wizard who cannot exist.
+ * Three, and every word of the old reason for two has been paid off rather
+ * than waived. That comment said a 3rd-level caster would gain second-level
+ * slots the engine could not represent and had nothing to spend them on. Both
+ * were true. `Character.spellSlots` is now a table indexed by spell level, and
+ * the registry holds second-level spells for both casting classes — Shatter for
+ * the wizard, Blindness for either.
  *
- * `SPELL_SLOTS_BY_LEVEL` below is written out past the cap on purpose: the rules
- * are correct further than the app can play them.
- *
- * Lifting the cap is **not** just a slot table and this constant, which is what
- * this comment used to claim. `Spell.level` is `0 | 1` and `spellsFor` is typed
- * the same, and the registry holds nothing above 1st level — so a level-3 caster
- * would get two 2nd-level slots with literally nothing to spend them on. That is
- * the same inert-content failure this codebase keeps catching, one layer up.
- *
- * The real order of work: 2nd-level spells for both casting classes first, then
- * widen `Spell.level`, then give `Character.spellSlots` a table, and only then
- * this number. The cleric's SRD list at that level also leans on effect kinds
- * the engine does not have.
+ * `SPELL_SLOTS_BY_LEVEL` is still written past this cap, for the same reason as
+ * before: the rules are correct further than the app can play them. Four stays
+ * out of reach because 4th level is an ability score improvement, which is a
+ * creation-flow question rather than a combat one.
  */
-export const MAX_LEVEL = 2
+export const MAX_LEVEL = 3
 
 /** How a class's magic grows. Full casters double a half caster's pace. */
 export type CastingProgression = 'full' | 'half' | 'none'
@@ -77,6 +70,22 @@ export const SPELL_SLOTS_BY_LEVEL: Readonly<Record<CastingProgression, readonly 
 }
 
 /**
+ * Second-level slots at each character level, indexed the same way.
+ *
+ * A full caster opens these at 3rd level and a half caster at 5th, which is why
+ * the paladin's row is still zeroes everywhere this app can reach. Kept as its
+ * own table rather than nested inside the one above, so each row still reads as
+ * "slots of this level, by character level" — the shape a reader already knows.
+ */
+export const SECOND_LEVEL_SLOTS_BY_LEVEL: Readonly<
+  Record<CastingProgression, readonly number[]>
+> = {
+  full: [0, 0, 0, 2, 3, 3],
+  half: [0, 0, 0, 0, 0, 2],
+  none: [0, 0, 0, 0, 0, 0],
+}
+
+/**
  * A deliberate divergence, and the one place this file disagrees with the SRD:
  * a 1st-level full caster gets **one** slot here, not two.
  *
@@ -86,13 +95,22 @@ export const SPELL_SLOTS_BY_LEVEL: Readonly<Record<CastingProgression, readonly 
  */
 export const FIRST_LEVEL_SLOTS_AT_LEVEL_1 = 1
 
-export function spellSlotsAt(classId: ClassId, level: number): number {
+export function spellSlotsAt(classId: ClassId, level: number): readonly number[] {
   const progression = castingProgressionFor(classId)
-  if (progression === 'none') return 0
-  if (level <= 1) return progression === 'full' ? FIRST_LEVEL_SLOTS_AT_LEVEL_1 : 0
+  if (progression === 'none') return []
 
-  const table = SPELL_SLOTS_BY_LEVEL[progression]
-  return table[Math.min(level, table.length - 1)] ?? 0
+  const pick = (table: readonly number[]): number => table[Math.min(level, table.length - 1)] ?? 0
+  // The 1st-level divergence below is deliberate and documented above.
+  const first =
+    level <= 1
+      ? progression === 'full'
+        ? FIRST_LEVEL_SLOTS_AT_LEVEL_1
+        : 0
+      : pick(SPELL_SLOTS_BY_LEVEL[progression])
+  const second = pick(SECOND_LEVEL_SLOTS_BY_LEVEL[progression])
+
+  // Index 0 is the cantrip slot nobody spends, kept so a level indexes itself.
+  return second > 0 ? [0, first, second] : [0, first]
 }
 
 /**
@@ -181,7 +199,7 @@ export interface LevelUpGains {
   /** Present only when the number actually moved, which is rare. */
   proficiencyBonus?: number
   /** Present only when the count changed. */
-  spellSlots?: number
+  spellSlots?: readonly number[]
   features: readonly LevelFeature[]
 }
 
@@ -198,6 +216,11 @@ export interface LevelUpResult {
  * Refuses at the cap rather than clamping silently: a caller that thinks it
  * levelled somebody and did not should hear about it.
  */
+/** Whether two slot tables say the same thing, so a no-op is not reported. */
+function sameSlots(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((count, index) => count === b[index])
+}
+
 export function levelUp(character: Character): LevelUpResult {
   if (character.level >= MAX_LEVEL) {
     return {
@@ -215,7 +238,7 @@ export function levelUp(character: Character): LevelUpResult {
 
   const wasProficiency = proficiencyBonus(character.level)
   const nowProficiency = proficiencyBonus(level)
-  const wasSlots = character.spellSlots ?? 0
+  const wasSlots = character.spellSlots ?? []
   const nowSlots = spellSlotsAt(character.classId, level)
   const features = featuresGainedAt(character.classId, level)
 
@@ -253,7 +276,7 @@ export function levelUp(character: Character): LevelUpResult {
      * 3 of 10 should be at 9 of 16, not topped up for free.
      */
     currentHp: character.currentHp + hitPointsGained,
-    ...(nowSlots === 0 ? {} : { spellSlots: nowSlots }),
+    ...(totalSlots(nowSlots) === 0 ? {} : { spellSlots: nowSlots }),
   }
 
   return {
@@ -263,7 +286,7 @@ export function levelUp(character: Character): LevelUpResult {
       hitPointsGained,
       maxHp,
       ...(nowProficiency === wasProficiency ? {} : { proficiencyBonus: nowProficiency }),
-      ...(nowSlots === wasSlots ? {} : { spellSlots: nowSlots }),
+      ...(sameSlots(nowSlots, wasSlots) ? {} : { spellSlots: nowSlots }),
       /*
        * The specialisation is listed first when it unlocks. It is the thing the
        * player actually chose, and burying it under a generic class feature
