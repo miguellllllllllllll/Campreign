@@ -150,6 +150,18 @@ Flagged rather than hidden, all of them in service of a first-time player:
   so no single written-down list fits every cleric. Styles are written at the
   larger size and cut to the cap in `resolveSpellSelection`, leading with the
   spells that make them that style. A hand-picked list is never trimmed.
+- **Your specialisation switches on at 2nd level, not at creation.** You pick it
+  during creation and the choice is remembered; the numbers arrive when you
+  level. Everything used to work from level 1, which handed a beginner the whole
+  kit before they had swung once and left the level-up with nothing to give them
+  but hit points.
+
+  One level for all ten rather than the SRD's spread, which puts a cleric's
+  domain at 1, a wizard's school at 2 and a fighter's archetype at 3. Two of
+  those sit past this build's cap of 2, so honouring the spread would mean three
+  classes whose specialisation could never turn on at all — a simplification
+  beats permanently dead choices. Every feature description names the level it
+  starts, because the sheet and the print view render that text verbatim.
 - **Every caster style carries an attack cantrip, chosen for reach rather than
   flavour.** Reach is the variable that decides the second encounter on a
   five-square board: 3000 simulated runs per build put Mercy & Mending — which

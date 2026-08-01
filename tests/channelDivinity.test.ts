@@ -11,9 +11,10 @@ import {
   sacredWeaponBonus,
   spendChannelDivinity,
 } from '../src/lib/dnd/channelDivinity.ts'
-import { channelDivinityFor, channelDivinityPowerFor } from '../src/content/subclasses.ts'
+import { channelDivinityFor, channelDivinityPowerFor, SUBCLASS_FEATURE_LEVEL } from '../src/content/subclasses.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
+import { grown } from './helpers/levels.ts'
 
 const meta = { id: 'pal', now: 1_700_000_000_000 }
 
@@ -30,7 +31,7 @@ function answers(overrides: Partial<CreationAnswers> = {}): CreationAnswers {
 }
 
 function paladin(subclassId: string) {
-  return buildCharacter(answers({ subclassId }), 'Oathkeeper', meta)
+  return grown(buildCharacter(answers({ subclassId }), 'Oathkeeper', meta))
 }
 
 function foe() {
@@ -65,11 +66,11 @@ function fight(heroSubclass: string) {
 // --- The resource ---------------------------------------------------------
 
 test('both oaths grant a charge and nobody else does', () => {
-  assert.equal(channelDivinityFor('devotion'), CHANNEL_DIVINITY_CHARGES_AT_LEVEL_1)
-  assert.equal(channelDivinityFor('vengeance'), CHANNEL_DIVINITY_CHARGES_AT_LEVEL_1)
-  assert.equal(channelDivinityFor('champion'), undefined)
-  assert.equal(channelDivinityFor('battlemaster'), undefined)
-  assert.equal(channelDivinityFor(undefined), undefined)
+  assert.equal(channelDivinityFor('devotion', SUBCLASS_FEATURE_LEVEL), CHANNEL_DIVINITY_CHARGES_AT_LEVEL_1)
+  assert.equal(channelDivinityFor('vengeance', SUBCLASS_FEATURE_LEVEL), CHANNEL_DIVINITY_CHARGES_AT_LEVEL_1)
+  assert.equal(channelDivinityFor('champion', SUBCLASS_FEATURE_LEVEL), undefined)
+  assert.equal(channelDivinityFor('battlemaster', SUBCLASS_FEATURE_LEVEL), undefined)
+  assert.equal(channelDivinityFor(undefined, SUBCLASS_FEATURE_LEVEL), undefined)
 })
 
 test('each oath spends its charge on its own power', () => {
@@ -88,7 +89,7 @@ test('the charge reaches the sheet and the board', () => {
 })
 
 test('a paladin without an oath carries no charge at all', () => {
-  const plain = buildCharacter(answers(), 'A', meta)
+  const plain = grown(buildCharacter(answers(), 'A', meta))
   assert.equal('channelDivinityCharges' in plain, false)
 })
 

@@ -27,10 +27,13 @@ import {
   critThresholdFor,
   subclassById,
   subclassesFor,
+  SUBCLASS_FEATURE_LEVEL,
 } from '../src/content/subclasses.ts'
 import { magicInitiateChoices, stepsFor } from '../src/content/creationQuestions.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
+import { levelUp } from '../src/lib/dnd/leveling.ts'
+import { grown } from './helpers/levels.ts'
 
 const meta = { id: 'test-id', now: 1_700_000_000_000 }
 
@@ -252,20 +255,20 @@ test('a subclass with no effect leaves every number untouched', () => {
 // --- Improved Critical ----------------------------------------------------
 
 test('only the Champion widens the critical range', () => {
-  assert.equal(critThresholdFor('champion'), 19)
-  assert.equal(critThresholdFor('battlemaster'), undefined)
-  assert.equal(critThresholdFor('no-such-subclass'), undefined)
-  assert.equal(critThresholdFor(undefined), undefined)
+  assert.equal(critThresholdFor('champion', SUBCLASS_FEATURE_LEVEL), 19)
+  assert.equal(critThresholdFor('battlemaster', SUBCLASS_FEATURE_LEVEL), undefined)
+  assert.equal(critThresholdFor('no-such-subclass', SUBCLASS_FEATURE_LEVEL), undefined)
+  assert.equal(critThresholdFor(undefined, SUBCLASS_FEATURE_LEVEL), undefined)
 })
 
 test('a Champion carries the threshold onto the sheet and into combat', () => {
-  const champion = buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)
+  const champion = grown(buildCharacter(answers({ subclassId: 'champion' }), 'A', meta))
   assert.equal(champion.critOn, 19)
   assert.equal(characterToCombatant(champion, { position: { x: 0, y: 0 } }).critOn, 19)
 })
 
 test('everyone else stores no threshold at all', () => {
-  const plain = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const plain = grown(buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta))
   assert.equal('critOn' in plain, false)
   assert.equal(characterToCombatant(plain, { position: { x: 0, y: 0 } }).critOn, undefined)
 })
@@ -303,7 +306,7 @@ test('the default threshold is exactly the old behaviour', () => {
 
 test("a Champion's 19 crits in a real attack, and a rogue's does not", () => {
   const nineteen = () => faceValue(19, 20)
-  const champion = buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)
+  const champion = grown(buildCharacter(answers({ subclassId: 'champion' }), 'A', meta))
   const ordinary = buildCharacter(answers(), 'A', meta)
   const attack = champion.attacks[0]
   assert.ok(attack !== undefined)
@@ -330,11 +333,11 @@ test("a Champion's 19 crits in a real attack, and a rogue's does not", () => {
 // --- Battle Master: superiority dice and Trip Attack ----------------------
 
 test('a Battle Master starts with a pool and nobody else has one', () => {
-  const bm = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const bm = grown(buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta))
   assert.equal(bm.superiorityDice, SUPERIORITY_DICE_AT_LEVEL_1)
   assert.equal(characterToCombatant(bm, { position: { x: 0, y: 0 } }).superiorityDice, 2)
 
-  const champion = buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)
+  const champion = grown(buildCharacter(answers({ subclassId: 'champion' }), 'A', meta))
   assert.equal('superiorityDice' in champion, false)
 })
 
@@ -380,7 +383,7 @@ test('a failed save knocks the target down and a passed one does not', () => {
 })
 
 test('spending a die leaves one fewer, and never goes below zero', () => {
-  const hero = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const hero = grown(buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta))
   const attack = hero.attacks[0]
   assert.ok(attack !== undefined)
   const target = characterToCombatant(
@@ -420,7 +423,7 @@ test('an encounter refuses a manoeuvre nobody can pay for', () => {
 })
 
 test('a landed Trip Attack adds damage, spends a die, and floors the target', () => {
-  const bm = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const bm = grown(buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta))
   const foe = buildCharacter(answers(), 'B', { ...meta, id: 'b' })
   const attack = bm.attacks[0]
   assert.ok(attack !== undefined)
@@ -461,7 +464,7 @@ test('a target dropped by the same blow is not also knocked prone', () => {
   // Prone is a state a standing creature enters. Someone at 0 hit points is
   // already down, and stacking the condition would read as a second effect the
   // player did not get.
-  const bm = buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta)
+  const bm = grown(buildCharacter(answers({ subclassId: 'battlemaster' }), 'A', meta))
   const foe = buildCharacter(answers(), 'B', { ...meta, id: 'b' })
   const attack = bm.attacks[0]
   assert.ok(attack !== undefined)
@@ -611,4 +614,94 @@ test('the fast-track road is exactly as long as it was', () => {
   const fastTrack = stepsFor({ classId: 'fighter' })
   const advanced = stepsFor({ classId: 'fighter', advanced: true })
   assert.equal(advanced.length, fastTrack.length + 1)
+})
+
+// --- The specialisation is earned, not issued -----------------------------
+
+test('a level-1 character has chosen a specialisation and none of its numbers', () => {
+  /*
+   * The whole point of the gate. Everything used to arrive at creation, which
+   * put the full kit in a beginner's hands before they had swung once and left
+   * the level-up with nothing to give them but hit points.
+   */
+  for (const subclass of SUBCLASSES) {
+    const hero = buildCharacter(
+      answers({ classId: subclass.classId, subclassId: subclass.id }),
+      'A',
+      { ...meta, id: subclass.id },
+    )
+    assert.equal(hero.level, 1)
+    assert.equal(hero.subclassId, subclass.id, 'the choice is remembered')
+    for (const field of ['critOn', 'superiorityDice', 'channelDivinityCharges',
+      'hasReaction', 'hasAmbush', 'hasFastHands'] as const) {
+      assert.equal(field in hero, false, `${subclass.id} handed out ${field} at level 1`)
+    }
+  }
+})
+
+test('levelling up is what turns the specialisation on', () => {
+  const expected: Record<string, string> = {
+    champion: 'critOn',
+    battlemaster: 'superiorityDice',
+    devotion: 'channelDivinityCharges',
+    vengeance: 'channelDivinityCharges',
+    light: 'hasReaction',
+    assassin: 'hasAmbush',
+    thief: 'hasFastHands',
+  }
+  for (const [subclassId, field] of Object.entries(expected)) {
+    const subclass = subclassById(subclassId)
+    assert.ok(subclass !== undefined)
+    const grownHero = grown(buildCharacter(
+      answers({ classId: subclass.classId, subclassId }), 'A', { ...meta, id: subclassId },
+    ))
+    assert.equal(grownHero.level, SUBCLASS_FEATURE_LEVEL)
+    assert.ok(field in grownHero, `${subclassId} did not gain ${field} on levelling`)
+  }
+})
+
+test('the level-up says which specialisation it just switched on, first', () => {
+  // It is the thing the player actually chose. Burying it under a generic class
+  // feature buries the answer to "what did I just get".
+  const gains = levelUp(buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)).gains
+  assert.ok(gains !== null)
+  assert.equal(gains.features[0]?.id, 'champion')
+  assert.match(gains.features[0]?.name ?? '', /Champion/)
+  assert.match(gains.features[0]?.name ?? '', /Improved Critical/)
+  assert.ok(gains.features.length > 1, 'the class feature is still listed too')
+})
+
+test('a hero with no specialisation gains no specialisation', () => {
+  const gains = levelUp(buildCharacter(answers(), 'A', meta)).gains
+  assert.ok(gains !== null)
+  assert.equal(gains.features.some((one) => one.id === 'champion'), false)
+  assert.ok(gains.features.length > 0, 'but still gains the class feature')
+})
+
+test('the gate and the grant cannot disagree', () => {
+  /*
+   * levelUp recomputes from the accessors at the new level rather than flipping
+   * a flag, so there is no second copy of the rule to drift.
+   */
+  const champion = buildCharacter(answers({ subclassId: 'champion' }), 'A', meta)
+  assert.equal(critThresholdFor('champion', champion.level), undefined)
+  assert.equal(champion.critOn, undefined)
+
+  const grownHero = grown(champion)
+  assert.equal(critThresholdFor('champion', grownHero.level), grownHero.critOn)
+})
+
+test('every specialisation says on the tin when it starts working', () => {
+  /*
+   * The character sheet and the print view render this text verbatim, so a
+   * description that describes a level-2 ability without saying so promises a
+   * fresh level-1 character something they do not have.
+   */
+  for (const subclass of SUBCLASSES) {
+    assert.match(
+      subclass.feature.description,
+      new RegExp(`From ${SUBCLASS_FEATURE_LEVEL}(st|nd|rd|th) level`),
+      `${subclass.id} does not say when its feature begins`,
+    )
+  }
 })

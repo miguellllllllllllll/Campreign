@@ -4,9 +4,10 @@ import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { attackWith, createEncounter, drinkPotion, endTurn } from '../src/lib/dnd/encounter.ts'
 import { STARTING_POTIONS, hasPotion, resolveItemUseCost } from '../src/lib/dnd/items.ts'
-import { hasFastHandsFor } from '../src/content/subclasses.ts'
+import { hasFastHandsFor, SUBCLASS_FEATURE_LEVEL } from '../src/content/subclasses.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
+import { grown } from './helpers/levels.ts'
 
 const meta = { id: 'rogue', now: 1_700_000_000_000 }
 
@@ -23,10 +24,8 @@ function answers(overrides: Partial<CreationAnswers> = {}): CreationAnswers {
 }
 
 function board(subclassId?: string) {
-  const hero = buildCharacter(
-    answers(subclassId === undefined ? {} : { subclassId }),
-    'Fingers',
-    meta,
+  const hero = grown(
+    buildCharacter(answers(subclassId === undefined ? {} : { subclassId }), 'Fingers', meta),
   )
   const foe = buildCharacter(
     { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
@@ -46,9 +45,9 @@ function board(subclassId?: string) {
 // --- Who pays what --------------------------------------------------------
 
 test('only the Thief drinks on a bonus action', () => {
-  assert.equal(hasFastHandsFor('thief'), true)
-  assert.equal(hasFastHandsFor('assassin'), false)
-  assert.equal(hasFastHandsFor(undefined), false)
+  assert.equal(hasFastHandsFor('thief', SUBCLASS_FEATURE_LEVEL), true)
+  assert.equal(hasFastHandsFor('assassin', SUBCLASS_FEATURE_LEVEL), false)
+  assert.equal(hasFastHandsFor(undefined, SUBCLASS_FEATURE_LEVEL), false)
 
   assert.equal(resolveItemUseCost({ hasFastHands: true }), 'bonusAction')
   assert.equal(resolveItemUseCost({}), 'action')
