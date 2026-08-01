@@ -65,19 +65,21 @@
   --color-dnd-red: #c8362b;
   --color-dnd-red-hover: #c44134;
 
-  /* The table the game is played on: light birch, with the panels laid on top
-     of it. `obsidian` deliberately stays the dark value — it is the ink on the
+  /* The table the game is played on: a creased parchment chart, with the
+     wooden panels laid on it. `obsidian` deliberately stays the dark value — it is the ink on the
      brass button and the well behind every resource bar, and both still need
      to be dark now that the room around them is not.
 
-     The board image is compressed toward its light end rather than used as
-     photographed, and that is a contrast requirement rather than taste. At its
-     original range the darkest knot came out at #92652e, and against that no
-     text colour reaches AA at all — pure black tops out at 3.70:1. Text on a
-     photographed surface is only as readable as that surface's darkest patch,
-     so the floor was lifted until the darkest knot is #cebca6, where the ink
-     below reads 8.26:1. */
-  --color-table: #e0cba4;
+     The surface is a creased chart rather than a photograph laid down flat,
+     and the processing is a contrast requirement rather than taste. Text on a
+     textured surface is only as readable as that surface's darkest patch, and
+     the first attempt at this — birch boards, used at their photographed range
+     — had a darkest knot of #92652e, against which no text colour reaches AA
+     at all: pure black tops out at 3.70:1. So the pattern is carried by the
+     material's *height* map rather than its colour, centred on mid-grey and
+     blended, which textures the parchment without ever moving it far from the
+     tone the tokens promise. */
+  --color-table: #e3d2a9;
   --color-table-ink: #33220f;
 
   --color-ink: var(--color-obsidian);
@@ -341,28 +343,47 @@
  *
  * Retuned twice now. It began as amber over near-black, which reads as warm
  * light; the same wash over teal read olive, because the two are near enough
- * complementary that the middle of the mix is mud. The room is birch now and
- * the problem inverts: the surface is already light and warm, so a bright wash
- * has nothing to lift and only flattens the grain. What a lit table wants
+ * complementary that the middle of the mix is mud. The surface is pale
+ * parchment now and the problem inverts: it is already light and warm, so a
+ * bright wash has nothing to lift and only flattens the creases. What a lit table wants
  * instead is the opposite — the light left alone in the middle and the corners
  * allowed to fall away.
  */
 @utility bg-torchlight {
   background-image:
-    radial-gradient(ellipse 75% 50% at 50% -8%, color-mix(in srgb, var(--color-gold-bright) 22%, transparent), transparent 68%),
-    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 40%, color-mix(in srgb, var(--color-edge) 26%, transparent) 100%),
-    url("/ui/birch-table.jpg");
+    radial-gradient(ellipse 75% 50% at 50% -8%, color-mix(in srgb, var(--color-gold-bright) 20%, transparent), transparent 68%),
+    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 40%, color-mix(in srgb, var(--color-edge) 30%, transparent) 100%),
+    /* The chart's graticule. Faint on purpose — it should be the ruling under
+       the game, not a grid the eye has to read past. */
+    repeating-linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-edge) 12%, transparent) 0 1px,
+      transparent 1px 88px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-edge) 12%, transparent) 0 1px,
+      transparent 1px 88px
+    ),
+    url("/ui/parchment-map.jpg");
   /* Per layer, and the `auto`s matter: one `background-size` applies to every
-     layer, so sizing the boards also tiled the two washes into 420px blocks
-     and put a hard grid across the page. */
+     layer, so sizing the parchment also tiled the two washes and put a hard
+     grid of its own across the page. */
   background-size:
     auto,
     auto,
-    420px 420px;
+    auto,
+    auto,
+    440px 440px;
   background-repeat:
     no-repeat,
     no-repeat,
+    repeat,
+    repeat,
     repeat;
+  /* Only the parchment blends — it is height data centred on mid-grey, so
+     `overlay` creases the surface colour without shifting it. */
+  background-blend-mode: normal, normal, normal, normal, overlay;
   background-attachment: fixed;
 }
 
