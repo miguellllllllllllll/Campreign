@@ -296,7 +296,7 @@ export function buildCharacter(
       ...cantrips.flatMap((cantrip) => (cantrip.attack === undefined ? [] : [cantrip.attack])),
     ]),
     trinket: { ...background.trinket },
-    personality: personalityOf(background, answers.flawId),
+    personality: personalityOf(background, answers.flawId, answers.flawText),
     cosmetics: { ...aura.cosmetics },
     ...(spellcasting === undefined ? {} : { spellcasting }),
     ...(cantripIds.length === 0 ? {} : { cantrips: [...cantripIds] }),

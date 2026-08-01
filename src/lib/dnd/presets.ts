@@ -698,7 +698,35 @@ export function flawsFor(background: BackgroundPreset): readonly BackgroundFlaw[
   return [...background.flaws, ...UNIVERSAL_FLAWS]
 }
 
-export function personalityOf(background: BackgroundPreset, flawId: string): Personality {
+/**
+ * The longest weakness the sheet will accept.
+ *
+ * Matches the ceiling on the creation field rather than trusting it: the field
+ * is content and could be edited, a saved draft could predate a change to it,
+ * and the printed sheet has a fixed amount of room either way.
+ */
+export const MAX_WRITTEN_FLAW = 140
+
+export function personalityOf(
+  background: BackgroundPreset,
+  flawId: string,
+  /** What the player typed instead, if they typed anything. */
+  written?: string,
+): Personality {
+  /*
+   * A written weakness wins over a picked one, because typing it is the more
+   * deliberate act — and clearing the box is how you take it back, which only
+   * works if empty means "fall through" rather than "empty flaw".
+   */
+  const typed = written?.trim() ?? ''
+  if (typed.length > 0) {
+    return {
+      ideal: background.ideal,
+      flaw: typed.slice(0, MAX_WRITTEN_FLAW),
+      bond: background.bond,
+    }
+  }
+
   // Looked up across both pools, because a flaw is no longer necessarily one
   // this background brought with it.
   const flaw = flawsFor(background).find((candidate) => candidate.id === flawId)

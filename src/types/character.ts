@@ -27,6 +27,15 @@ export interface CreationAnswers {
   backgroundId: BackgroundId
   /** Which of the background's flaws the player owned up to. */
   flawId: string
+  /**
+   * A weakness the player wrote instead of picking one.
+   *
+   * Wins over `flawId` when it has anything in it, because typing is the more
+   * deliberate act and clearing the box undoes it. Optional, and safe to be
+   * optional: nothing mechanical hangs off a flaw, so a character with only a
+   * picked one is complete.
+   */
+  flawText?: string
   equipmentChoice: EquipmentChoice
   auraId: AuraId
   /**

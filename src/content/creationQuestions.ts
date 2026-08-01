@@ -22,6 +22,7 @@ export type CreationFieldId =
   | 'raceId'
   | 'backgroundId'
   | 'flawId'
+  | 'flawText'
   | 'equipmentChoice'
   | 'magicStyleId'
   | 'subclassId'
@@ -59,6 +60,15 @@ export interface CreationField {
   choices?: readonly CreationChoice[]
   /** A field nobody has to answer — the spell pick for non-casters. */
   optional?: boolean
+  /**
+   * Another field that answers this one instead.
+   *
+   * Not the same as `optional`: this field is still required, but a written
+   * weakness satisfies the pickable one because it replaces it. Without this
+   * the helper text lies — it says what you write is used *instead*, and the
+   * step then refuses to advance until you have also picked one.
+   */
+  supersededBy?: CreationFieldId
   /** Narrow cards, for short options like a colour. */
   compact?: boolean
 }
@@ -140,9 +150,25 @@ export const CREATION_STEPS: readonly CreationStepDef[] = [
       },
       {
         id: 'flawId',
+        supersededBy: 'flawText',
         question: 'And what is wrong with you?',
         helper:
           'Pick the flaw you will actually play. Nothing mechanical hangs on it — it is there to make you a person rather than a stat block.',
+      },
+      /*
+       * Below the pickable ones on purpose. A beginner should meet the fast
+       * path first and never have to face a blank box; a player who has
+       * somebody specific in mind reads on and finds this.
+       */
+      {
+        id: 'flawText',
+        question: 'Or write your own.',
+        helper:
+          'One sentence, in your own words, starting with "I". Anything you write here is used instead of the flaw above — clear the box to go back to it.',
+        kind: 'text',
+        optional: true,
+        placeholder: 'I cannot walk past an argument without joining it.',
+        maxLength: 140,
       },
     ],
   },
@@ -335,6 +361,18 @@ export function stepAnswered(step: CreationStepDef, draft: CreationDraft): boole
   return step.fields.every((field) => {
     if (field.optional === true) return true
     if (choicesFor(field, draft).length === 0) return true
+    if (fieldSuperseded(field, draft)) return true
     return draft[field.id] !== undefined
   })
+}
+
+/**
+ * Whether another answer has already covered this field.
+ *
+ * Only true when the superseding field has something in it — a whitespace-only
+ * box is not an answer, and must not unlock a step it has not really answered.
+ */
+export function fieldSuperseded(field: CreationField, draft: CreationDraft): boolean {
+  if (field.supersededBy === undefined) return false
+  return (draft[field.supersededBy] ?? '').trim().length > 0
 }

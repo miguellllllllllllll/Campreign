@@ -116,6 +116,14 @@ and none of that.
 Six backgrounds — Guild Artisan, Street Urchin, Noble, Acolyte, Soldier,
 Outlander — each training two skills and carrying three weaknesses of its own.
 
+**Or you can write your own.** Below the pickable weaknesses is a box: one
+sentence in your own words, and it is used instead of anything selected above.
+Clearing it hands you back to the list. Safe to be free text because nothing
+mechanical hangs off a flaw — `Personality.flaw` is a plain string that reaches
+the sheet and the printed page and stops there — so the only rules are "not
+empty" and a 140-character ceiling the engine enforces itself rather than
+trusting the field to.
+
 **A weakness is not chained to a background.** Each background's own three come
 first, because they are the obvious answer and a beginner should find it at the
 top. After them sit eight anyone can carry, marked as such. Nothing mechanical
