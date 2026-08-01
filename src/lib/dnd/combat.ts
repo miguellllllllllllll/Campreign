@@ -20,6 +20,7 @@ import { channelDivinityAttackBonus, hasVowAgainst } from './channelDivinity.ts'
 import { applyDamageWithWard } from './spellcasting.ts'
 import { damageNotation } from './characterBuilder.ts'
 import { clearDeathSaves } from './dying.ts'
+import { sneakAttackDiceFor, sneakAttackNotation } from './sneakAttack.ts'
 
 /**
  * The armour a combatant is actually wearing right now.
@@ -102,9 +103,16 @@ export function resolveAttack(args: {
   rng?: Rng
   /** Forces a roll mode; otherwise it is derived from both sides' conditions. */
   mode?: RollMode
+  /**
+   * Whether a friend of the attacker is in the target's face, which is half of
+   * Sneak Attack's trigger. Passed in rather than derived because this function
+   * sees two combatants and the question is about the whole board.
+   */
+  allyAdjacentToTarget?: boolean
 }): AttackOutcome {
   const { attacker, target, attack } = args
   const rng = args.rng ?? Math.random
+  const allyAdjacentToTarget = args.allyAdjacentToTarget ?? false
   const conditionMode = attackRollMode(attacker.conditions, target.conditions)
   /*
    * A vow grants advantage, but it is combined with the conditions rather than
@@ -171,25 +179,39 @@ export function resolveAttack(args: {
   const rider = damageRiderFor(attacker)
   const withRider = rider === null ? baseDamage : `${baseDamage}+${rider}`
 
+  /*
+   * Sneak Attack rides the same notation, which is what makes it double on a
+   * crit without a line of code saying so — `toCriticalNotation` below doubles
+   * every die in the expression, and the SRD doubles the sneak dice too.
+   *
+   * Read after `mode` is settled rather than before, so advantage that was
+   * cancelled by disadvantage cannot still pay out.
+   */
+  const sneakDice = sneakAttackDiceFor({ attacker, attack, mode, allyAdjacentToTarget })
+  const sneak = sneakAttackNotation(sneakDice)
+  const withSneak = sneak === null ? withRider : `${withRider}+${sneak}`
+
   if (attackRoll.crit === 'hit') {
-    const damageRoll = roll(toCriticalNotation(withRider), { rng })
+    const damageRoll = roll(toCriticalNotation(withSneak), { rng })
     return {
       kind: 'crit',
       breakdown,
       attackRoll,
       damageRoll,
       damage: Math.max(0, damageRoll.total),
+      ...(sneakDice === 0 ? {} : { sneakAttackDice: sneakDice }),
     }
   }
 
   if (total >= effectiveAc(target)) {
-    const damageRoll = roll(withRider, { rng })
+    const damageRoll = roll(withSneak, { rng })
     return {
       kind: 'hit',
       breakdown,
       attackRoll,
       damageRoll,
       damage: Math.max(0, damageRoll.total),
+      ...(sneakDice === 0 ? {} : { sneakAttackDice: sneakDice }),
     }
   }
 
@@ -236,4 +258,28 @@ export function gridDistance(a: GridPosition, b: GridPosition): number {
 
 export function isInRange(attacker: Combatant, target: Combatant, attack: AttackAction): boolean {
   return gridDistance(attacker.position, target.position) <= attack.rangeSquares
+}
+
+/**
+ * Whether somebody on the attacker's side is close enough to occupy the target.
+ *
+ * The half of Sneak Attack's trigger that makes the squire matter: a rogue alone
+ * needs advantage, a rogue with a friend in the target's face does not. It lives
+ * here rather than in `sneakAttack.ts` because it is a question about the grid,
+ * and because that module importing `gridDistance` back out of this one would be
+ * a cycle for no gain.
+ */
+export function hasAllyAdjacentTo(
+  roster: readonly Combatant[],
+  attacker: Combatant,
+  target: Combatant,
+): boolean {
+  return roster.some(
+    (one) =>
+      one.id !== attacker.id
+      && one.id !== target.id
+      && one.team === attacker.team
+      && !isDefeated(one)
+      && gridDistance(one.position, target.position) <= 1,
+  )
 }

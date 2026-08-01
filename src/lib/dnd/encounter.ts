@@ -13,6 +13,7 @@ import {
   applyHealing,
   canAct,
   gridDistance,
+  hasAllyAdjacentTo,
   initiativeOrder,
   isDefeated,
   isInRange,
@@ -366,7 +367,15 @@ export function attackWith(
     }
   }
 
-  const outcome = resolveAttack({ attacker, target, attack, rng: args.rng })
+  const outcome = resolveAttack({
+    attacker,
+    target,
+    attack,
+    rng: args.rng,
+    // The roster is only visible here, which is why the question is answered
+    // here and passed down rather than asked inside resolveAttack.
+    allyAdjacentToTarget: hasAllyAdjacentTo(Object.values(encounter.combatants), attacker, target),
+  })
   const landed = outcome.kind === 'hit' || outcome.kind === 'crit'
 
   /*
@@ -1008,6 +1017,42 @@ function stepToward(from: GridPosition, to: GridPosition): GridPosition {
 }
 
 /**
+ * The straight step first, then any neighbour that still closes the gap.
+ *
+ * The straight step alone was enough while only monsters walked, because a
+ * monster approaching the party had nobody of its own in the way. The squire
+ * does: a player who walks up and stabs the goblin head-on is standing in the
+ * one square their own ally was going to step through, and the squire would
+ * stop there and log "cannot reach anyone" for the rest of the fight.
+ *
+ * Every candidate strictly reduces the Chebyshev distance, so a detour can
+ * never walk backwards and the loop that calls this still terminates. The first
+ * draft offered only the two steps flanking the direct one, which works for a
+ * diagonal approach and collapses to nothing for a straight one — going from
+ * (2,2) to (2,0) it proposed the blocked square twice. Asking the grid which
+ * neighbours are closer has no such special case.
+ *
+ * Still not a pathfinder: it cannot back out of a dead end. A five-by-five room
+ * holding at most three bodies has no dead end to back out of.
+ */
+function stepsToward(from: GridPosition, to: GridPosition): GridPosition[] {
+  const reach = gridDistance(from, to)
+  const neighbours: GridPosition[] = []
+  for (const dx of [-1, 0, 1]) {
+    for (const dy of [-1, 0, 1]) {
+      if (dx === 0 && dy === 0) continue
+      const step = { x: from.x + dx, y: from.y + dy }
+      if (gridDistance(step, to) < reach) neighbours.push(step)
+    }
+  }
+  const direct = stepToward(from, to)
+  return neighbours.sort((a, b) => {
+    const straight = (p: GridPosition) => (p.x === direct.x && p.y === direct.y ? 0 : 1)
+    return straight(a) - straight(b)
+  })
+}
+
+/**
  * The whole of one enemy turn: close the distance, then swing if it can. Kept
  * deliberately simple — the tutorial is teaching the player's turn, not
  * showing off tactics.
@@ -1076,8 +1121,12 @@ export function takeAutomaticTurn(
   ) {
     const self = current.combatants[actor.id]
     if (self === undefined) break
-    const next = stepToward(self.position, target.position)
-    const moved = moveActive(current, next)
+    let moved = current
+    for (const next of stepsToward(self.position, target.position)) {
+      moved = moveActive(current, next)
+      if (moved !== current) break
+    }
+    // Every way forward is blocked, so standing still is the honest outcome.
     if (moved === current) break
     current = moved
   }

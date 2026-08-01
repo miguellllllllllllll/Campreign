@@ -192,6 +192,8 @@ export interface Character {
   hasCunningAction?: boolean
   /** True when this hero opens a fight with advantage. */
   hasAmbush?: boolean
+  /** How many d6 Sneak Attack lends. Rogues only; absent for everyone else. */
+  sneakAttackDice?: number
   /** Potions carried into the fight. */
   potions?: number
   /** True when this hero drinks with a bonus action rather than an action. */

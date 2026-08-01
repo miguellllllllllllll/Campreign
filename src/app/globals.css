@@ -365,6 +365,11 @@
       color-mix(in srgb, var(--color-edge) 12%, transparent) 0 1px,
       transparent 1px 88px
     ),
+    /* The chart itself: coastline, ranges, forests, a rose. Drawn rather than
+       found, because the one hard constraint on this surface is that text sits
+       on it — every stroke is ink at 26% or less, so the darkest point of the
+       whole composite stays inside AA. */
+    url("/ui/fantasy-map.svg"),
     url("/ui/parchment-map.jpg");
   /* Per layer, and the `auto`s matter: one `background-size` applies to every
      layer, so sizing the parchment also tiled the two washes and put a hard
@@ -374,16 +379,18 @@
     auto,
     auto,
     auto,
+    cover,
     440px 440px;
   background-repeat:
     no-repeat,
     no-repeat,
     repeat,
     repeat,
+    no-repeat,
     repeat;
   /* Only the parchment blends — it is height data centred on mid-grey, so
      `overlay` creases the surface colour without shifting it. */
-  background-blend-mode: normal, normal, normal, normal, overlay;
+  background-blend-mode: normal, normal, normal, normal, normal, overlay;
   background-attachment: fixed;
 }
 

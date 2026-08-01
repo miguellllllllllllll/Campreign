@@ -11,6 +11,7 @@ import { useTutorialStore } from '../src/stores/tutorialStore.ts'
 import type { Combatant } from '../src/types/combat.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
+import { grown } from './helpers/levels.ts'
 
 const meta = { id: 'evoker', now: 1_700_000_000_000 }
 
@@ -104,12 +105,12 @@ test('the save DC is the caster\'s, not a constant', () => {
   assert.equal(spellSaveDcFor(combatant), 8 + hero.proficiencyBonus + int)
 })
 
-// --- Sculpt Spells: wired, and provably unreachable ------------------------
+// --- Sculpt Spells ---------------------------------------------------------
 
 test('sculpting waives an ally\'s save entirely when there is an ally', () => {
-  // Constructed by hand. The app never builds a roster like this — which is
-  // exactly why the subclass stays inactive — but the branch is real and this
-  // pins its behaviour for whenever a companion exists.
+  // Constructed by hand, and it no longer has to be: the heading here used to
+  // read "wired, and provably unreachable" because the app fielded no ally to
+  // sculpt around. The squire settled that, and the test below says so.
   const { combatant } = wizard('evocation')
   const ally: Combatant = { ...goblin('friend', 1), team: 'party', name: 'Ally' }
 
@@ -268,7 +269,7 @@ test('an Evoker on the real tutorial board spares the squire and burns the gobli
    * hand-assembled ally — so it proves the feature is reachable by a player
    * rather than merely correct in isolation.
    */
-  const hero = buildCharacter(answers({ subclassId: 'evocation' }), 'Evoker', meta)
+  const hero = grown(buildCharacter(answers({ subclassId: 'evocation' }), 'Evoker', meta))
   useTutorialStore.getState().begin(hero)
   const roster = useTutorialStore.getState().roster ?? []
 
@@ -299,4 +300,27 @@ test('an Evoker on the real tutorial board spares the squire and burns the gobli
   assert.equal(hitSquire.currentHp, squire.maxHp, 'the squire is sculpted clear and untouched')
   assert.ok(hitGoblin.currentHp < inRange.currentHp, 'the goblin is not')
   assert.ok(result.lines.some((l) => /sculpted clear/.test(l)))
+})
+
+test('a 1st-level Evoker has not learned to spare anyone yet', () => {
+  /*
+   * The other half of the rule, and the half that was missing. Sculpt Spells
+   * was hard-coded by subclass id at the cast site, so it fired from creation
+   * while Champion, Battle Master, Thief, Assassin and Light all waited for
+   * 2nd level. This is the fixture that would have caught it.
+   */
+  const { combatant } = wizard('evocation')
+  const squire = goblin('squire', 1)
+  const result = castAreaSpell({
+    caster: { ...combatant, preparedSpells: ['burningHands'], spellSlots: [0, 1] },
+    candidates: [combatant, { ...squire, team: 'party' }],
+    spellId: 'burningHands',
+    subclassId: 'evocation',
+    rng: sequenceRng([faceValue(4, 6), faceValue(4, 6), faceValue(3, 6), faceValue(1, 20)]),
+  })
+
+  const caught = result.affected.find((c) => c.id === squire.id)
+  assert.ok(caught !== undefined, 'the ally is in the blast either way')
+  assert.ok(caught.currentHp < squire.currentHp, 'and at 1st level the fire does not spare them')
+  assert.ok(!result.lines.some((l) => /sculpted clear/.test(l)))
 })

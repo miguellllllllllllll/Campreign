@@ -22,6 +22,7 @@ import {
   superiorityDiceFor,
 } from '../../content/subclasses.ts'
 import { STARTING_POTIONS } from './items.ts'
+import { sneakAttackDiceAt } from './sneakAttack.ts'
 import {
   FIRST_LEVEL_SLOTS,
   getSpellcastingLimits,
@@ -275,6 +276,9 @@ export function buildCharacter(
   const hasReaction = hasReactionFor(answers.subclassId, level)
   const hasAmbush = hasAmbushFor(answers.subclassId, level)
   const hasFastHands = hasFastHandsFor(answers.subclassId, level)
+  // Unlike the five above, this is the class's own and owes nothing to a
+  // subclass — a rogue who skipped the advanced layer entirely still has it.
+  const sneakAttackDice = sneakAttackDiceAt(klass.id, level)
   // One 1st-level slot for anyone who prepares spells at all.
   // Index 0 is the cantrip slot nobody spends, so a level indexes itself.
   const spellSlots = selectionHasLeveledSpells(answers, klass.spellcasting !== undefined)
@@ -340,6 +344,7 @@ export function buildCharacter(
     ...(hasReaction ? { hasReaction } : {}),
     ...(hasAmbush ? { hasAmbush } : {}),
     ...(hasFastHands ? { hasFastHands } : {}),
+    ...(sneakAttackDice === 0 ? {} : { sneakAttackDice }),
     // Everyone walks in with one, so the Thief's bonus action has something
     // to be quicker than.
     potions: STARTING_POTIONS,

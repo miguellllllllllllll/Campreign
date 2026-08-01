@@ -169,9 +169,12 @@ test('levels that grant nothing say so rather than inventing something', () => {
   for (const classId of CLASS_IDS) {
     assert.deepEqual(featuresGainedAt(classId, 1), [], `${classId} gains nothing at 1`)
   }
-  // A subclass is granted at 2 in this build, so 3 leaves a martial with only
-  // hit points — and a half caster's second tier does not open until 5th.
-  for (const classId of ['fighter', 'rogue', 'paladin'] as const) {
+  // A subclass is granted at 2 in this build, so 3 leaves the fighter with only
+  // hit points — and a half caster's second tier does not open until 5th. The
+  // rogue left this list when Sneak Attack arrived, which is the second time
+  // this assertion has had to shrink; it is a list of who has nothing, and that
+  // is a claim that ages every time somebody ships a feature.
+  for (const classId of ['fighter', 'paladin'] as const) {
     assert.deepEqual(featuresGainedAt(classId, 3), [], `${classId} gains nothing at 3`)
   }
 })
