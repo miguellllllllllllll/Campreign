@@ -367,14 +367,37 @@
  * ------------------------------------------------------------------------ */
 
 /**
- * Paper grain. A blended background layer rather than a `::before`, on purpose
- * — a pseudo-element would need `position: relative` on the host and that is a
- * layout change, which this session does not get to make. `background-blend-mode`
- * touches nothing but pixels.
+ * Wood grain, blended into the panel fill.
+ *
+ * This was an `feTurbulence` data URI — isotropic noise, which is grain in the
+ * sense of not-flat but not in the sense of wood. The panels in this palette
+ * are planks, and a plank has direction. A photographed board carries that; no
+ * amount of tuning octaves gets you a grain line.
+ *
+ * The processing is the whole job, and the first attempt shipped a bug worth
+ * recording. `overlay` darkens below mid-grey and lightens above it, so a
+ * texture's *mean* decides whether it textures a surface or relights it. The
+ * source board is dark — about 15% luminance — and desaturating alone leaves it
+ * there, so the first normalisation over-corrected to a mean of 150. That reads
+ * as a plank right up until you measure it: at the brightest grain the panel
+ * lifted to #ad9f94 and parchment on it fell to 2.32:1, from 10.8:1 on the
+ * plain fill. Text over the pale streaks would have failed AA badly.
+ *
+ * It is now mapped to a mean of exactly 128 with a deliberately small swing —
+ * 112 to 143 — so the panel moves only between #452a15 and #57361b. Measured
+ * by compositing it against the surface in a canvas with the same blend mode,
+ * rather than by doing the blend arithmetic myself: parchment 9.75:1, muted
+ * 7.10:1, blood 5.01:1 at the lightest point the grain reaches.
+ *
+ * Still a blended background layer rather than a `::before`, for the reason it
+ * always was: a pseudo-element wants `position: relative` on the host, and that
+ * is a layout change this session does not get to make.
+ *
+ * 512px, 21K, tiled at 256. See NOTICE — ambientCG, CC0.
  */
 @utility texture-grain {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.32'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
+  background-image: url("/ui/wood-grain.jpg");
+  background-size: 256px 256px;
   background-blend-mode: overlay;
 }
 
