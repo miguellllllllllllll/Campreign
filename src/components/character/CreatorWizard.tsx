@@ -297,10 +297,14 @@ export function CreatorWizard() {
             className={cn(
               'rounded-full border px-3 py-1 font-serif text-xs font-semibold tracking-wide transition-colors',
               // The current step is a filled crimson ribbon rather than another
-              // gold outline: crimson cannot carry text on leather, but it can
-              // sit under parchment at 7.49:1, which is the one high-contrast
-              // way this palette gets to shout.
-              index === safeIndex && 'banner-dnd-red border-gold-border/60 rounded-full',
+              // gold outline: crimson cannot carry text, but it can sit under
+              // parchment at 4.73:1, which is the one high-contrast way this
+              // palette gets to shout.
+              //
+              // Notched rather than rounded, so it is a cloth tab and not one
+              // more pill in a row of pills — `rounded-full` is dropped here
+              // because the clip-path squares those corners off anyway.
+              index === safeIndex && 'banner-dnd-red ribbon-swallowtail border-gold-border/60 px-5',
               index !== safeIndex && stepAnswered(candidate, draft) && 'border-moss/50 text-moss',
               index !== safeIndex && !stepAnswered(candidate, draft) && 'border-edge text-muted',
             )}
