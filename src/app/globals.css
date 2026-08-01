@@ -10,10 +10,18 @@
  * Retuning the mood means editing six values here, not fifty files — which is
  * exactly what turning this from blue-black to leather-brown cost.
  *
- * Every value here is checked against the darkest surface it is allowed to sit
- * on and clears WCAG AA for normal text (4.5:1). Where the reference palette
- * did not clear it, the nearest hue-preserving value that does is used instead;
- * those three are marked.
+ * Every value here is checked against the *lightest* surface it is allowed to
+ * sit on and clears WCAG AA for normal text (4.5:1). Where the reference
+ * palette did not clear it, the nearest hue-preserving value that does is used
+ * instead; those are marked.
+ *
+ * Lightest, not darkest, and this file said darkest for a while. On a dark
+ * theme the worst case for pale text is the palest thing behind it, so a value
+ * tuned against the page passes a test it was never going to be given: nothing
+ * sits on the page. It sits on a card, or on `surface-raised`, which is two
+ * steps up from the page and was added as a semantic token after the palette
+ * had been signed off. Two values were riding on that mistake — see `blood`
+ * and `class-paladin` below.
  */
 @theme {
   /* Warm leather rather than cold obsidian: the name is kept because twenty
@@ -44,8 +52,11 @@
   --color-muted: var(--color-parchment-muted);
   --color-gold: var(--color-amber-torch);
   --color-gold-dim: var(--color-gold-border);
-  /* Raised from #c0463b, which read at 3.77:1 on leather and failed AA. */
-  --color-blood: #d9534f;
+  /* Raised twice. #c0463b read at 3.77:1 on leather; #d9534f was supposed to
+     fix that and cleared only the page (4.85:1) — on a card it was 4.43:1 and
+     on `surface-raised` 4.03:1, and `text-blood` is only ever used on cards.
+     This clears 4.55:1 against the palest of the three. */
+  --color-blood: #dc635f;
   --color-moss: #7aa35f;
   --color-arcane: #8a9ae0;
 
@@ -59,8 +70,9 @@
   --color-class-wizard: #9b87d4;
   --color-class-cleric: #d9a441;
   --color-class-rogue: #5e9c78;
-  /* #c4574d would be the truer oxide but lands at 4.03:1, just under AA. */
-  --color-class-paladin: #d0655b;
+  /* #c4574d would be the truer oxide but lands at 3.62:1 on `surface-raised`.
+     #d0655b, which replaced it, was still 4.33:1 there. This clears at 4.57:1. */
+  --color-class-paladin: #d26b61;
 
   --font-display: var(--font-cinzel-decorative), ui-serif, Georgia, serif;
   --font-serif: var(--font-cinzel), ui-serif, Georgia, serif;
@@ -159,10 +171,29 @@
 
 /* ---------------------------------------------------------------------------
  * Atmosphere utilities
+ *
+ * Every tint below names its palette token through `color-mix(… , transparent)`
+ * rather than repeating the channels. It used to spell `rgb(212 175 55 / 0.16)`
+ * in ten places, which quietly made the promise at the top of this file false:
+ * retuning gold meant editing the six tokens *and* hunting the literals, and
+ * the literals are exactly what a hurried retune misses.
+ *
+ * `color-mix(in srgb, X n%, transparent)` is the same colour as `rgb(X / 0.n)`,
+ * not an approximation, and it is already what ships — Tailwind v4 compiles its
+ * own `/opacity` modifiers, `bg-blood/35` and the rest, to the same function.
+ * Checked against the built sheet rather than assumed: each one comes out as
+ * the byte it went in as, `rgba(212 175 55 / 0.15)` as `#d4af3726`. Lightning
+ * CSS emits that flattened hex and then the live `var()` again inside an
+ * `@supports`, so old browsers get the old bytes and new ones actually follow
+ * the token.
+ *
+ * The one-off shades further down (#6a1414, #f0dca4, #6b5527, #e8cf8a) stay
+ * literal on purpose: they are not palette entries, and inventing tokens for
+ * values used once would put two more names in front of the next retune.
  * ------------------------------------------------------------------------ */
 
 @utility shadow-torch {
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-amber-torch) 15%, transparent);
 }
 
 /* ---------------------------------------------------------------------------
@@ -217,10 +248,10 @@
 /** A leather panel with a gold hairline and ambient torchlight caught inside. */
 @utility card-dnd-filigree {
   background-color: var(--color-dungeon-card);
-  border: 1px solid rgb(197 160 89 / 0.3);
+  border: 1px solid color-mix(in srgb, var(--color-gold-border) 30%, transparent);
   box-shadow:
-    inset 0 0 15px rgb(197 160 89 / 0.08),
-    0 1px 0 rgb(244 232 193 / 0.04);
+    inset 0 0 15px color-mix(in srgb, var(--color-gold-border) 8%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-parchment) 4%, transparent);
 }
 
 /** Narrative and rules prose. Reads like print, not like an interface. */
@@ -231,7 +262,7 @@
 
 @utility shadow-torch-lg {
   box-shadow:
-    0 0 40px rgba(212, 175, 55, 0.18),
+    0 0 40px color-mix(in srgb, var(--color-amber-torch) 18%, transparent),
     0 18px 40px -12px rgb(0 0 0 / 0.8);
 }
 
@@ -255,15 +286,15 @@
     );
   background-origin: border-box;
   background-clip: padding-box, border-box;
-  box-shadow: inset 0 1px 0 rgb(244 232 193 / 0.08);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-parchment) 8%, transparent);
 }
 
 /** Torchlight spilling from above, for full-page backdrops. */
 @utility bg-torchlight {
   background-image:
-    radial-gradient(ellipse 70% 50% at 50% -8%, rgb(212 175 55 / 0.16), transparent 72%),
+    radial-gradient(ellipse 70% 50% at 50% -8%, color-mix(in srgb, var(--color-amber-torch) 16%, transparent), transparent 72%),
     /* A second, redder light source — the cold blue cast belonged to obsidian. */
-    radial-gradient(ellipse 50% 40% at 88% 8%, rgb(139 29 29 / 0.14), transparent 70%);
+    radial-gradient(ellipse 50% 40% at 88% 8%, color-mix(in srgb, var(--color-dnd-red) 14%, transparent), transparent 70%);
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
@@ -274,8 +305,8 @@
  */
 @utility bg-motes {
   background-image:
-    radial-gradient(rgb(244 232 193 / 0.13) 1px, transparent 1.4px),
-    radial-gradient(rgb(212 175 55 / 0.1) 1px, transparent 1.6px);
+    radial-gradient(color-mix(in srgb, var(--color-parchment) 13%, transparent) 1px, transparent 1.4px),
+    radial-gradient(color-mix(in srgb, var(--color-amber-torch) 10%, transparent) 1px, transparent 1.6px);
   background-size:
     140px 200px,
     90px 160px;
