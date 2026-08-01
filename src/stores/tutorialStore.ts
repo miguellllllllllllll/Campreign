@@ -254,7 +254,7 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
  * to spawn a level-2 hero with the hit points and slots they just earned, and
  * a roster stored once at the beginning cannot know about them.
  */
-function rosterFor(encounterId: string, character: Character): Combatant[] {
+export function rosterFor(encounterId: string, character: Character): Combatant[] {
   const hero = characterToCombatant(character, {
     position: HERO_START,
     speedSquares: TUTORIAL_SPEED_SQUARES,
@@ -280,6 +280,12 @@ function rosterFor(encounterId: string, character: Character): Combatant[] {
    * Those numbers are a floor rather than a forecast: the simulation plays the
    * hero automatically, so it never casts, drinks or spends an Action Surge.
    * A player holding the same character does better than 59%.
+   *
+   * The simulation is `tests/balance.test.ts` now, rather than a script that
+   * was run once and thrown away. It imports `rosterFor` directly, so adding a
+   * second monster here turns the sentence above red instead of leaving it
+   * quietly wrong — which is what happened to the note in the bestiary claiming
+   * the spider had no venom, for several commits after it grew one.
    */
   if (encounterId === 'rafters') {
     return [hero, squire, spawnMonster(GIANT_SPIDER, { id: 'giantSpider', position: SPIDER_START })]

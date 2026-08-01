@@ -75,15 +75,19 @@ export const TRAINING_DUMMY: MonsterPreset = {
  * goblin's softened ones — the goblin is AC 12 instead of 15 because it is the
  * first fight anybody has, and that reason does not generalise.
  *
- * Two shared divergences, both forced by the board rather than chosen:
+ * One shared divergence, forced by the board rather than chosen:
  *
  * - **Speed is squares, not feet, and the board is five across.** A giant bat
  *   flies 60 feet, which is twelve squares and further than the whole map. Speeds
  *   here are relative to the goblin's three rather than converted.
- * - **No riders on attacks.** `AttackAction` carries damage and reach and
- *   nothing else, so the giant spider's poison save is simply absent. Noted
- *   because it is a real omission, not an oversight — the spider hits for its
- *   SRD damage and that is all it does.
+ *
+ * There used to be a second one here: attacks carried damage and reach and
+ * nothing else, so the giant spider's venom was simply absent. `onHitSave` was
+ * added and the venom with it, and this paragraph went on claiming the omission
+ * for several commits afterwards — which is worse than the omission was, since
+ * a stale note saying a thing is deliberately missing is exactly what stops the
+ * next reader checking. The spider bites for 1d8 and its venom is a real
+ * Constitution save for 2d8 more.
  */
 
 /**

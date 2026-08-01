@@ -315,6 +315,28 @@ Light and Thaumaturgy still do nothing — neither has a combat effect to have.
 They are deliberately kept off the action bar rather than shown greyed out; a
 button that will never work teaches nothing.
 
+### The balance numbers run themselves now
+
+Sentences like "the party wins 59% against the spider alone" decide things — that
+one is the reason the spider fights without company. They were all measured by
+scripts that were run once and thrown away, so nothing could re-check them after
+a monster changed, and one note in the bestiary went on claiming the giant spider
+had no venom for several commits after it grew a 2d8 one.
+
+`tests/balance.test.ts` plays each tutorial encounter 600 times on a fixed seed
+and asserts the documented shape still holds. It imports `rosterFor` from the
+store rather than rebuilding the roster, which is the point: a copy would measure
+the fight somebody remembered writing, and would stay green through exactly the
+change the test exists to catch. Adding a second monster to the rafters drops the
+party to 38% and turns it red.
+
+The bands are wide on purpose. Pinning 59.2% would fail on noise and teach a
+reader to ignore the test; the assertions say "a close fight the party usually
+takes", "not a coin flip", and — the claim that survives both numbers drifting —
+that the rafters are harder than the fight before them. A change that made the
+last one false would run the tutorial's difficulty curve backwards while both
+individual figures still looked reasonable.
+
 **Resistance is absent on purpose, and the reason is arithmetic.** It was the
 obvious fourth working cantrip: the SRD lends 1d4 to a saving throw, the
 `guideCheck` machinery for lending a die already existed, and the giant spider's
