@@ -141,6 +141,15 @@ test('walking the whole script finishes the tutorial exactly once', () => {
   store.dispatch({ type: 'acknowledged' })
   assert.equal(useTutorialStore.getState().stepId, 'swarm')
 
+  // Winning the second fight brings the spider down out of the rafters rather
+  // than ending the tutorial — the venom lesson is the last thing taught.
+  store.dispatch({ type: 'enemyDefeated' })
+  assert.equal(useTutorialStore.getState().stepId, 'rafters')
+  assert.equal(useTutorialStore.getState().finished, false)
+
+  store.dispatch({ type: 'acknowledged' })
+  assert.equal(useTutorialStore.getState().stepId, 'venom')
+
   store.dispatch({ type: 'enemyDefeated' })
   assert.equal(useTutorialStore.getState().stepId, FINAL_STEP_ID)
   assert.equal(useTutorialStore.getState().finished, true)
