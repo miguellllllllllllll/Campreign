@@ -41,6 +41,20 @@ export interface CreationField {
   id: CreationFieldId
   question: string
   helper: string
+  /**
+   * How the field is answered. Absent means `'choice'`, so every field written
+   * before this existed is untouched by it.
+   *
+   * `'text'` is for the answers only the player can write — a weakness that is
+   * theirs rather than one of eleven. Safe to type because nothing mechanical
+   * hangs off such a field: `Personality.flaw` is a plain string that reaches
+   * the sheet and the printed page and stops there.
+   */
+  kind?: 'choice' | 'text'
+  /** Shown in an empty text field. Ignored by choice fields. */
+  placeholder?: string
+  /** A ceiling on a typed answer, so a sheet cannot be filled with an essay. */
+  maxLength?: number
   /** Absent for fields whose options depend on an earlier answer. */
   choices?: readonly CreationChoice[]
   /** A field nobody has to answer — the spell pick for non-casters. */

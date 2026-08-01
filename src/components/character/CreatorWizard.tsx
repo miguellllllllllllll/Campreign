@@ -409,6 +409,74 @@ export function CreatorWizard() {
   )
 }
 
+/**
+ * A field the player writes rather than picks.
+ *
+ * Built for the custom weakness, and kept general because the shape is: a
+ * question, a helper, and one string back through the same `onAnswer` every
+ * choice field already calls. Nothing downstream can tell the difference —
+ * `CreationDraft` values are strings whichever way they arrived.
+ *
+ * A textarea rather than an input, because a weakness is a sentence and a
+ * single-line box that scrolls sideways invites a shorter, worse one.
+ */
+function WrittenAnswerCard({
+  field,
+  draft,
+  onAnswer,
+}: {
+  field: CreationField
+  draft: CreationDraft
+  onAnswer: (fieldId: CreationFieldId, value: string) => void
+}) {
+  const value = draft[field.id] ?? ''
+  const limit = field.maxLength ?? 160
+  const used = value.length
+
+  return (
+    <ParchmentCard>
+      <ParchmentCardContent className="flex flex-col gap-2 pt-5">
+        {/*
+          A real label rather than a styled div: this is the one place in
+          creation where a screen reader has to tie a question to a box the
+          player types into, and `htmlFor` is what does that.
+        */}
+        <label
+          htmlFor={`field-${field.id}`}
+          className="rule-crimson font-serif text-xl font-semibold tracking-wide text-parchment"
+        >
+          {field.question}
+        </label>
+        <p className="text-book text-sm text-muted">{field.helper}</p>
+
+        <textarea
+          id={`field-${field.id}`}
+          value={value}
+          rows={2}
+          maxLength={limit}
+          placeholder={field.placeholder}
+          onChange={(event) => onAnswer(field.id, event.target.value)}
+          className={cn(
+            'mt-1 w-full resize-none rounded-card border border-edge bg-surface/70 p-3',
+            'text-sm leading-relaxed text-parchment placeholder:text-muted/70',
+            'transition-colors hover:border-gold-border/70',
+            'focus-visible:border-amber-torch/80 focus-visible:shadow-torch focus-visible:outline-none',
+          )}
+        />
+
+        {/*
+          Announced politely rather than silently: somebody typing towards a
+          ceiling should hear that they are near it, not discover it by being
+          cut off mid-word.
+        */}
+        <p aria-live="polite" className="self-end font-mono text-xs text-muted">
+          {used} / {limit}
+        </p>
+      </ParchmentCardContent>
+    </ParchmentCard>
+  )
+}
+
 function FieldCard({
   field,
   draft,
@@ -418,6 +486,15 @@ function FieldCard({
   draft: CreationDraft
   onAnswer: (fieldId: CreationFieldId, value: string) => void
 }) {
+  /*
+   * Before the choices are fetched, deliberately. A text field has none, and
+   * the guard below returns null for anything with an empty list — so asking
+   * for choices first would make every typed field silently render nothing.
+   */
+  if (field.kind === 'text') {
+    return <WrittenAnswerCard field={field} draft={draft} onAnswer={onAnswer} />
+  }
+
   const choices = choicesFor(field, draft)
   if (choices.length === 0) return null
 
