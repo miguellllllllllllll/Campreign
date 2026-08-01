@@ -255,6 +255,59 @@ export const SPELLS: readonly Spell[] = [
       'Flame sheets from your fingertips across everything in front of you. There is no attack roll — enemies roll to dodge instead, and take half damage if they do.',
     isConcentration: false,
   },
+  {
+    id: 'rayOfSickness',
+    name: 'Ray of Sickness',
+    level: 1,
+    school: 'Necromancy',
+    classes: ['wizard'],
+    range: '60 ft (12 squares)',
+    damageOrEffect: '2d8 Poison, then disadvantage',
+    /*
+     * The wizard's fifth 1st-level spell, and the count is the point. A wizard
+     * prepares four at every Intelligence score, so with four spells in the
+     * list every wizard prepared all of them — the style question changed a
+     * wizard's cantrips and nothing else, which `spellPresets.ts` said outright.
+     *
+     * Measured against Magic Missile rather than argued, because the first
+     * candidate for this slot did not survive being measured. Thunderwave
+     * (2d8, Constitution save) came out strictly worse than Burning Hands on
+     * every creature in the bestiary — goblin 7.09 against 7.79, bat 7.08
+     * against 7.49, skeleton 6.63 against 7.79, spider 6.85 against 7.50 —
+     * because 3d6 beats 2d8 by more than a two-point save gap recovers when
+     * half lands anyway. SRD Thunderwave earns its keep by shoving ten feet,
+     * and pushing is not modelled here. It was cut rather than shipped.
+     *
+     * This one is an honest trade rather than a win. Against a goblin over 20k
+     * runs it deals 6.21 and lands 70% of the time, where Magic Missile deals
+     * 10.44 and never misses; the poisoned rider prevents about 2.8 more over
+     * its two rounds. So it gives up roughly a point and a half of expected
+     * value for defence — a trade that grows the longer a fight runs, because
+     * disadvantage applies to every swing the target makes, including at an
+     * ally.
+     *
+     * Poisoned already means "attacks with disadvantage" everywhere else, so
+     * the rider needed no new machinery — it is the condition Trip Attack and
+     * the goblin's own tricks already feed.
+     */
+    effect: { kind: 'spellAttack', conditionOnHit: 'poisoned', conditionRounds: 2 },
+    description:
+      'A sickly green beam that leaves the target retching. It hurts less than most attack spells, but a poisoned enemy swings at disadvantage for two rounds — so it is the spell you cast when you would rather not be hit back.',
+    isConcentration: false,
+    attack: {
+      id: 'rayOfSickness',
+      name: 'Ray of Sickness',
+      kind: 'spell',
+      ability: 'int',
+      proficient: true,
+      damage: '2d8',
+      damageType: 'poison',
+      addAbilityToDamage: false,
+      ranged: true,
+      rangeSquares: 12,
+      description: 'A green ray. Roll to hit, then roll 2d8 poison damage.',
+    },
+  },
 
   // --- Cleric cantrips ----------------------------------------------------
   {

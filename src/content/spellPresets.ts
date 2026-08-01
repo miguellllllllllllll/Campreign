@@ -18,11 +18,18 @@ export interface MagicStylePreset {
 }
 
 /**
- * Every wizard style prepares the same four spells because the SRD list for a
- * 1st-level wizard holds exactly four and the spec prepares four. The styles
- * differ in their cantrips, which are the spells a wizard actually casts most.
+ * Mage Armor and Shield are in every wizard list, and that is a judgement
+ * rather than an oversight. A 1st-level wizard without them is AC 12 on six
+ * hit points, and a beginner who picked "Ember & Destruction" should not
+ * discover that the style question quietly chose dying for them. The styles
+ * spend their other two slots instead, which is where the character actually is.
+ *
+ * Until Ray of Sickness there were four spells and a cap of four, so all three
+ * lists here were literally the same constant — the style question changed a
+ * wizard's cantrips and nothing else. Five spells for four slots is the
+ * smallest number that makes it a question.
  */
-const WIZARD_FIRST_LEVEL = ['magicMissile', 'mageArmor', 'shield', 'burningHands'] as const
+const WIZARD_CORE = ['mageArmor', 'shield'] as const
 
 /*
  * Every cleric style carries an attack cantrip, and the reason is measured
@@ -64,7 +71,8 @@ export const MAGIC_STYLE_PRESETS: readonly MagicStylePreset[] = [
     description:
       'Master of fire and raw force. You answer most problems by burning them, and you are very good at it.',
     cantripIds: ['fireBolt', 'rayOfFrost', 'light'],
-    preparedSpellIds: WIZARD_FIRST_LEVEL,
+    // The burner: darts that never miss, and the spell that covers ground.
+    preparedSpellIds: [...WIZARD_CORE, 'magicMissile', 'burningHands'],
   },
   {
     id: 'guardianMage',
@@ -73,7 +81,8 @@ export const MAGIC_STYLE_PRESETS: readonly MagicStylePreset[] = [
     description:
       'Defensive wards and protective shields. You are the fragile one, so you spend your magic on not being hit.',
     cantripIds: ['rayOfFrost', 'mageHand', 'light'],
-    preparedSpellIds: WIZARD_FIRST_LEVEL,
+    // Defence by subtraction — a poisoned enemy swings at disadvantage.
+    preparedSpellIds: [...WIZARD_CORE, 'magicMissile', 'rayOfSickness'],
   },
   {
     id: 'arcaneUtility',
@@ -82,7 +91,8 @@ export const MAGIC_STYLE_PRESETS: readonly MagicStylePreset[] = [
     description:
       'Tricks, light, and battlefield control. You solve encounters before they turn into fights.',
     cantripIds: ['mageHand', 'light', 'fireBolt'],
-    preparedSpellIds: WIZARD_FIRST_LEVEL,
+    // Control: soften the board, then make what is left swing badly.
+    preparedSpellIds: [...WIZARD_CORE, 'burningHands', 'rayOfSickness'],
   },
 
   {

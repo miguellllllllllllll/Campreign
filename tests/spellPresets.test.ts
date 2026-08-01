@@ -4,6 +4,8 @@ import { MAGIC_STYLE_PRESETS } from '../src/content/spellPresets.ts'
 import { BACKGROUND_PRESETS, RACE_PRESETS } from '../src/lib/dnd/presets.ts'
 import { getSpellcastingLimits } from '../src/lib/dnd/spellcasting.ts'
 import { buildCharacter, resolveSpellSelection } from '../src/lib/dnd/characterBuilder.ts'
+import { castableSpells } from '../src/lib/dnd/casting.ts'
+import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { abilityModifier } from '../src/lib/dnd/stats.ts'
 import { spellsByIds, spellsFor } from '../src/content/spells.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
@@ -235,4 +237,59 @@ test('no two styles of a class are the same character', () => {
       }
     }
   }
+})
+
+test('every spell a wizard style prepares reaches the action bar', () => {
+  /*
+   * The reachability check, walked rather than asserted. `castableSpells` is
+   * what ActionBar renders, so going preset -> character -> combatant -> this
+   * list is the same path a player takes; a spell that resolves correctly but
+   * never appears as a button is the failure mode this repository keeps
+   * rediscovering.
+   *
+   * Ray of Sickness is the reason it exists. It was added so the wizard's
+   * prepared cap of four had five spells to choose from — before it, every
+   * wizard prepared the whole list and the style question changed only
+   * cantrips.
+   */
+  for (const style of MAGIC_STYLE_PRESETS.filter((one) => one.classId === 'wizard')) {
+    const hero = buildCharacter(
+      {
+        classId: 'wizard',
+        raceId: 'human',
+        backgroundId: 'noble',
+        flawId: 'obeyed',
+        equipmentChoice: 'offensive',
+        auraId: 'amber',
+        magicStyleId: style.id,
+      },
+      'Mage',
+      { id: 'reach-' + style.id, now: 1_700_000_000_000 },
+    )
+    const listed = castableSpells(characterToCombatant(hero, { position: { x: 0, y: 0 } }))
+    for (const id of hero.preparedSpells ?? []) {
+      const entry = listed.find((one) => one.spell.id === id)
+      assert.ok(entry !== undefined, `${style.id} prepares ${id}, which never reaches the bar`)
+      // Shield is castable only as a reaction, and says so rather than vanishing.
+      if (id !== 'shield') {
+        assert.ok(entry.castable, `${style.id}: ${id} is on the bar but refused — ${entry.reason}`)
+      }
+    }
+  }
+})
+
+test('the wizard styles differ in what they prepare, not only in cantrips', () => {
+  /*
+   * Sharper than "no two styles are the same character", which only fires when
+   * cantrips AND prepared lists both match — so it passed for the whole period
+   * when all three wizard styles prepared one shared constant and differed by
+   * cantrip alone. That is a cosmetic choice wearing a real one's clothes.
+   */
+  const wizards = MAGIC_STYLE_PRESETS.filter((one) => one.classId === 'wizard')
+  const prepared = new Set(wizards.map((one) => [...one.preparedSpellIds].sort().join(',')))
+  assert.equal(
+    prepared.size,
+    wizards.length,
+    'two wizard styles prepare the same spells, so picking between them is decoration',
+  )
 })

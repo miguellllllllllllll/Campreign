@@ -26,6 +26,8 @@ export type DamageType =
   | 'necrotic'
   /** Venom in the blood, which is why Ray of Sickness leaves you poisoned. */
   | 'poison'
+  /** Venom in the blood, which is why Ray of Sickness leaves you poisoned. */
+  | 'poison'
 
 export interface Weapon {
   id: string
