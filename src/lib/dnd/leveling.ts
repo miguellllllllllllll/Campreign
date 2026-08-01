@@ -1,5 +1,15 @@
 import type { Character, ClassId } from '../../types/character.ts'
 import { CLASS_PRESETS } from './presets.ts'
+import {
+  channelDivinityFor,
+  critThresholdFor,
+  hasAmbushFor,
+  hasFastHandsFor,
+  hasReactionFor,
+  subclassById,
+  subclassFeatureActive,
+  superiorityDiceFor,
+} from '../../content/subclasses.ts'
 import { abilityModifier, proficiencyBonus } from './stats.ts'
 
 /**
@@ -197,10 +207,30 @@ export function levelUp(character: Character): LevelUpResult {
   const nowSlots = spellSlotsAt(character.classId, level)
   const features = featuresGainedAt(character.classId, level)
 
+  /*
+   * The specialisation switches on here rather than at creation, so this is
+   * where its numbers actually reach the sheet. Recomputed at the new level
+   * rather than toggled, so the grant and the gate can never disagree.
+   */
+  const subclassId = character.subclassId
+  const critOn = critThresholdFor(subclassId, level)
+  const superiorityDice = superiorityDiceFor(subclassId, level)
+  const channelDivinityCharges = channelDivinityFor(subclassId, level)
+  const unlocked =
+    subclassFeatureActive(level) && !subclassFeatureActive(character.level)
+      ? subclassById(subclassId)
+      : undefined
+
   const levelled: Character = {
     ...character,
     level,
     maxHp,
+    ...(critOn === undefined ? {} : { critOn }),
+    ...(superiorityDice === undefined ? {} : { superiorityDice }),
+    ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),
+    ...(hasReactionFor(subclassId, level) ? { hasReaction: true } : {}),
+    ...(hasAmbushFor(subclassId, level) ? { hasAmbush: true } : {}),
+    ...(hasFastHandsFor(subclassId, level) ? { hasFastHands: true } : {}),
     /*
      * Current hit points rise by the same amount rather than refilling. Levelling
      * up is not a heal in the SRD, and a character who levels mid-adventure at
@@ -218,7 +248,23 @@ export function levelUp(character: Character): LevelUpResult {
       maxHp,
       ...(nowProficiency === wasProficiency ? {} : { proficiencyBonus: nowProficiency }),
       ...(nowSlots === wasSlots ? {} : { spellSlots: nowSlots }),
-      features,
+      /*
+       * The specialisation is listed first when it unlocks. It is the thing the
+       * player actually chose, and burying it under a generic class feature
+       * would bury the answer to "what did I just get".
+       */
+      features: [
+        ...(unlocked === undefined
+          ? []
+          : [
+              {
+                id: unlocked.id,
+                name: `${unlocked.label} — ${unlocked.feature.name}`,
+                description: unlocked.feature.description,
+              },
+            ]),
+        ...features,
+      ],
     },
     refusal: null,
   }

@@ -10,11 +10,12 @@ import {
   resolveWardingFlare,
 } from '../src/lib/dnd/reactions.ts'
 import { resolveAttack } from '../src/lib/dnd/combat.ts'
-import { hasReactionFor } from '../src/content/subclasses.ts'
+import { hasReactionFor, SUBCLASS_FEATURE_LEVEL } from '../src/content/subclasses.ts'
 import { critFor, DEFAULT_CRIT_ON, roll } from '../src/lib/dnd/dice.ts'
 import type { Combatant } from '../src/types/combat.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 import { faceValue, sequenceRng } from './helpers/rng.ts'
+import { grown } from './helpers/levels.ts'
 
 const meta = { id: 'cleric', now: 1_700_000_000_000 }
 
@@ -37,7 +38,7 @@ function answers(overrides: Partial<CreationAnswers> = {}): CreationAnswers {
  * rng pinned to a natural 20, which would confuse crit assertions.
  */
 function board(subclassId = 'light') {
-  const hero = buildCharacter(answers({ subclassId }), 'Flarelight', meta)
+  const hero = grown(buildCharacter(answers({ subclassId }), 'Flarelight', meta))
   const foe = buildCharacter(
     { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
     'Goblin',
@@ -60,14 +61,14 @@ function board(subclassId = 'light') {
 // --- Who can react --------------------------------------------------------
 
 test('only the Light Domain brings a reaction to the fight', () => {
-  assert.equal(hasReactionFor('light'), true)
-  assert.equal(hasReactionFor('life'), false)
-  assert.equal(hasReactionFor('champion'), false)
-  assert.equal(hasReactionFor(undefined), false)
+  assert.equal(hasReactionFor('light', SUBCLASS_FEATURE_LEVEL), true)
+  assert.equal(hasReactionFor('life', SUBCLASS_FEATURE_LEVEL), false)
+  assert.equal(hasReactionFor('champion', SUBCLASS_FEATURE_LEVEL), false)
+  assert.equal(hasReactionFor(undefined, SUBCLASS_FEATURE_LEVEL), false)
 })
 
 test('the flag reaches the sheet and becomes an unspent reaction on the board', () => {
-  const cleric = buildCharacter(answers({ subclassId: 'light' }), 'A', meta)
+  const cleric = grown(buildCharacter(answers({ subclassId: 'light' }), 'A', meta))
   assert.equal(cleric.hasReaction, true)
   assert.equal(
     characterToCombatant(cleric, { position: { x: 0, y: 0 } }).reactionAvailable,
@@ -289,31 +290,31 @@ test('resolveWardingFlare never invents damage on a blow it turned aside', () =>
 // --- Ambush ---------------------------------------------------------------
 
 test('only the Assassin opens a fight with advantage', () => {
-  const rogue = buildCharacter(
+  const rogue = grown(buildCharacter(
     { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
     'Knife',
     { ...meta, id: 'rogue' },
-  )
+  ))
   assert.equal(rogue.hasAmbush, true)
   assert.equal(
     characterToCombatant(rogue, { position: { x: 0, y: 0 } }).hasAmbush,
     true,
   )
 
-  const thief = buildCharacter(
+  const thief = grown(buildCharacter(
     { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'thief' },
     'Fingers',
     { ...meta, id: 'thief' },
-  )
+  ))
   assert.equal('hasAmbush' in thief, false)
 })
 
 test('the opening strike has advantage and the next one does not', () => {
-  const rogue = buildCharacter(
+  const rogue = grown(buildCharacter(
     { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
     'Knife',
     { ...meta, id: 'rogue' },
-  )
+  ))
   const foe = buildCharacter(
     { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
     'Goblin',
@@ -339,11 +340,11 @@ test('the opening strike has advantage and the next one does not', () => {
 test('an ambush from the floor is normal, not advantage', () => {
   // The whole reason this is a roll mode and not a boolean: prone gives the
   // attacker disadvantage, and the two must annihilate rather than one winning.
-  const rogue = buildCharacter(
+  const rogue = grown(buildCharacter(
     { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
     'Knife',
     { ...meta, id: 'rogue' },
-  )
+  ))
   const foe = buildCharacter(
     { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
     'Goblin',
@@ -365,11 +366,11 @@ test('an ambush from the floor is normal, not advantage', () => {
 })
 
 test('ending a turn spends the opening strike, even a turn spent walking', () => {
-  const rogue = buildCharacter(
+  const rogue = grown(buildCharacter(
     { ...answers({ classId: 'rogue' }), backgroundId: 'streetUrchin', flawId: 'debt', subclassId: 'assassin' },
     'Knife',
     { ...meta, id: 'rogue' },
-  )
+  ))
   const foe = buildCharacter(
     { ...answers({ classId: 'fighter' }), backgroundId: 'guildArtisan', flawId: 'haggler' },
     'Goblin',
@@ -421,7 +422,7 @@ test('a wizard is offered Shield and a Light cleric is offered both', () => {
   const { combatant } = wizardWithShield()
   assert.deepEqual(availableReactions(combatant), ['shield'])
 
-  const cleric = buildCharacter(answers({ subclassId: 'light' }), 'Flarelight', meta)
+  const cleric = grown(buildCharacter(answers({ subclassId: 'light' }), 'Flarelight', meta))
   const withFlare = {
     ...characterToCombatant(cleric, { position: { x: 0, y: 0 } }),
     preparedSpells: ['shield'],

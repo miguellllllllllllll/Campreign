@@ -240,12 +240,17 @@ export function buildCharacter(
   // maxHitPoints, so the base calculation stays the one the sheet explains.
   const maxHp = maxHitPoints(klass.hitDie, scores.con) + bonusMaxHp(answers.featId)
   const initiativeBonus = bonusInitiative(answers.featId)
-  const critOn = critThresholdFor(answers.subclassId)
-  const superiorityDice = superiorityDiceFor(answers.subclassId)
-  const channelDivinityCharges = channelDivinityFor(answers.subclassId)
-  const hasReaction = hasReactionFor(answers.subclassId)
-  const hasAmbush = hasAmbushFor(answers.subclassId)
-  const hasFastHands = hasFastHandsFor(answers.subclassId)
+  /*
+   * Held back until the specialisation switches on. A level-1 character has
+   * chosen their path and has not grown into it yet, which is what leaves the
+   * level-up something to hand them besides hit points.
+   */
+  const critOn = critThresholdFor(answers.subclassId, level)
+  const superiorityDice = superiorityDiceFor(answers.subclassId, level)
+  const channelDivinityCharges = channelDivinityFor(answers.subclassId, level)
+  const hasReaction = hasReactionFor(answers.subclassId, level)
+  const hasAmbush = hasAmbushFor(answers.subclassId, level)
+  const hasFastHands = hasFastHandsFor(answers.subclassId, level)
   // One 1st-level slot for anyone who prepares spells at all.
   const spellSlots = selectionHasLeveledSpells(answers, klass.spellcasting !== undefined)
     ? FIRST_LEVEL_SLOTS

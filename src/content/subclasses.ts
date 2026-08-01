@@ -64,7 +64,7 @@ export const SUBCLASSES: readonly Subclass[] = [
       'You do not have tricks. You have a weapon and the willingness to keep swinging until the other side stops.',
     feature: {
       name: 'Improved Critical',
-      description: 'Your critical hits land on a roll of 19 or 20, not just 20.',
+      description: 'From 2nd level, your critical hits land on a roll of 19 or 20, not just 20.',
       active: true,
     },
     effect: { kind: 'critOn', value: 19 },
@@ -79,7 +79,7 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Superiority Dice',
       description:
-        'Two d6 you spend on Trip Attack: extra damage, and the target falls over unless it saves.',
+        'From 2nd level, two d6 you spend on Trip Attack: extra damage, and the target falls over unless it saves.',
       active: true,
     },
     effect: { kind: 'superiorityDice', count: SUPERIORITY_DICE_AT_LEVEL_1 },
@@ -96,7 +96,7 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Sculpt Spells',
       description:
-        'Your allies are spared your own fire — they pass their saves automatically and take nothing.',
+        'From 2nd level, your allies are spared your own fire — they pass their saves automatically and take nothing.',
       active: true,
     },
     effect: { kind: 'areaShaping', power: 'sculptSpells' },
@@ -111,7 +111,7 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Arcane Ward',
       description:
-        'Casting an abjuration spell raises a ward that soaks damage before your hit points do.',
+        'From 2nd level, casting an abjuration spell raises a ward that soaks damage before your hit points do.',
       active: true,
     },
     effect: { kind: 'castHook', power: 'arcaneWard' },
@@ -128,7 +128,8 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Disciple of Life',
       description:
-        'Every spell you cast to heal restores 2 extra hit points, plus the spell\'s level.',
+        'From 2nd level, every spell you cast to heal restores 2 extra hit points, plus the '
+        + "spell's level.",
       active: true,
     },
     effect: { kind: 'castHook', power: 'discipleOfLife' },
@@ -143,7 +144,7 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Warding Flare',
       description:
-        'When a blow is about to land, flare light at the attacker and make them roll again with disadvantage.',
+        'From 2nd level, when a blow is about to land, flare light at the attacker and make them roll again with disadvantage.',
       active: true,
     },
     effect: { kind: 'reaction', power: 'wardingFlare' },
@@ -160,7 +161,7 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Fast Hands',
       description:
-        'Drink a potion as a bonus action, so you can heal and still swing in the same turn.',
+        'From 2nd level, drink a potion as a bonus action, so you can heal and still swing in the same turn.',
       active: true,
     },
     effect: { kind: 'itemEconomy', power: 'fastHands' },
@@ -175,7 +176,7 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Ambush',
       description:
-        'Your opening attack of a fight is made with advantage, however the initiative fell.',
+        'From 2nd level, your opening attack of a fight is made with advantage, however the initiative fell.',
       active: true,
     },
     /*
@@ -200,7 +201,7 @@ export const SUBCLASSES: readonly Subclass[] = [
     feature: {
       name: 'Sacred Weapon',
       description:
-        'Spend your Channel Divinity to add your Charisma to every attack roll for the fight.',
+        'From 2nd level, spend your Channel Divinity to add your Charisma to every attack roll for the fight.',
       active: true,
     },
     effect: {
@@ -218,7 +219,7 @@ export const SUBCLASSES: readonly Subclass[] = [
       'Your oath is not abstract. It is aimed at a specific enemy, and you will not be talked out of it.',
     feature: {
       name: 'Vow of Enmity',
-      description: 'Spend your Channel Divinity to swear at one foe and strike it with advantage.',
+      description: 'From 2nd level, spend your Channel Divinity to swear at one foe and strike it with advantage.',
       active: true,
     },
     effect: {
@@ -246,34 +247,57 @@ export function subclassById(id: string | undefined): Subclass | undefined {
  * Undefined rather than 20 so the field stays absent on every character who has
  * not widened it, and nothing downstream has to store a default.
  */
-export function critThresholdFor(id: string | undefined): number | undefined {
+/**
+ * The level a specialisation actually switches on.
+ *
+ * Everything used to work from level 1, which made the whole kit available
+ * before the player had swung once — and left the level-up with nothing to hand
+ * them but hit points. Holding it back is what gives levelling something to be.
+ *
+ * One level for all ten rather than the SRD's spread, which puts a cleric's
+ * domain at 1, a wizard's school at 2 and a fighter's archetype at 3. Two of
+ * those are past this build's cap, so honouring the spread would mean three
+ * classes whose specialisation could never turn on at all. A single gate is a
+ * simplification; permanently dead choices would be a defect.
+ */
+export const SUBCLASS_FEATURE_LEVEL = 2
+
+/** Whether a character of this level has grown into their specialisation yet. */
+export function subclassFeatureActive(level: number): boolean {
+  return level >= SUBCLASS_FEATURE_LEVEL
+}
+
+export function critThresholdFor(id: string | undefined, level = 1): number | undefined {
+  if (!subclassFeatureActive(level)) return undefined
   const effect = subclassById(id)?.effect
   return effect?.kind === 'critOn' ? effect.value : undefined
 }
 
 /** The superiority-dice pool this subclass grants, or undefined for none. */
-export function superiorityDiceFor(id: string | undefined): number | undefined {
+export function superiorityDiceFor(id: string | undefined, level = 1): number | undefined {
+  if (!subclassFeatureActive(level)) return undefined
   const effect = subclassById(id)?.effect
   return effect?.kind === 'superiorityDice' ? effect.count : undefined
 }
 
 /** Whether this subclass uses items on a bonus action. */
-export function hasFastHandsFor(id: string | undefined): boolean {
-  return subclassById(id)?.effect?.kind === 'itemEconomy'
+export function hasFastHandsFor(id: string | undefined, level = 1): boolean {
+  return subclassFeatureActive(level) && subclassById(id)?.effect?.kind === 'itemEconomy'
 }
 
 /** Whether this subclass opens a fight with advantage. */
-export function hasAmbushFor(id: string | undefined): boolean {
-  return subclassById(id)?.effect?.kind === 'openingAdvantage'
+export function hasAmbushFor(id: string | undefined, level = 1): boolean {
+  return subclassFeatureActive(level) && subclassById(id)?.effect?.kind === 'openingAdvantage'
 }
 
 /** Whether this subclass fights on somebody else's turn. */
-export function hasReactionFor(id: string | undefined): boolean {
-  return subclassById(id)?.effect?.kind === 'reaction'
+export function hasReactionFor(id: string | undefined, level = 1): boolean {
+  return subclassFeatureActive(level) && subclassById(id)?.effect?.kind === 'reaction'
 }
 
 /** The Channel Divinity charges this subclass grants, or undefined for none. */
-export function channelDivinityFor(id: string | undefined): number | undefined {
+export function channelDivinityFor(id: string | undefined, level = 1): number | undefined {
+  if (!subclassFeatureActive(level)) return undefined
   const effect = subclassById(id)?.effect
   return effect?.kind === 'channelDivinity' ? effect.charges : undefined
 }
