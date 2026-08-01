@@ -15,12 +15,19 @@ grid tokens meant editing `monsters.ts`.
 | --- | --- | --- |
 | Rules & content | `src/lib/dnd`, `src/content`, `src/stores`, `src/types`, `tests`, `README.md`, `components/{tutorial,combat,dice}` | `Campreign` on `main` |
 | Interface | `src/app`, `components/ui`, `components/character`, `globals.css`, `public` | `Campreign-ui` on `interface` |
+| Pure design | `globals.css`, `components/ui/{creature-icons,custom-icons}.tsx`, inline SVG artwork | `.worktrees/agent-4-design` on `feature/design-system` |
+
+Design overlaps interface on `globals.css` and the two icon files. That is
+deliberate and safe for the same reason the accessibility carve-out below is:
+both are aesthetic edits that change no behaviour, so a genuine collision shows
+up as an ordinary merge conflict rather than as two people disagreeing about
+what the code should do.
 
 Separate worktrees, one `.git`. Commits are shared the moment they are made;
 uncommitted state is not, which is the entire point — a torn working tree is
 invisible to `git log` and breaks the build anyway.
 
-## One carve-out: accessibility and layout
+## Two carve-outs: accessibility, and pure design
 
 Ownership by directory cannot express that two different *kinds* of change land
 in the same file. A new spell needs a button — that is the rules session
@@ -30,7 +37,9 @@ kind of edit entirely: the rules session will not make them, and they alter no
 behaviour.
 
 Those belong to the interface session **in any file**, provided the change adds
-no import from `lib/dnd` or `content` and changes no behaviour. The two kinds
+no import from `lib/dnd` or `content` and changes no behaviour. Colour,
+typography, artwork and animation are the same kind of edit under the same
+condition, and belong to the design session on those terms. The two kinds
 are orthogonal — a roving tabindex and a Shield button do not touch the same
 lines — and on separate branches a genuine overlap surfaces as an ordinary
 merge conflict rather than a torn tree.
@@ -50,6 +59,34 @@ far has happened there. The rule follows the failures rather than taste:
   carrying every call site. A required `tokenId` on `MonsterPreset` without the
   presets that set it, and `PendingReaction.kind` renamed to `options` without
   its two readers, each reddened `main`.
+
+## Compile-coupled pairs cannot be split across sessions
+
+`creature-icons.tsx` declares `Record<TokenId, ReactNode>` while `TokenId` lives
+in `src/types/combat.ts`. Widening the union without adding the shape reddens
+the build for whoever pulls next, so the two must land together — which means
+they cannot sit on opposite sides of a boundary.
+
+The split is by *kind of change* rather than by file:
+
+- **Adding or removing an entry** belongs to whoever owns the union — the rules
+  session lands the new `TokenId` and a serviceable shape in one commit.
+- **Redrawing an existing entry** is pure artwork, needs no coordination, and
+  belongs to design.
+
+This generalises. Where a type and its exhaustive consumer sit in different
+domains, the domain that owns the type owns *adding the case*; the other owns
+what the case looks like.
+
+## A layer split was tried, and the numbers say why it failed
+
+Worth recording so it is not proposed a third time. Measured over 38 consecutive
+commits, **74% touched more than one layer** — five touched four or five of
+them. Splitting engine from stores from components from styles would have put a
+coordination step in front of three commits out of four.
+
+Vertical ownership is not a preference. It is what the change sizes in this
+repository actually are.
 
 ## `npm test` cannot see type errors
 
