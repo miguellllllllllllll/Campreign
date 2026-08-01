@@ -189,7 +189,26 @@ export const GIANT_SPIDER: MonsterPreset = {
       addAbilityToDamage: true,
       ranged: false,
       rangeSquares: 1,
-      description: 'Fangs that go in further than you expect. In the SRD this one also poisons.',
+      description:
+        'Fangs that go in further than you expect, and the venom comes after — a '
+        + 'Constitution save against DC 11, for half of it if you hold on.',
+      /*
+       * The first attack in the game that makes the *player* roll. Every save
+       * before this was an enemy resisting something the hero cast; this one
+       * points the other way, which is the lesson the spider exists to teach.
+       *
+       * SRD numbers, including the half on a success: the venom is already in
+       * the wound, and resisting it is not the same as never having been bitten.
+       * No poisoned condition — the SRD giant spider does damage, and adding a
+       * rider it does not have would teach the wrong monster.
+       */
+      onHitSave: {
+        ability: 'con',
+        dc: 11,
+        damage: '2d8',
+        damageType: 'poison',
+        halfOnSuccess: true,
+      },
     },
   ],
 }

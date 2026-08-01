@@ -90,7 +90,11 @@ test('each fight is started once, by an effect on entering a step', () => {
       .filter((effect) => effect.kind === 'startCombat')
       .map((effect) => ({ step, encounterId: effect.encounterId })),
   )
-  assert.equal(starters.length, 2, 'one cellar goblin, then whatever came through the drain')
+  assert.equal(
+    starters.length,
+    3,
+    'one cellar goblin, then whatever came through the drain, then what was watching',
+  )
   for (const { step } of starters) assert.equal(step.phase, 'combat')
 
   /*
