@@ -61,9 +61,10 @@ file in the same commit as the assets — not afterwards.
 Interface ornaments
 -------------------
 
-`public/ui/divider-fantasy.png` and `public/ui/frame-corner.png` are from the
-"Fantasy UI Borders" pack by Kenney (https://kenney.nl/assets/fantasy-ui-borders),
-released under Creative Commons Zero 1.0:
+`public/ui/divider-fantasy.png`, `public/ui/frame-corner.png` and
+`public/ui/frame-panel.png` are from the "Fantasy UI Borders" pack by Kenney
+(https://kenney.nl/assets/fantasy-ui-borders), released under Creative Commons
+Zero 1.0:
 
   License: (Creative Commons Zero, CC0)
   http://creativecommons.org/publicdomain/zero/1.0/
@@ -80,3 +81,8 @@ CC0 was a deliberate choice over the free tier of a stock library. Those licence
 the work rather than waiving it, and require a visible credit wherever the asset
 appears — a permanent obligation on the page, on top of the SRD attribution
 above, in exchange for artwork of no greater use.
+
+The unmodified source packs are kept in `design-assets/`, together with Kenney's
+"UI Pack (RPG Expansion)" (also CC0), which is stored but not used — see the
+README there. Nothing in that directory is served or built; it is a shelf to
+pick from, and only the three files named above reach the site.
