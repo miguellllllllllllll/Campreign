@@ -11,10 +11,16 @@ const FILL: Record<ResourceTone, string> = {
   arcane: 'from-arcane/70 to-arcane',
 }
 
+/**
+ * Named off the tokens rather than spelled as channels. These were three
+ * literals — rgb(122 163 95), rgb(192 70 59), rgb(138 154 224) — and every one
+ * had gone stale: the palette moved twice underneath them and each bar kept
+ * glowing in a previous scheme's colour, the red two schemes behind.
+ */
 const GLOW: Record<ResourceTone, string> = {
-  health: 'shadow-[0_0_10px_rgb(122_163_95/0.5)]',
-  foe: 'shadow-[0_0_10px_rgb(192_70_59/0.5)]',
-  arcane: 'shadow-[0_0_10px_rgb(138_154_224/0.5)]',
+  health: 'glow-health',
+  foe: 'glow-foe',
+  arcane: 'glow-arcane',
 }
 
 export interface ResourceBarProps {
@@ -48,7 +54,7 @@ export function ResourceBar({
   return (
     <div
       className={cn(
-        'relative h-2 overflow-hidden rounded-full border border-edge/80 bg-ink/70',
+        'bar-well relative h-3 overflow-hidden rounded-full border-2 border-edge bg-ink/80',
         className,
       )}
       role="progressbar"
