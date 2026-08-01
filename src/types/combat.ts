@@ -96,10 +96,6 @@ export interface Combatant {
   /** The oath power currently running, for the rest of this encounter. */
   activeChannelDivinity?: ActiveChannelDivinity
   /**
-   * First-level spell slots left. Absent for anyone who never had any, so a
-   * fighter is not carrying a zero around.
-   */
-  /**
    * Spell slots by the level they cast: index 1 is first-level, 2 is second.
    * Absent for anyone who never had any, so a fighter carries no empty array.
    */
