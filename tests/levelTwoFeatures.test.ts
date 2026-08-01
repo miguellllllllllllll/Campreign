@@ -9,6 +9,7 @@ import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { createEncounter, dash } from '../src/lib/dnd/encounter.ts'
 import { GOBLIN, spawnMonster } from '../src/lib/dnd/data/monsters.ts'
 import { useTutorialStore } from '../src/stores/tutorialStore.ts'
+import { GOBLIN_CELLAR } from '../src/content/goblinCellar.ts'
 import type { ClassId, CreationAnswers } from '../src/types/character.ts'
 
 const meta = { id: 'hero', now: 1_700_000_000_000 }
@@ -166,16 +167,56 @@ test('what third level promises is what it hands over', () => {
 
 // --- Levelling more than once in one breath --------------------------------
 
+/**
+ * Walks the script to the step that levels twice, dispatching the same events
+ * the runner dispatches.
+ *
+ * The point is that nothing here reimplements the merge. It goes through
+ * `dispatch` and therefore through `applyEffect`, so if that stopped calling
+ * `mergeGains` these tests would fail — which the previous version of them
+ * would not have, because it did the merging itself and only checked its own
+ * arithmetic.
+ */
+function walkToDoubleLevelUp(classId: ClassId) {
+  const store = useTutorialStore
+  store.getState().begin(hero(classId, 1))
+  const send = (event: Parameters<ReturnType<typeof store.getState>['dispatch']>[0]) =>
+    store.getState().dispatch(event)
+
+  send({ type: 'acknowledged' })                                   // arrive
+  send({ type: 'skillCheck', skill: 'perception', success: true }) // listen
+  send({ type: 'acknowledged' })                                   // descend
+  send({ type: 'choicePicked', choiceId: 'attack', success: true })// parley
+  send({ type: 'acknowledged' })                                   // initiative
+  send({ type: 'moved' })                                          // move
+  send({ type: 'attackResolved' })                                 // attack
+  send({ type: 'turnEnded' })                                      // endTurn
+  send({ type: 'enemyDefeated' })                                  // rout -> aftermath
+  send({ type: 'acknowledged' })                                   // aftermath -> deeper
+  send({ type: 'acknowledged' })                                   // deeper -> swarm
+  send({ type: 'enemyDefeated' })                                  // swarm -> rafters
+  return store.getState()
+}
+
+test('the script really does reach the step that levels twice', () => {
+  // Guards the walk itself. If the tutorial is restructured again this fails
+  // first, rather than the assertions below quietly testing nothing.
+  const state = walkToDoubleLevelUp('fighter')
+  assert.equal(state.stepId, 'rafters')
+  const step = GOBLIN_CELLAR.find((one) => one.id === 'rafters')
+  assert.equal(
+    (step?.onEnter ?? []).filter((effect) => effect.kind === 'levelUp').length,
+    2,
+    'and it is still two level-ups, which is the whole premise',
+  )
+})
+
 test('a jump from 1 to 3 announces everything earned on the way', () => {
   /*
-   * The tutorial levels twice in a single step. Each `levelUp` effect used to
-   * replace the recorded gains, so the panel showed only what third level gave
-   * — and a fighter silently gained Action Surge, a rogue silently gained
-   * Cunning Action, and neither was ever told.
-   *
-   * Driven through the store rather than the engine, because the engine was
-   * never wrong: `levelUp` reported each level correctly, and the loss happened
-   * between the two calls.
+   * Each `levelUp` effect used to replace the recorded gains rather than merge
+   * them, so the panel reported only what third level gave — and a fighter
+   * silently gained Action Surge, a rogue silently gained Cunning Action, a
+   * paladin silently gained Divine Smite.
    */
   for (const [classId, expected] of [
     ['fighter', 'Action Surge'],
@@ -183,51 +224,57 @@ test('a jump from 1 to 3 announces everything earned on the way', () => {
     ['wizard', 'Arcane Recovery'],
     ['paladin', 'Divine Smite'],
   ] as const) {
-    useTutorialStore.getState().begin(hero(classId, 1))
-    const store = useTutorialStore.getState()
-
-    // Exactly what the `rafters` step does.
-    store.dispatch({ type: 'acknowledged' })
-    useTutorialStore.setState({ levelGains: null })
-    for (let i = 0; i < 2; i += 1) {
-      const character = useTutorialStore.getState().character
-      assert.ok(character !== null)
-      const result = levelUp(character)
-      useTutorialStore.setState({
-        character: result.character,
-        levelGains:
-          result.gains === null
-            ? useTutorialStore.getState().levelGains
-            : {
-                ...result.gains,
-                hitPointsGained:
-                  (useTutorialStore.getState().levelGains?.hitPointsGained ?? 0)
-                  + result.gains.hitPointsGained,
-                features: [
-                  ...(useTutorialStore.getState().levelGains?.features ?? []),
-                  ...result.gains.features,
-                ],
-              },
-      })
-    }
-
-    const gains = useTutorialStore.getState().levelGains
+    const gains = walkToDoubleLevelUp(classId).levelGains
     assert.ok(gains !== null, `${classId} recorded nothing`)
     assert.equal(gains.level, 3, `${classId} should end at third level`)
     assert.ok(
       gains.features.some((one) => one.name === expected),
-      `${classId} gained ${expected} and was not told: ${gains.features.map((f) => f.name)}`,
+      `${classId} gained ${expected} and was not told: `
+        + `${gains.features.map((one) => one.name).join(', ') || 'nothing'}`,
     )
   }
 })
 
-test('hit points from both levels are added, not replaced', () => {
-  const one = hero('fighter', 1)
-  const two = levelUp(one)
-  const three = levelUp(two.character)
-  assert.ok(two.gains !== null && three.gains !== null)
+test('the reported hit points are both levels, not the last one', () => {
+  const state = walkToDoubleLevelUp('fighter')
+  const gains = state.levelGains
+  const character = state.character
+  assert.ok(gains !== null && character !== null)
 
-  const total = two.gains.hitPointsGained + three.gains.hitPointsGained
-  assert.equal(three.character.maxHp - one.maxHp, total, 'the sheet and the sum agree')
-  assert.ok(total > three.gains.hitPointsGained, 'so reporting only the last would understate it')
+  const started = hero('fighter', 1)
+  assert.equal(character.level, 3)
+  assert.equal(
+    gains.hitPointsGained,
+    character.maxHp - started.maxHp,
+    'the panel and the sheet agree on what was gained',
+  )
 })
+
+test('a caster is told about both tiers it crossed', () => {
+  // A wizard passes through 2nd and 3rd in one step, so the panel owes them
+  // Arcane Recovery *and* the new tier of spells.
+  const gains = walkToDoubleLevelUp('wizard').levelGains
+  assert.ok(gains !== null)
+  const names = gains.features.map((one) => one.name)
+  assert.ok(names.includes('Arcane Recovery'), names.join(', '))
+  assert.ok(names.includes('Second-level spells'), names.join(', '))
+})
+
+test('gains do not leak in from an earlier level-up moment', () => {
+  /*
+   * The accumulation resets when a step that levels is entered. Without that,
+   * a second level-up beat would report the first one's features again — the
+   * opposite failure to the one being fixed, and just as wrong.
+   */
+  const first = walkToDoubleLevelUp('fighter').levelGains
+  assert.ok(first !== null)
+  const second = walkToDoubleLevelUp('fighter').levelGains
+  assert.ok(second !== null)
+  assert.equal(
+    second.features.length,
+    first.features.length,
+    'a fresh run reports the same, not twice as much',
+  )
+  assert.equal(second.hitPointsGained, first.hitPointsGained)
+})
+

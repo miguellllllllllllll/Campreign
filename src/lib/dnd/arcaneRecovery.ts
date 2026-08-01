@@ -60,9 +60,13 @@ export function recoverSlots(
   return next
 }
 
-/** How the rest reads when a wizard gets something back and nobody else does. */
-export function narrateRecovery(recovered: number): string {
-  return recovered === 1
-    ? 'Arcane Recovery: one spell slot back, from reading rather than resting.'
-    : `Arcane Recovery: ${recovered} spell slots back, from reading rather than resting.`
-}
+/*
+ * There is deliberately no narration function here.
+ *
+ * One was written and had no caller: the rest happens between encounters, and
+ * the log it would have been written to belongs to a fight that is over. The
+ * recovery is announced by the level-up panel naming the feature, and shown by
+ * the slot count a wizard carries into the next fight where a cleric carries
+ * none. An exported function nobody calls is the same inert-content failure as
+ * a spell nothing can cast.
+ */
