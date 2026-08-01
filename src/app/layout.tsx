@@ -8,6 +8,7 @@ import {
 } from 'next/font/google'
 import { PrintOverlay } from '../components/character/PrintOverlay.tsx'
 import { CharacterHudModal } from '../components/nav/CharacterHudModal.tsx'
+import { ReducedMotionProvider } from '../components/ui/reduced-motion.tsx'
 import { SoundToggle } from '../components/ui/sound-toggle.tsx'
 import './globals.css'
 
@@ -75,22 +76,24 @@ export default function RootLayout({
       className={`${cinzelDecorative.variable} ${cinzel.variable} ${jakarta.variable} ${alegreya.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="bg-torchlight relative flex min-h-full flex-col">
-        {/*
-          `contents` keeps this wrapper invisible to layout on screen, so the body's
-          flex column still applies to the page itself. Printing collapses it to
-          `display: none`, which is what clears the screen UI off the paper.
-        */}
-        <div className="contents print:hidden">
-          {/* Drifting motes, behind everything and inert to the pointer. */}
-          <div
-            aria-hidden
-            className="bg-motes animate-ember-drift pointer-events-none fixed inset-0 -z-10 opacity-60"
-          />
-          <SoundToggle />
-          <CharacterHudModal />
-          {children}
-        </div>
-        <PrintOverlay />
+        <ReducedMotionProvider>
+          {/*
+            `contents` keeps this wrapper invisible to layout on screen, so the body's
+            flex column still applies to the page itself. Printing collapses it to
+            `display: none`, which is what clears the screen UI off the paper.
+          */}
+          <div className="contents print:hidden">
+            {/* Drifting motes, behind everything and inert to the pointer. */}
+            <div
+              aria-hidden
+              className="bg-motes animate-ember-drift pointer-events-none fixed inset-0 -z-10 opacity-60"
+            />
+            <SoundToggle />
+            <CharacterHudModal />
+            {children}
+          </div>
+          <PrintOverlay />
+        </ReducedMotionProvider>
       </body>
     </html>
   )
