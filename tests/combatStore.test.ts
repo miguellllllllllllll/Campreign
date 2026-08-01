@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { slotsAt } from '../src/lib/dnd/slots.ts'
 import { activeCombatant, encounterWinner } from '../src/lib/dnd/encounter.ts'
 import { faceValue, seededRng, sequenceRng } from './helpers/rng.ts'
 import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
@@ -191,7 +192,7 @@ test('the store forwards a smite to the engine, not just its type', () => {
   }
   useCombatStore.getState().start([hero, foe], hero.id, () => 0.99)
 
-  const before = useCombatStore.getState().encounter?.combatants[hero.id]?.spellSlots
+  const before = slotsAt(useCombatStore.getState().encounter?.combatants[hero.id]?.spellSlots, 1)
   assert.equal(before, 2)
 
   useCombatStore.getState().attack({
@@ -203,7 +204,7 @@ test('the store forwards a smite to the engine, not just its type', () => {
 
   const after = useCombatStore.getState().encounter
   assert.equal(
-    after?.combatants[hero.id]?.spellSlots,
+    slotsAt(after?.combatants[hero.id]?.spellSlots, 1),
     1,
     'the slot was burned, so the smite actually reached the engine',
   )
