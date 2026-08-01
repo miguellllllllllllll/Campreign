@@ -19,10 +19,10 @@ export function PracticeArena() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-3xl font-black text-transparent">
+        <h1 className="font-display text-table-ink text-3xl font-black drop-shadow-[0_1px_0_rgb(255_255_255/0.35)]">
           Practice arena
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-table-ink/80">
           A straw dummy that does not hit back. Attack it as often as you like and watch the roll
           break itself down — this is the fastest way to see what your bonuses actually do.
         </p>

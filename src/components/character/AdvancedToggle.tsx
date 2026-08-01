@@ -22,10 +22,10 @@ export function AdvancedToggle({ enabled, onChange }: AdvancedToggleProps) {
   return (
     <label
       className={cn(
-        'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors',
+        'flex cursor-pointer items-center gap-3 rounded-lg border-2 px-3 py-2 transition-colors',
         enabled
-          ? 'border-gold-border/60 bg-amber-torch/5'
-          : 'border-edge hover:border-gold-border/40',
+          ? 'border-edge/70 bg-amber-torch/25'
+          : 'border-edge/50 bg-table-ink/5 hover:border-edge',
       )}
     >
       <input
@@ -34,12 +34,12 @@ export function AdvancedToggle({ enabled, onChange }: AdvancedToggleProps) {
         onChange={(event) => onChange(event.target.checked)}
         className="accent-amber-torch size-4 shrink-0"
       />
-      <Settings2 size={15} aria-hidden className="text-amber-torch shrink-0" />
+      <Settings2 size={15} aria-hidden className="text-table-ink shrink-0" />
       <span className="flex flex-col">
-        <span className="font-serif text-xs font-semibold text-parchment">
+        <span className="font-serif text-xs font-semibold text-table-ink">
           Advanced options
         </span>
-        <span className="text-[11px] leading-snug text-muted">
+        <span className="text-[11px] leading-snug text-table-ink/75">
           Adds a specialisation and a knack. Everything else stays exactly as it is.
         </span>
       </span>
