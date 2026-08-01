@@ -97,7 +97,7 @@ function SpellCard({
 
       <span className="text-[11px] leading-snug text-muted">{spell.description}</span>
 
-      <span className="flex flex-wrap gap-2 text-[10px] text-muted/80">
+      <span className="flex flex-wrap gap-2 text-[10px] text-muted">
         <span>Range: {spell.range}</span>
         {spell.isConcentration && <span className="text-amber-torch/80">Concentration</span>}
         {/*
@@ -221,7 +221,7 @@ export function SpellSelectionWizard({
                   )}
                 </p>
                 {spellsFor(classId, level).some((spell) => spell.isConcentration) && (
-                  <p className="mb-1.5 text-[10px] leading-snug text-muted/80">
+                  <p className="mb-1.5 text-[10px] leading-snug text-muted">
                     Some of these need <Explain k="concentration">Concentration</Explain>.
                   </p>
                 )}

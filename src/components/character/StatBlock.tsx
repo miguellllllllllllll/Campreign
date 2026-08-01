@@ -32,7 +32,7 @@ function StatTile({
       <span className="heading-small-caps text-center text-xs font-semibold">
         <Explain k={explainKey}>{label}</Explain>
       </span>
-      {hint !== undefined && <span className="text-center text-[11px] text-muted/70">{hint}</span>}
+      {hint !== undefined && <span className="text-center text-[11px] text-muted">{hint}</span>}
       {bar !== undefined && <div className="mt-1 w-full">{bar}</div>}
     </div>
   )

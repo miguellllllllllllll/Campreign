@@ -360,7 +360,7 @@ export function CreatorWizard() {
                   onChange={(event) => setName(event.target.value)}
                   placeholder="Leave blank and we will call you Unnamed Hero"
                   maxLength={40}
-                  className="h-10 rounded-lg border border-edge bg-ink/70 px-3 text-sm text-parchment transition-colors placeholder:text-muted/60 focus:border-gold-border/70"
+                  className="h-10 rounded-lg border border-edge bg-ink/70 px-3 text-sm text-parchment transition-colors placeholder:text-muted focus:border-gold-border/70"
                 />
               </ParchmentCardContent>
             </ParchmentCard>

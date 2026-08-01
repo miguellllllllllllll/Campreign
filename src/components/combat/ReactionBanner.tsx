@@ -73,7 +73,7 @@ export function ReactionBanner({
         </FantasyButton>
       </div>
 
-      <p className="mt-2 text-[11px] leading-snug text-muted/80">
+      <p className="mt-2 text-[11px] leading-snug text-muted">
         You get one reaction each round, and it comes back at the start of the next one.
       </p>
     </div>

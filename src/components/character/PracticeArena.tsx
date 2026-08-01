@@ -39,7 +39,7 @@ export function PracticeArena() {
                 empty state a scene rather than a notice. */}
             <span
               aria-hidden
-              className="grid size-24 shrink-0 place-items-center rounded-card border border-edge bg-ink/50 text-muted/60 shadow-[inset_0_0_24px_rgb(0_0_0/0.6)]"
+              className="grid size-24 shrink-0 place-items-center rounded-card border border-edge bg-ink/50 text-muted shadow-[inset_0_0_24px_rgb(0_0_0/0.6)]"
             >
               <CreatureToken token="dummy" size={58} />
             </span>

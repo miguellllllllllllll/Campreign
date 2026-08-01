@@ -47,7 +47,7 @@ function LockedSpellCard({ spell }: { spell: PaladinSpellPreview }) {
 
       <span className="text-[11px] leading-snug text-muted">{spell.description}</span>
 
-      <span className="flex flex-wrap items-center gap-2 text-[10px] text-muted/80">
+      <span className="flex flex-wrap items-center gap-2 text-[10px] text-muted">
         <span className="rounded-full border border-amber-torch/40 px-1.5 py-px font-serif text-amber-torch/90">
           Unlocks at Level 2
         </span>
@@ -148,7 +148,7 @@ export function PaladinPowerCard({ spellcasting }: PaladinPowerCardProps) {
 
           {previewOpen && (
             <div id={previewId} className="flex flex-col gap-2">
-              <p className="text-[11px] leading-snug text-muted/80">
+              <p className="text-[11px] leading-snug text-muted">
                 You cannot cast these yet — they arrive with your first spell slots at level 2.
               </p>
               <div className="grid gap-2 sm:grid-cols-2">

@@ -99,7 +99,7 @@ export function CharacterCard({
                 {formatModifier(character.spellcasting.attackBonus)}
               </p>
               {character.spellcasting.note !== undefined && (
-                <p className="mt-1 text-xs leading-relaxed text-muted/80 italic">
+                <p className="mt-1 text-xs leading-relaxed text-muted italic">
                   {character.spellcasting.note}
                 </p>
               )}
@@ -113,7 +113,7 @@ export function CharacterCard({
               <Explain k="trinket">Trinket</Explain>
             </p>
             <p className="text-sm text-parchment">{character.trinket.name}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-muted/80">
+            <p className="mt-0.5 text-xs leading-relaxed text-muted">
               {character.trinket.description}
             </p>
           </div>

@@ -45,7 +45,7 @@ function Tile({
         <Explain k={explainKey}>{label}</Explain>
       </span>
       {hint !== undefined && (
-        <span className="text-center text-[10px] leading-tight text-muted/70">{hint}</span>
+        <span className="text-center text-[10px] leading-tight text-muted">{hint}</span>
       )}
       {bar !== undefined && <div className="mt-1 w-full">{bar}</div>}
     </div>
@@ -176,7 +176,7 @@ export function HeroPreview({ hero, draft }: HeroPreviewProps) {
       )}
 
       {hero.spellcasting?.note !== undefined && (
-        <p className="text-[11px] leading-relaxed text-muted/80 italic">{hero.spellcasting.note}</p>
+        <p className="text-[11px] leading-relaxed text-muted italic">{hero.spellcasting.note}</p>
       )}
 
       <Entry label="Trained Skills" explainKey="skillCheck">
@@ -185,7 +185,7 @@ export function HeroPreview({ hero, draft }: HeroPreviewProps) {
           .map((skill) => SKILL_LABELS[skill])
           .join(' · ')}
         {background === null && (
-          <span className="block text-muted/80">Your background will train two more.</span>
+          <span className="block text-muted">Your background will train two more.</span>
         )}
       </Entry>
 
@@ -200,7 +200,7 @@ export function HeroPreview({ hero, draft }: HeroPreviewProps) {
       {background !== null && (
         <Entry label="Trinket" explainKey="trinket">
           <span className="text-parchment">{hero.trinket.name}</span>
-          <span className="block text-muted/80">{hero.trinket.description}</span>
+          <span className="block text-muted">{hero.trinket.description}</span>
         </Entry>
       )}
 

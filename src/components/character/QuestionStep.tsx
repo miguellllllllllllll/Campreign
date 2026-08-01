@@ -152,7 +152,7 @@ export function QuestionStep<T extends string>({
                 <span className="relative text-sm leading-snug text-muted">{choice.tagline}</span>
               )}
               {choice.detail !== undefined && (
-                <span className="relative mt-0.5 text-xs leading-relaxed text-muted/75">
+                <span className="relative mt-0.5 text-xs leading-relaxed text-muted">
                   {choice.detail}
                 </span>
               )}
