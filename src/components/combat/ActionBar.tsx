@@ -11,6 +11,7 @@ import {
 } from '../ui/custom-icons.tsx'
 import { useState } from 'react'
 import { isInRange } from '../../lib/dnd/combat.ts'
+import { canActionSurge } from '../../lib/dnd/actionSurge.ts'
 import { FantasyButton } from '../ui/fantasy-button.tsx'
 import { HintTooltip } from '../ui/rules-tooltip.tsx'
 import { Explain } from '../Explain.tsx'
@@ -40,6 +41,8 @@ export interface ActionBarProps {
   oathPower?: 'sacredWeapon' | 'vowOfEnmity'
   /** Undefined when this hero has no oath to call on. */
   onChannel?: (power: 'sacredWeapon' | 'vowOfEnmity') => void
+  /** Undefined for everyone who cannot take a second action. */
+  onSurge?: () => void
   onEndTurn: () => void
 }
 
@@ -58,6 +61,7 @@ export function ActionBar({
   onDrink,
   oathPower,
   onChannel,
+  onSurge,
   onEndTurn,
 }: ActionBarProps) {
   /*
@@ -81,6 +85,14 @@ export function ActionBar({
 
   const canChannel =
     onChannel !== undefined && oathPower !== undefined && charges > 0 && oath === undefined
+
+  /*
+   * Offered only once the action is gone, which is the whole point of it. A
+   * surge spent to recover an action you still had would be the player paying a
+   * once-per-rest resource for nothing.
+   */
+  const surges = active.actionSurges ?? 0
+  const canSurge = onSurge !== undefined && canActionSurge(active, hasActed) && attackEnabled
 
   return (
     <div className="border-gold-ornate rounded-card p-4">
@@ -171,6 +183,19 @@ export function ActionBar({
             {oathPower === 'sacredWeapon' ? 'Sacred Weapon' : 'Vow of Enmity'}
             <span className="font-mono text-xs font-normal">{charges} left</span>
           </FantasyButton>
+          </HintTooltip>
+        )}
+
+        {canSurge && (
+          <HintTooltip
+            title="Action Surge"
+            body="A second action, right now. Once between rests — and the only thing here that gives a turn back rather than making one bigger."
+          >
+            <FantasyButton variant="crimson" onClick={onSurge}>
+              <ChannelDivinityIcon size={16} />
+              Action Surge
+              <span className="font-mono text-xs font-normal">{surges} left</span>
+            </FantasyButton>
           </HintTooltip>
         )}
 

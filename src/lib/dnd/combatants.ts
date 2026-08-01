@@ -55,6 +55,7 @@ export function characterToCombatant(
     ...(character.hasFastHands === true ? { hasFastHands: true } : {}),
     ...(character.potions === undefined ? {} : { potions: character.potions }),
     ...(character.spellSlots === undefined ? {} : { spellSlots: character.spellSlots }),
+    ...(character.actionSurges === undefined ? {} : { actionSurges: character.actionSurges }),
     ...(character.preparedSpells === undefined
       ? {}
       : { preparedSpells: [...character.preparedSpells] }),

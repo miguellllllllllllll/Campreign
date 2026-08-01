@@ -8,6 +8,7 @@ import {
   castFromActive,
   drinkPotion,
   channelDivinity,
+  actionSurge,
   endTurn,
   resolveReaction,
   moveActive,
@@ -31,6 +32,8 @@ interface CombatStore {
   attack: (args: { targetId: string; attackId: string; maneuverId?: 'trip' }) => AttackOutcome | null
   /** Spends the paladin's oath charge. Costs no action, so the turn continues. */
   channel: (args: { power: 'sacredWeapon' | 'vowOfEnmity'; targetId?: string }) => void
+  /** Spends a second action, handing back the one already used this turn. */
+  surge: () => void
   /** Casts a prepared spell, spending the action and a slot. */
   cast: (args: { spellId: string; targetId: string; subclassId?: string }) => void
   /** Drinks a potion, spending an action or a bonus action as the hero allows. */
@@ -101,6 +104,15 @@ export const useCombatStore = create<CombatStore>((set, get) => ({
       ...(targetId === undefined ? {} : { targetId }),
     })
     set({ encounter: result.encounter, refusal: result.refusal })
+  },
+
+  surge: () => {
+    const { encounter } = get()
+    if (encounter === null) return
+    const result = actionSurge(encounter)
+    set(result.refusal === null
+      ? { encounter: result.encounter, refusal: null }
+      : { refusal: result.refusal })
   },
 
   cast: ({ spellId, targetId, subclassId }) => {

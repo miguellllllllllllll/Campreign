@@ -154,6 +154,8 @@ export interface Character {
   hasReaction?: boolean
   /** First-level spell slots. One at level 1 for a full caster. */
   spellSlots?: number
+  /** Action Surges left before a rest. Fighters, from 2nd level. */
+  actionSurges?: number
   /** True when this hero opens a fight with advantage. */
   hasAmbush?: boolean
   /** Potions carried into the fight. */
