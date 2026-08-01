@@ -427,6 +427,34 @@
   clip-path: polygon(0 0, 100% 0, calc(100% - 0.75rem) 50%, 100% 100%, 0 100%);
 }
 
+/**
+ * A drawn ornament for section breaks, from Kenney's CC0 fantasy border set —
+ * see NOTICE. The first thing in this project that is somebody else's artwork.
+ *
+ * Used as a *mask* rather than an `<img>`, and that is the whole reason it can
+ * be here at all. `custom-icons.tsx` explains why the icons are inline SVG: an
+ * `<img>` is a separate document and cannot be recoloured by the page around
+ * it. A mask has no colour of its own — it punches the shape out of whatever
+ * `background-color` the element carries — so `currentColor` still reaches it
+ * and the ornament follows the palette like everything drawn by hand does.
+ *
+ * `mask-size: auto 100%` rather than `100% 100%`: the source is 96×22 and
+ * stretching it to the width of a container pulls the ornament out of shape.
+ * Height drives the scale, the ornament keeps its proportions, and the rules
+ * either side of it do the spanning.
+ */
+@utility rule-ornament {
+  background-color: currentColor;
+  -webkit-mask-image: url("/ui/divider-fantasy.png");
+  mask-image: url("/ui/divider-fantasy.png");
+  -webkit-mask-size: auto 100%;
+  mask-size: auto 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
