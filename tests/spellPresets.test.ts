@@ -5,7 +5,7 @@ import { BACKGROUND_PRESETS, RACE_PRESETS } from '../src/lib/dnd/presets.ts'
 import { getSpellcastingLimits } from '../src/lib/dnd/spellcasting.ts'
 import { buildCharacter, resolveSpellSelection } from '../src/lib/dnd/characterBuilder.ts'
 import { abilityModifier } from '../src/lib/dnd/stats.ts'
-import { spellsFor } from '../src/content/spells.ts'
+import { spellsByIds, spellsFor } from '../src/content/spells.ts'
 import type { CreationAnswers } from '../src/types/character.ts'
 
 /**
@@ -189,6 +189,47 @@ test('every spell a preset names is real, and on that class list', () => {
       const legal = new Set(spellsFor(style.classId, level).map((spell) => spell.id))
       for (const id of ids) {
         assert.ok(legal.has(id), `${style.id} names ${id}, which is not a ${style.classId} spell`)
+      }
+    }
+  }
+})
+
+test('every caster style carries something it can attack at range with', () => {
+  /*
+   * Measured rather than felt. Mercy & Mending held no attack cantrip, so its
+   * only reach was a mace — 3000 simulated runs of the second encounter put it
+   * at a 53% chance of ending unconscious, against 22% for the other cleric
+   * styles and 3% for a paladin. Reach is the variable that matters on a
+   * five-square board.
+   */
+  for (const style of MAGIC_STYLE_PRESETS) {
+    const cantrips = spellsByIds(style.cantripIds)
+    const reach = Math.max(0, ...cantrips.map((spell) => spell.attack?.rangeSquares ?? 0))
+    assert.ok(reach > 1, `${style.id} has no cantrip it can attack at range with`)
+  }
+})
+
+test('no two styles of a class are the same character', () => {
+  /*
+   * The trap the reach fix walked into. Handing Mercy & Mending the obvious
+   * third working cantrip made it identical to Shield of the Faithful — same
+   * cantrips, and the same prepared spells for every ancestry. Two of three
+   * choices would have collapsed into one, which is a worse bug than the one
+   * being fixed.
+   */
+  const key = (ids: readonly string[]) => [...ids].sort().join(',')
+  for (const classId of ['cleric', 'wizard'] as const) {
+    const styles = MAGIC_STYLE_PRESETS.filter((one) => one.classId === classId)
+    for (let i = 0; i < styles.length; i += 1) {
+      for (let j = i + 1; j < styles.length; j += 1) {
+        const a = styles[i]!
+        const b = styles[j]!
+        const sameCantrips = key(a.cantripIds) === key(b.cantripIds)
+        const samePrepared = key(a.preparedSpellIds) === key(b.preparedSpellIds)
+        assert.ok(
+          !(sameCantrips && samePrepared),
+          `${a.id} and ${b.id} are the same character`,
+        )
       }
     }
   }

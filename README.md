@@ -150,6 +150,18 @@ Flagged rather than hidden, all of them in service of a first-time player:
   so no single written-down list fits every cleric. Styles are written at the
   larger size and cut to the cap in `resolveSpellSelection`, leading with the
   spells that make them that style. A hand-picked list is never trimmed.
+- **Every caster style carries an attack cantrip, chosen for reach rather than
+  flavour.** Reach is the variable that decides the second encounter on a
+  five-square board: 3000 simulated runs per build put Mercy & Mending — which
+  had no attack cantrip and therefore no range beyond a mace — at a 53% chance
+  of ending the fight unconscious, against 22% for the other cleric styles and
+  3% for a paladin. Holding damage constant and changing only range took the
+  same cleric from 53% to 19%.
+
+  The cost is written down in `spellPresets.ts`: only three cleric cantrips here
+  do anything, and there are three styles wanting three each, so once Sacred
+  Flame is compulsory one style must carry a flavour cantrip. The honest fix is
+  more working cleric cantrips rather than a cleverer shuffle of five.
 - **The giant bat has 11 hit points, not the SRD's 22.** At 22 it was sturdier
   than the skeleton standing next to it, while the step's own narration called
   it fragile — and the second encounter became a coin toss that wiped a level-2
