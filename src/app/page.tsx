@@ -1,4 +1,4 @@
-import { BookOpen, Dices, Scroll, Shield, Sparkles, Swords } from 'lucide-react'
+import { BookOpen, Dices, Shield, Sparkles, Swords } from 'lucide-react'
 import Link from 'next/link'
 import { FantasyButton } from '../components/ui/fantasy-button.tsx'
 import {
@@ -44,10 +44,20 @@ export default function Home() {
           Hero Step
         </h1>
 
-        {/* A divider with a rune at its centre, the way a rulebook breaks a section. */}
-        <div aria-hidden className="flex w-full max-w-md items-center gap-3">
+        {/* A divider with an ornament at its centre, the way a rulebook breaks a
+            section. The ornament is masked rather than drawn as an image, so it
+            takes `text-gold-border` the same way the hand-drawn icons do.
+
+            Two copies, the second mirrored: the source art is a half-divider
+            running into a terminal at one end, so a single copy sits lopsided
+            between the two rules. Butted together, the terminals meet and make
+            one symmetrical medallion. */}
+        <div aria-hidden className="flex w-full max-w-md items-center gap-3 text-gold-border">
           <span className="h-px flex-1 bg-gradient-to-r from-transparent to-gold-border/60" />
-          <Scroll size={14} className="text-gold-border" />
+          <span className="flex shrink-0 items-center">
+            <span className="rule-ornament h-5 w-20" />
+            <span className="rule-ornament h-5 w-20 -scale-x-100" />
+          </span>
           <span className="h-px flex-1 bg-gradient-to-l from-transparent to-gold-border/60" />
         </div>
 
