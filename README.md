@@ -264,10 +264,15 @@ giant spider, and all five now appear. The spider closes the tutorial on its
 own: it is the hardest thing written, and its bite is the only attack that makes
 the player roll a saving throw rather than an enemy.
 
-Levelling is milestone-based and lives in the tutorial only: beating the goblin
-takes you to 2, and it is scoped to that run. `characterStore` is persisted, and
-a level that survived a replay would stack every time somebody pressed "Play it
-again" — a level-6 hero after six runs of one goblin fight.
+Levelling is milestone-based and lives in the tutorial only. Both levels land
+together, before the spider: the goblin is worth nothing, because one cornered
+goblin is not worth as much as the rest of the cellar, and because a full caster
+needs third level for the second-tier slots that Shatter and Blindness are cast
+from. A level granted after that fight would arrive with nothing to spend it on.
+
+Scoped to the run, and deliberately. `characterStore` is persisted, and a level
+that survived a replay would stack every time somebody pressed "Play it again" —
+a level-6 hero after six runs of one goblin fight.
 
 Every 1st-level spell in the registry now does something. Shield is castable, but never on your own turn: it appears in the reaction
 prompt when a blow is about to land, alongside Warding Flare if you have both.

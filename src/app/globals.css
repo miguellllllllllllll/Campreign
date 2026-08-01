@@ -528,43 +528,75 @@
 }
 
 /**
- * A full ornate frame, for the one panel that should look more important than
- * the cards around it. Corner filigree marks a card; this marks the card.
+ * A full ornate frame, for the one panel that should outrank the cards around
+ * it. Corner filigree marks a card; this marks *the* card.
  *
- * Nine-sliced, which is the only way a drawn frame survives an arbitrary size:
- * the four corners are pinned and the edges stretch between them. Stretching
- * the whole 48×48 instead would pull the corner knots into smears, which is
- * the same trap `rule-ornament` avoids with `mask-size: auto 100%`.
+ * Built from the drawn corners plus rules in CSS, rather than 9-slicing the
+ * whole frame as a mask border. That was the first version and it worked, but
+ * in some browsers. MDN carries a "not Baseline" banner on `mask-border` —
+ * "does not work in some of the most widely-used browsers" — and testing here
+ * showed Chrome shipping only the prefixed `-webkit-mask-box-image` while
+ * answering false for the standard property. It sat behind an `@supports`
+ * guard that degraded honestly, so nothing was broken; but it left one
+ * flourish in the design system that existed in some browsers and not others,
+ * which is a poor trade for an ornament whose edges are two straight lines.
  *
- * Guarded behind `@supports`, and the guard is load-bearing rather than
- * politeness. The overlay is a solid `currentColor` block that the mask cuts a
- * frame out of; in a browser that cannot 9-slice a mask the declaration is
- * dropped and the block stays — a gold rectangle over the card's whole
- * content. So it starts hidden and only appears where the cut will happen.
+ * So the corners are masked, which is Baseline and works everywhere, and the
+ * lines are drawn. The measurements are the artwork's own: in the 48×48 source
+ * the edge is a 2px rule at 4px from the border and another at 8px, and the
+ * corner knot occupies the outer 10. The rules therefore start 1rem in, which
+ * is exactly where the 16px corner windows stop, and meet the knots rather
+ * than crossing them.
  */
 @utility frame-ornate {
+  /* Corners come from the frame design here, not the plain card ornament, so
+     the knots and the rules below are from the same drawing. */
+  & .corner-filigree {
+    -webkit-mask-image: url("/ui/frame-panel.png");
+    mask-image: url("/ui/frame-panel.png");
+  }
+
   &::after {
+    --frame-ink: color-mix(in srgb, var(--color-amber-torch) 60%, transparent);
+
     content: "";
     position: absolute;
     inset: 0;
-    display: none;
     pointer-events: none;
-    background-color: currentColor;
     border-radius: inherit;
+    background-repeat: no-repeat;
+    background-image:
+      linear-gradient(var(--frame-ink), var(--frame-ink)),
+      linear-gradient(var(--frame-ink), var(--frame-ink)),
+      linear-gradient(var(--frame-ink), var(--frame-ink)),
+      linear-gradient(var(--frame-ink), var(--frame-ink)),
+      linear-gradient(var(--frame-ink), var(--frame-ink)),
+      linear-gradient(var(--frame-ink), var(--frame-ink)),
+      linear-gradient(var(--frame-ink), var(--frame-ink)),
+      linear-gradient(var(--frame-ink), var(--frame-ink));
+    background-size:
+      calc(100% - 2rem) 2px,
+      calc(100% - 2rem) 2px,
+      calc(100% - 2rem) 2px,
+      calc(100% - 2rem) 2px,
+      2px calc(100% - 2rem),
+      2px calc(100% - 2rem),
+      2px calc(100% - 2rem),
+      2px calc(100% - 2rem);
+    background-position:
+      1rem 4px,
+      1rem 8px,
+      1rem calc(100% - 6px),
+      1rem calc(100% - 10px),
+      4px 1rem,
+      8px 1rem,
+      calc(100% - 6px) 1rem,
+      calc(100% - 10px) 1rem;
   }
 
-  @supports (-webkit-mask-box-image: url("/ui/frame-panel.png")) {
-    &::after {
-      display: block;
-      -webkit-mask-box-image: url("/ui/frame-panel.png") 16 stretch;
-    }
-  }
-
-  @supports (mask-border-source: url("/ui/frame-panel.png")) {
-    &::after {
-      display: block;
-      mask-border: url("/ui/frame-panel.png") 16 / 16px stretch;
-    }
+  /* Brightens with the corners, which carry `group-hover:text-amber-torch`. */
+  .group:hover &::after {
+    --frame-ink: var(--color-amber-torch);
   }
 }
 
