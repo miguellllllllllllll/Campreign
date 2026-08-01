@@ -61,9 +61,9 @@ file in the same commit as the assets — not afterwards.
 Interface ornaments
 -------------------
 
-`public/ui/divider-fantasy.png` is from the "Fantasy UI Borders" pack by Kenney
-(https://kenney.nl/assets/fantasy-ui-borders), released under Creative Commons
-Zero 1.0:
+`public/ui/divider-fantasy.png` and `public/ui/frame-corner.png` are from the
+"Fantasy UI Borders" pack by Kenney (https://kenney.nl/assets/fantasy-ui-borders),
+released under Creative Commons Zero 1.0:
 
   License: (Creative Commons Zero, CC0)
   http://creativecommons.org/publicdomain/zero/1.0/
