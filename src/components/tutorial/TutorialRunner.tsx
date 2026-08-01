@@ -13,6 +13,7 @@ import {
   turnOrder,
 } from '../../lib/dnd/encounter.ts'
 import { spellTargetsDying, spellTargetsEnemies } from '../../lib/dnd/casting.ts'
+import { isDefeated } from '../../lib/dnd/combat.ts'
 import { isDead, isDying } from '../../lib/dnd/dying.ts'
 import { LevelUpSummary } from './LevelUpSummary.tsx'
 import { channelDivinityPowerFor } from '../../content/subclasses.ts'
@@ -157,7 +158,24 @@ export function TutorialRunner() {
    * so the action bar would occasionally be driving the squire.
    */
   const hero = encounter === null ? undefined : encounter.combatants[character.id]
-  const foe = encounter === null ? undefined : combatantsOf(encounter, 'foes')[0]
+  /*
+   * The first foe still standing, not simply the first foe.
+   *
+   * `combatantsOf` returns everyone on that side including the dead, and this
+   * used to take index 0 outright. With one enemy that was invisible. With two
+   * it broke the fight: the moment the bat dropped, every attack the player
+   * made was still aimed at its corpse, `attackWith` refused with "Giant Bat is
+   * already down", and the refusal is not surfaced anywhere — so the action bar
+   * stayed lit and did nothing at all, for the rest of the encounter.
+   *
+   * Found by playing it rather than by reading it. The squire kept fighting
+   * because it picks its own target, which is what disguised the bug: the fight
+   * still progressed, just never because of anything the player pressed.
+   */
+  const foe =
+    encounter === null
+      ? undefined
+      : combatantsOf(encounter, 'foes').find((one) => !isDefeated(one))
   /** Whoever on the party's side is on the floor and still slipping. */
   const fallen =
     encounter === null ? undefined : combatantsOf(encounter, 'party').find(isDying)

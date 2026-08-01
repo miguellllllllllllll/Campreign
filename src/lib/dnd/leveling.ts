@@ -246,6 +246,40 @@ function preparedSpellsOnUnlock(
 }
 
 /**
+ * The spells a caster gains when a whole new tier of slots opens up.
+ *
+ * Found by playing it. A cleric reaching third level was handed two
+ * second-level slots and no second-level spell — `preparedSpellsOnUnlock`
+ * above only ever fires for a paladin gaining magic from nothing, so anybody
+ * who already had a prepared list from creation never gained another spell
+ * again. The slots existed, the spells existed, and the two never met: content
+ * that cannot be reached, which is the failure this codebase keeps catching.
+ *
+ * Given rather than chosen, for the same reason the paladin's list is: the
+ * tutorial is not the place to stop and read six spell descriptions. Appended
+ * rather than replacing, so nothing a player picked at creation is taken away.
+ */
+function spellsForNewTier(
+  character: Character,
+  slots: readonly number[],
+): string[] | undefined {
+  const existing = character.preparedSpells
+  if (existing === undefined) return undefined
+  if (character.classId !== 'wizard' && character.classId !== 'cleric') return undefined
+
+  const known = new Set(existing)
+  const gained: string[] = []
+  // Index 2 upward: any tier the new slot table can pay for.
+  for (let tier = 2; tier < slots.length; tier += 1) {
+    if ((slots[tier] ?? 0) <= 0) continue
+    for (const spell of spellsFor(character.classId, tier as 1 | 2)) {
+      if (!known.has(spell.id)) gained.push(spell.id)
+    }
+  }
+  return gained.length === 0 ? undefined : [...existing, ...gained]
+}
+
+/**
  * Takes one level, returning a new character rather than touching the old.
  *
  * Refuses at the cap rather than clamping silently: a caller that thinks it
@@ -285,6 +319,7 @@ export function levelUp(character: Character): LevelUpResult {
   const surges = actionSurgesFor(character.classId, level)
   const smites = hasDivineSmiteAt(character.classId, level)
   const prepared = preparedSpellsOnUnlock(character, level)
+  const newTier = spellsForNewTier(character, nowSlots)
   const subclassId = character.subclassId
   const critOn = critThresholdFor(subclassId, level)
   const superiorityDice = superiorityDiceFor(subclassId, level)
@@ -301,6 +336,7 @@ export function levelUp(character: Character): LevelUpResult {
     ...(surges === undefined ? {} : { actionSurges: surges }),
     ...(smites ? { hasDivineSmite: true } : {}),
     ...(prepared === undefined ? {} : { preparedSpells: prepared }),
+    ...(newTier === undefined ? {} : { preparedSpells: newTier }),
     ...(critOn === undefined ? {} : { critOn }),
     ...(superiorityDice === undefined ? {} : { superiorityDice }),
     ...(channelDivinityCharges === undefined ? {} : { channelDivinityCharges }),

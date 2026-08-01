@@ -165,12 +165,24 @@ export function guidesChecks(spellId: string | null): boolean {
  * Whether a spell is aimed at somebody you would rather were hurt.
  *
  * Derived from the effect rather than stored, so a new spell cannot forget to
- * declare it: anything that rolls to hit or covers an area points outward, and
- * everything else lands on you or an ally.
+ * declare it: anything that rolls to hit, covers an area, or makes its victim
+ * save points outward, and everything else lands on you or an ally.
+ *
+ * `saveOrCondition` was missed when it was added, and the omission is worth
+ * recording because the comment above promised it could not happen. Deriving
+ * from the effect stops a spell forgetting to *declare* its direction; it does
+ * not stop this list forgetting to *ask*. Blindness shipped aimed at the
+ * caster, and the tell in play was a log line reading "Unnamed Hero rolls 13
+ * against DC 12" on the hero's own spell.
  */
 export function spellTargetsEnemies(spellId: string): boolean {
   const kind = SPELLS_BY_ID[spellId]?.effect?.kind
-  return kind === 'spellAttack' || kind === 'aoeSave' || kind === 'autoHit'
+  return (
+    kind === 'spellAttack'
+    || kind === 'aoeSave'
+    || kind === 'autoHit'
+    || kind === 'saveOrCondition'
+  )
 }
 
 /**
