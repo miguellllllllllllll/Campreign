@@ -22,6 +22,10 @@ export type DamageType =
   | 'acid'
   /** Raw magical impact — Magic Missile's darts, and nothing else yet. */
   | 'force'
+  /** Life pulled out rather than damage put in. Inflict Wounds. */
+  | 'necrotic'
+  /** Venom in the blood, which is why Ray of Sickness leaves you poisoned. */
+  | 'poison'
 
 export interface Weapon {
   id: string

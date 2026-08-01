@@ -174,21 +174,42 @@ export function ActionBar({
           </HintTooltip>
         )}
 
-        {spells.map(({ spell, castable, reason }) => (
-          // The reason is already on the face of the button when it applies, so
-          // the scroll carries what the spell actually does either way.
-          <HintTooltip key={spell.id} title={spell.name} body={spell.description}>
-          <FantasyButton
-            variant="iron"
-            aria-disabled={!castable || hasActed || !attackEnabled}
-            onClick={() => onCast?.(spell.id)}
-          >
-            <SpellFlareIcon size={16} className="text-gold-bright" />
-            {spell.name}
-            {!castable && <span className="text-xs font-normal">— {reason}</span>}
-          </FantasyButton>
-          </HintTooltip>
-        ))}
+        {spells.map(({ spell, castable, reason }) => {
+          /*
+           * A bonus-action spell spends a different budget, so it stays live
+           * after you have attacked — greying out Healing Word because you
+           * already swung would contradict the only reason it exists beside
+           * Cure Wounds.
+           */
+          const onBonus = spell.castingCost === 'bonusAction'
+          const budgetSpent = onBonus ? bonusActionSpent : hasActed
+          return (
+            // The reason is already on the face of the button when it applies, so
+            // the scroll carries what the spell actually does either way.
+            <HintTooltip
+              key={spell.id}
+              title={spell.name}
+              body={
+                onBonus
+                  ? `${spell.description} Casting it costs only a bonus action.`
+                  : spell.description
+              }
+            >
+              <FantasyButton
+                variant="iron"
+                aria-disabled={!castable || budgetSpent || !attackEnabled}
+                onClick={() => onCast?.(spell.id)}
+              >
+                <SpellFlareIcon size={16} className="text-gold-bright" />
+                {spell.name}
+                {onBonus && (
+                  <span className="text-xs font-normal text-muted">— bonus action</span>
+                )}
+                {!castable && <span className="text-xs font-normal">— {reason}</span>}
+              </FantasyButton>
+            </HintTooltip>
+          )
+        })}
 
         {onDrink !== undefined && potions > 0 && (
           <HintTooltip

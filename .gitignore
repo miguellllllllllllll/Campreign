@@ -42,8 +42,3 @@ next-env.d.ts
 
 .vercel
 
-# Sibling agent worktrees live here. Ignored rather than merely untracked:
-# `git add -A` in a shared checkout has already swept another session's work
-# into a commit once, and an entire second checkout sitting inside this one is
-# the largest version of that mistake available.
-.worktrees/

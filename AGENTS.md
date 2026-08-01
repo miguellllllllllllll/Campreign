@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# Two sessions work this repo
+# Three sessions work this repo
 
 Ownership is **vertical**. A feature includes the UI that surfaces it — a spell
 is not done until something can cast it. Splitting by layer was tried and fails
@@ -13,9 +13,9 @@ grid tokens meant editing `monsters.ts`.
 
 | Domain | Owns | Where |
 | --- | --- | --- |
-| Rules & content | `src/lib/dnd`, `src/content`, `src/stores`, `src/types`, `tests`, `README.md`, `components/{tutorial,combat,dice}` | `Campreign` on `main` |
+| Rules & content | `src/lib/dnd`, `src/content`, `src/stores`, `src/types`, `tests`, `README.md`, `components/{tutorial,combat,dice}` | `Campreign-rules` on `rules` |
 | Interface | `src/app`, `components/ui`, `components/character`, `globals.css`, `public` | `Campreign-ui` on `interface` |
-| Pure design | `globals.css`, `components/ui/{creature-icons,custom-icons}.tsx`, inline SVG artwork | `.worktrees/agent-4-design` on `feature/design-system` |
+| Pure design | `globals.css`, `components/ui/{creature-icons,custom-icons}.tsx`, inline SVG artwork | `Campreign-design` on `feature/design-system` |
 
 Design overlaps interface on `globals.css` and the two icon files. That is
 deliberate and safe for the same reason the accessibility carve-out below is:
@@ -23,9 +23,25 @@ both are aesthetic edits that change no behaviour, so a genuine collision shows
 up as an ordinary merge conflict rather than as two people disagreeing about
 what the code should do.
 
-Separate worktrees, one `.git`. Commits are shared the moment they are made;
-uncommitted state is not, which is the entire point — a torn working tree is
-invisible to `git log` and breaks the build anyway.
+`Campreign` on `main` is the integration checkout. Every session works on its
+own branch in its own worktree and merges to `main`; nobody edits `main`
+directly. That is not bureaucracy — the rules session lived in the `main`
+checkout until a second chat began editing the same directory, and the first
+symptom was a test failing on a spell that existed in one read and not the next.
+A branch per session makes a second chat in the same directory an ordinary
+merge instead of a file changing under you mid-command.
+
+Separate worktrees, one `.git`, all **siblings** of each other. Commits are
+shared the moment they are made; uncommitted state is not, which is the entire
+point — a torn working tree is invisible to `git log` and breaks the build
+anyway.
+
+Siblings rather than nested, and that is not cosmetic. A worktree placed inside
+this one was linted as part of it: 88 errors from another session's dependencies,
+which would have failed *this* session's commit gate for code it does not own.
+Git ignoring a directory does not make the toolchain ignore it, and nesting
+reintroduces through the filesystem exactly the coupling the branches exist to
+remove.
 
 ## Two carve-outs: accessibility, and pure design
 
@@ -87,6 +103,23 @@ coordination step in front of three commits out of four.
 
 Vertical ownership is not a preference. It is what the change sizes in this
 repository actually are.
+
+## The stash is shared; the working trees are not
+
+`git stash` and `git stash pop` operate on one stack for the whole repository,
+across every worktree. Stashing to test something against a clean `HEAD` will
+therefore pop whatever is on top when you come back — which may be another
+session's work, not yours.
+
+Do not stash in this repository. To compare against `HEAD`, read it directly:
+
+```sh
+git show HEAD:src/content/spells.ts | grep …    # no working tree involved
+git diff -- <explicit paths> > /tmp/mine.patch  # lift your own work, read-only
+```
+
+Both are read-only on every checkout, which is the property that matters when
+you are not the only writer.
 
 ## `npm test` cannot see type errors
 

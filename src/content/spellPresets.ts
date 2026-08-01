@@ -45,9 +45,10 @@ const WIZARD_FIRST_LEVEL = ['magicMissile', 'mageArmor', 'shield', 'burningHands
  */
 
 /*
- * A cleric at level 1 prepares 1 + their Wisdom modifier, which is four, and
- * the SRD list here holds exactly four 1st-level cleric spells. So every cleric
- * style prepares all of them and differs by its cantrips alone.
+ * A cleric at level 1 prepares 1 + their Wisdom modifier, which is three or four
+ * depending on ancestry. There are now six 1st-level cleric spells, so for the
+ * first time the styles differ by what they prepare rather than only by their
+ * cantrips — picking one is a real choice about what your cleric is for.
  *
  * This is not tidiness. A preset short of the cap left the creation wizard's
  * Next button disabled with "1st Level 3/4" and no way forward but the
@@ -91,7 +92,7 @@ export const MAGIC_STYLE_PRESETS: readonly MagicStylePreset[] = [
     description:
       'Your faith burns. You call down light on anything that deserves it and hit surprisingly hard for a healer.',
     cantripIds: ['sacredFlame', 'light', 'thaumaturgy'],
-    preparedSpellIds: ['guidingBolt', 'cureWounds', 'bless', 'shieldOfFaith'],
+    preparedSpellIds: ['guidingBolt', 'inflictWounds', 'cureWounds', 'bless'],
   },
   {
     id: 'healersMercy',
@@ -100,7 +101,7 @@ export const MAGIC_STYLE_PRESETS: readonly MagicStylePreset[] = [
     description:
       'You keep everyone standing. The least glamorous role at the table and the one nobody wants to be without.',
     cantripIds: ['spareTheDying', 'guidance', 'sacredFlame'],
-    preparedSpellIds: ['cureWounds', 'bless', 'shieldOfFaith', 'guidingBolt'],
+    preparedSpellIds: ['healingWord', 'cureWounds', 'bless', 'shieldOfFaith'],
   },
   {
     id: 'faithfulWard',

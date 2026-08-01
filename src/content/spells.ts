@@ -97,6 +97,16 @@ export interface Spell {
   /** One or two sentences, written for someone who has never cast a spell. */
   description: string
   isConcentration: boolean
+  /**
+   * What casting it costs on your turn. Absent means an action, which is almost
+   * every spell — declared only by the handful the SRD makes faster.
+   *
+   * This is the whole point of Healing Word existing beside Cure Wounds: one
+   * costs your turn and heals more, the other is a bonus action at range so you
+   * can pick somebody up *and* still swing. Without a cost to spend, the two
+   * would just be a bigger die and a smaller one.
+   */
+  castingCost?: 'action' | 'bonusAction'
   /** Present when the engine can resolve this spell; absent means not yet. */
   effect?: SpellEffect
   /**
@@ -312,6 +322,46 @@ export const SPELLS: readonly Spell[] = [
   },
 
   // --- Cleric 1st-level ---------------------------------------------------
+  {
+    id: 'healingWord',
+    name: 'Healing Word',
+    level: 1,
+    school: 'Evocation',
+    classes: ['cleric'],
+    range: '60 ft (12 squares)',
+    damageOrEffect: '1d4 + Wis Healing, as a bonus action',
+    description:
+      'A shouted word of power that closes a wound from across the room. It mends less than Cure Wounds, and it costs you only a moment — so you can heal a friend and still swing this turn.',
+    isConcentration: false,
+    castingCost: 'bonusAction',
+    effect: { kind: 'heal', dice: '1d4', addsAbility: true },
+  },
+  {
+    id: 'inflictWounds',
+    name: 'Inflict Wounds',
+    level: 1,
+    school: 'Necromancy',
+    classes: ['cleric'],
+    range: 'Touch',
+    damageOrEffect: '3d10 Necrotic',
+    description:
+      'You put a hand on something and pull the life out of it. The biggest hit a first-level caster can land, and you have to be close enough to touch to do it.',
+    isConcentration: false,
+    attack: {
+      id: 'inflictWounds',
+      name: 'Inflict Wounds',
+      kind: 'spell',
+      ability: 'wis',
+      proficient: true,
+      damage: '3d10',
+      damageType: 'necrotic',
+      addAbilityToDamage: false,
+      ranged: false,
+      rangeSquares: 1,
+      description: 'A touch that withers. Enormous damage, at arm\u2019s length.',
+    },
+    effect: { kind: 'spellAttack' },
+  },
   {
     id: 'cureWounds',
     name: 'Cure Wounds',

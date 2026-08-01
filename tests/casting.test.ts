@@ -5,6 +5,7 @@ import { characterToCombatant } from '../src/lib/dnd/combatants.ts'
 import { applyDamage, resolveAttack } from '../src/lib/dnd/combat.ts'
 import { addCondition, hasCondition, tickConditions } from '../src/lib/dnd/conditions.ts'
 import { castSpell, castableSpells, spellTargetsEnemies } from '../src/lib/dnd/casting.ts'
+import { SPELLS_BY_ID } from '../src/content/spells.ts'
 import { FIRST_LEVEL_SLOTS } from '../src/lib/dnd/spellcasting.ts'
 import { castFromActive, createEncounter } from '../src/lib/dnd/encounter.ts'
 import { SUBCLASSES } from '../src/content/subclasses.ts'
@@ -463,4 +464,82 @@ test('Magic Missile with no slot left is refused', () => {
     spellId: 'magicMissile',
   })
   assert.match(result.refusal ?? '', /slot/i)
+})
+
+// --- What a spell costs on your turn --------------------------------------
+
+/** A healer, somebody to heal, and room on the board for both. */
+function healerBoard() {
+  const { combatant } = caster(undefined, { magicStyleId: 'healersMercy' })
+  const wounded = {
+    ...characterToCombatant(
+      buildCharacter(answers({ classId: 'fighter' }), 'Ally', { ...meta, id: 'ally' }),
+      { position: { x: 1, y: 0 } },
+    ),
+    currentHp: 3,
+  }
+  return { hero: combatant, roster: [combatant, wounded, target()] }
+}
+
+test('Healing Word costs a bonus action and Cure Wounds costs the turn', () => {
+  /*
+   * The only reason the two exist side by side. Asserted off the registry
+   * rather than hard-coded, so a spell that forgets to declare its cost reads
+   * as an action, which is the safe default and the SRD's.
+   */
+  assert.equal(SPELLS_BY_ID['healingWord']?.castingCost, 'bonusAction')
+  assert.equal(SPELLS_BY_ID['cureWounds']?.castingCost, undefined)
+  assert.equal(SPELLS_BY_ID['guidingBolt']?.castingCost, undefined)
+})
+
+test('a bonus-action spell can be cast after you have already attacked', () => {
+  const { hero, roster } = healerBoard()
+  const base = createEncounter(roster, () => 0.99, { leadId: hero.id })
+  const acted = { ...base, hasActed: true }
+
+  const cast = castFromActive(acted, { spellId: 'healingWord', targetId: 'ally' })
+  assert.equal(cast.refusal, null, 'a bonus action is a different budget')
+  assert.equal(cast.encounter.bonusActionSpent, true)
+  assert.equal(cast.encounter.hasActed, true, 'and the action stays spent')
+})
+
+test('an action spell is still refused once you have acted', () => {
+  const { hero, roster } = healerBoard()
+  const base = createEncounter(roster, () => 0.99, { leadId: hero.id })
+  const cast = castFromActive({ ...base, hasActed: true }, {
+    spellId: 'cureWounds',
+    targetId: 'ally',
+  })
+  assert.match(cast.refusal ?? '', /already taken your action/)
+})
+
+test('a bonus action is only good for one thing per turn', () => {
+  const { hero, roster } = healerBoard()
+  const base = createEncounter(roster, () => 0.99, { leadId: hero.id })
+  const once = castFromActive(base, { spellId: 'healingWord', targetId: 'ally' })
+  assert.equal(once.refusal, null)
+
+  const twice = castFromActive(once.encounter, { spellId: 'healingWord', targetId: 'ally' })
+  assert.match(twice.refusal ?? '', /already used your bonus action/)
+})
+
+test('Healing Word actually heals, at range, for less than Cure Wounds', () => {
+  // The trade has to be real: further away and cheaper, but a smaller die.
+  const word = SPELLS_BY_ID['healingWord']
+  const cure = SPELLS_BY_ID['cureWounds']
+  assert.equal(word?.effect?.kind, 'heal')
+  assert.ok(word !== undefined && cure !== undefined)
+  const dieOf = (s: typeof word) => (s?.effect?.kind === 'heal' ? s.effect.dice : '')
+  assert.equal(dieOf(word), '1d4')
+  assert.equal(dieOf(cure), '1d8')
+  assert.match(word.range, /60 ft/)
+  assert.match(cure.range, /Touch/)
+})
+
+test('Inflict Wounds hits hard and only at arm’s length', () => {
+  const spell = SPELLS_BY_ID['inflictWounds']
+  assert.equal(spell?.effect?.kind, 'spellAttack')
+  assert.equal(spell?.attack?.damage, '3d10')
+  assert.equal(spell?.attack?.rangeSquares, 1, 'the price of the biggest die')
+  assert.equal(spell?.attack?.addAbilityToDamage, false)
 })

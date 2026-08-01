@@ -470,9 +470,22 @@ export function castFromActive(
   if (caster === undefined || target === undefined) {
     return { encounter, refusal: 'There is nobody there to aim at.' }
   }
-  if (encounter.hasActed) {
+
+  /*
+   * Most spells cost an action; a few cost only a bonus action, which is the
+   * entire reason Healing Word exists beside Cure Wounds. Read before any of
+   * the branches below so every one of them spends the same budget — an earlier
+   * version set `hasActed` in three separate places and adding a fourth branch
+   * would have been three chances to forget.
+   */
+  const cost = SPELLS_BY_ID[args.spellId]?.castingCost ?? 'action'
+  if (cost === 'action' && encounter.hasActed) {
     return { encounter, refusal: 'You have already taken your action this turn.' }
   }
+  if (cost === 'bonusAction' && encounter.bonusActionSpent) {
+    return { encounter, refusal: 'You have already used your bonus action this turn.' }
+  }
+  const spent = cost === 'action' ? { hasActed: true } : { bonusActionSpent: true }
 
   const spell = SPELLS_BY_ID[args.spellId]
   if (spell?.effect?.kind === 'blessAllies') {
@@ -498,7 +511,7 @@ export function castFromActive(
             concentratingOn: blessing.caster.concentratingOn,
           },
         },
-        hasActed: true,
+        ...spent,
         log: [...encounter.log, ...blessing.lines],
       },
       refusal: null,
@@ -519,7 +532,7 @@ export function castFromActive(
       encounter: {
         ...encounter,
         combatants: { ...encounter.combatants, ...touched, [area.caster.id]: area.caster },
-        hasActed: true,
+        ...spent,
         log: [...encounter.log, ...area.lines],
       },
       refusal: null,
@@ -543,7 +556,7 @@ export function castFromActive(
         [result.caster.id]: result.caster,
         [result.target.id]: result.target,
       },
-      hasActed: true,
+      ...spent,
       log: [...encounter.log, ...result.lines],
     },
     refusal: null,

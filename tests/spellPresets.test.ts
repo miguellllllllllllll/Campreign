@@ -98,7 +98,9 @@ test('trimming keeps the spells that make it that style', () => {
    */
   const signatures: Record<string, string> = {
     radiantWrath: 'guidingBolt',
-    healersMercy: 'cureWounds',
+    // Healing Word, not Cure Wounds. Once both exist the bonus-action one is
+    // what "Mercy & Mending" actually means — you pick somebody up and still act.
+    healersMercy: 'healingWord',
     faithfulWard: 'shieldOfFaith',
   }
   for (const [styleId, spellId] of Object.entries(signatures)) {
