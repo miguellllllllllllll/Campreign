@@ -82,6 +82,11 @@ the work rather than waiving it, and require a visible credit wherever the asset
 appears — a permanent obligation on the page, on top of the SRD attribution
 above, in exchange for artwork of no greater use.
 
+`public/ui/birch-table.jpg` is derived from the "Wood091A" material by ambientCG
+(https://ambientcg.com/view?id=Wood091A), CC0 on the same terms. Colour map
+only, scaled to 640px and compressed toward its light end — see the note in
+globals.css for why that mattered.
+
 `public/ui/wood-grain.jpg` is derived from the "Wood051" material by ambientCG
 (https://ambientcg.com/view?id=Wood051), also CC0:
 

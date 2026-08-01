@@ -241,7 +241,7 @@ export function CreatorWizard() {
     return (
       <div className="flex flex-col gap-5">
         <div>
-          <h1 className="font-display bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-3xl font-black text-transparent">
+          <h1 className="font-display text-table-ink text-3xl font-black drop-shadow-[0_1px_0_rgb(255_255_255/0.35)]">
             {hero.name} is ready
           </h1>
           <p className="mt-2 text-sm text-muted">
@@ -283,10 +283,10 @@ export function CreatorWizard() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-3xl font-black text-transparent">
+        <h1 className="font-display text-table-ink text-3xl font-black drop-shadow-[0_1px_0_rgb(255_255_255/0.35)]">
           {step.title}
         </h1>
-        <p className="mt-2 text-sm text-muted">{step.subtitle}</p>
+        <p className="mt-2 text-sm text-table-ink/80">{step.subtitle}</p>
       </div>
 
       <ol className="flex flex-wrap gap-2" aria-label="Progress">
@@ -305,8 +305,8 @@ export function CreatorWizard() {
               // more pill in a row of pills — `rounded-full` is dropped here
               // because the clip-path squares those corners off anyway.
               index === safeIndex && 'banner-dnd-red ribbon-swallowtail border-gold-border/60 px-5',
-              index !== safeIndex && stepAnswered(candidate, draft) && 'border-moss/50 text-moss',
-              index !== safeIndex && !stepAnswered(candidate, draft) && 'border-edge text-muted',
+              index !== safeIndex && stepAnswered(candidate, draft) && 'border-edge/60 bg-moss/25 text-table-ink',
+              index !== safeIndex && !stepAnswered(candidate, draft) && 'border-edge/50 text-table-ink/70',
             )}
           >
             {index + 1}. {candidate.title}

@@ -126,7 +126,7 @@ export function TutorialRunner() {
   const levelGains = useTutorialStore((state) => state.levelGains)
 
   if (!hydrated) {
-    return <p className="text-sm text-muted">Loading your hero…</p>
+    return <p className="text-sm text-table-ink/80">Loading your hero…</p>
   }
 
   if (character === null) {

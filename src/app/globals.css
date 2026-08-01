@@ -65,6 +65,21 @@
   --color-dnd-red: #c8362b;
   --color-dnd-red-hover: #c44134;
 
+  /* The table the game is played on: light birch, with the panels laid on top
+     of it. `obsidian` deliberately stays the dark value — it is the ink on the
+     brass button and the well behind every resource bar, and both still need
+     to be dark now that the room around them is not.
+
+     The board image is compressed toward its light end rather than used as
+     photographed, and that is a contrast requirement rather than taste. At its
+     original range the darkest knot came out at #92652e, and against that no
+     text colour reaches AA at all — pure black tops out at 3.70:1. Text on a
+     photographed surface is only as readable as that surface's darkest patch,
+     so the floor was lifted until the darkest knot is #cebca6, where the ink
+     below reads 8.26:1. */
+  --color-table: #e0cba4;
+  --color-table-ink: #33220f;
+
   --color-ink: var(--color-obsidian);
   --color-surface: var(--color-dungeon-card);
   --color-surface-raised: #5e3c1e;
@@ -171,9 +186,13 @@
     color-scheme: dark;
   }
 
+  /* No `background-image` here on purpose — see `bg-torchlight`, which owns
+     every layer of the page surface, the boards included. A second rule setting
+     background-image on the same element does not add a layer; the utility wins
+     outright and the boards vanish. */
   body {
-    background-color: var(--color-obsidian);
-    color: var(--color-parchment);
+    background-color: var(--color-table);
+    color: var(--color-table-ink);
     font-family: var(--font-sans);
   }
 
@@ -320,20 +339,31 @@
 /**
  * A lamp over the table, for full-page backdrops.
  *
- * Retuned for teal. The old wash was amber over near-black, which reads as
- * warm light; the identical wash over teal reads olive, because amber and teal
- * are close to complementary and the midpoint of that mix is mud. The fix is a
- * paler, cooler primary light with the warmth kept to a small pool, rather than
- * a big amber field fighting the room colour.
+ * Retuned twice now. It began as amber over near-black, which reads as warm
+ * light; the same wash over teal read olive, because the two are near enough
+ * complementary that the middle of the mix is mud. The room is birch now and
+ * the problem inverts: the surface is already light and warm, so a bright wash
+ * has nothing to lift and only flattens the grain. What a lit table wants
+ * instead is the opposite — the light left alone in the middle and the corners
+ * allowed to fall away.
  */
 @utility bg-torchlight {
   background-image:
-    radial-gradient(ellipse 80% 55% at 50% -10%, color-mix(in srgb, var(--color-gold-bright) 13%, transparent), transparent 70%),
-    radial-gradient(ellipse 45% 35% at 82% 4%, color-mix(in srgb, var(--color-amber-torch) 10%, transparent), transparent 68%),
-    /* Lifts the floor of the room so the page is not flat teal behind the panels. */
-    radial-gradient(ellipse 120% 70% at 50% 118%, color-mix(in srgb, var(--color-edge-bright) 16%, transparent), transparent 72%);
+    radial-gradient(ellipse 75% 50% at 50% -8%, color-mix(in srgb, var(--color-gold-bright) 22%, transparent), transparent 68%),
+    radial-gradient(ellipse 120% 90% at 50% 45%, transparent 40%, color-mix(in srgb, var(--color-edge) 26%, transparent) 100%),
+    url("/ui/birch-table.jpg");
+  /* Per layer, and the `auto`s matter: one `background-size` applies to every
+     layer, so sizing the boards also tiled the two washes into 420px blocks
+     and put a hard grid across the page. */
+  background-size:
+    auto,
+    auto,
+    420px 420px;
+  background-repeat:
+    no-repeat,
+    no-repeat,
+    repeat;
   background-attachment: fixed;
-  background-repeat: no-repeat;
 }
 
 /**
