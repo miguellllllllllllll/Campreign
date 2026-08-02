@@ -71,19 +71,27 @@ export const TRAINING_DUMMY: MonsterPreset = {
 
 /*
  * Everything below is met after the goblin, by a character who has already
- * learned to hit things. So these carry their SRD numbers rather than the
+ * learned to hit things. The default is their SRD numbers rather than the
  * goblin's softened ones — the goblin is AC 12 instead of 15 because it is the
  * first fight anybody has, and that reason does not generalise.
  *
- * Two shared divergences, both forced by the board rather than chosen:
+ * A default, not a promise. Every departure from it is written at the stat it
+ * changes, with what was measured and why; do not read this paragraph as a
+ * guarantee that a number below is the SRD's. Two of them are not.
+ *
+ * Shared divergences:
  *
  * - **Speed is squares, not feet, and the board is five across.** A giant bat
  *   flies 60 feet, which is twelve squares and further than the whole map. Speeds
- *   here are relative to the goblin's three rather than converted.
- * - **No riders on attacks.** `AttackAction` carries damage and reach and
- *   nothing else, so the giant spider's poison save is simply absent. Noted
- *   because it is a real omission, not an oversight — the spider hits for its
- *   SRD damage and that is all it does.
+ *   here are relative to the goblin's three rather than converted. Forced by
+ *   the board — except the skeleton's, which is a tuning choice and says so.
+ *
+ * This list used to carry a second entry claiming attacks take no riders, "so
+ * the giant spider's poison save is simply absent". That stopped being true the
+ * day `onHitSave` landed and the spider's venom went in below, and it sat here
+ * wrong for a while — which is the argument for keeping reasoning beside the
+ * number it explains rather than in a summary at the top. A summary is a second
+ * place to be wrong, and the only one nobody thinks to edit.
  */
 
 /**
@@ -106,8 +114,16 @@ export const GIANT_BAT: MonsterPreset = {
    * cleric and their squire outright.
    *
    * Halved, so "fast and fragile" is what the numbers say as well as the prose.
+   *
+   * Eight now rather than eleven: the same reason a second time, against a
+   * harder version of the same fight. That "level-2 cleric" is a level-1 one
+   * today — both level-ups moved to the spider — and the skeleton beside it now
+   * reliably reaches the party instead of stalling behind a body. The cleric
+   * was the class that broke at 22 and is still the one that breaks first, so
+   * it stays the measure: 58% of fights won at eleven, 76% at eight with the
+   * skeleton slowed. The skeleton's speed carries the rest of the working.
    */
-  maxHp: 11,
+  maxHp: 8,
   ac: 13,
   // Four rather than the goblin's three: the one thing a bat is, is faster
   // than you. Twelve squares would be the honest conversion and would let it
@@ -144,7 +160,29 @@ export const SKELETON: MonsterPreset = {
   scores: { str: 10, dex: 14, con: 15, int: 6, wis: 8, cha: 5 },
   maxHp: 13,
   ac: 13,
-  speedSquares: 3,
+  /*
+   * Two rather than the goblin's three. A divergence from the SRD's flat 30
+   * feet, and the only stat in this file chosen to fix a fight rather than to
+   * describe a creature.
+   *
+   * The second encounter got harder twice and nobody re-measured it. Both
+   * level-ups moved to the spider, so it is fought at 1st level where it was
+   * built for 2nd; and the companion pathing fix means the second enemy now
+   * actually arrives, where before it often stalled behind a body and never
+   * joined at all. Simulated at 2,500 fights per class, the party fell from
+   * 92.6/86.4/78.2 to 84.7/72.8/58.0 (fighter/rogue/cleric).
+   *
+   * Slowing the skeleton rather than thinning it is the point. What changed was
+   * tempo — two enemies arriving together — so the compensation is tempo.
+   * Cutting hit points would make the fight arithmetically easier instead of
+   * restoring its shape, and measured worse besides: the best hit-point-only
+   * pairing reached 90.5/83.0/73.3 where this reaches 92.0/85.6/76.4.
+   *
+   * It also makes the numbers say what the narration already says — "the
+   * skeleton is slow and keeps coming" — which is the argument the bat's hit
+   * points were softened on, one creature up.
+   */
+  speedSquares: 2,
   attacks: [
     {
       id: 'skeletonShortsword',
