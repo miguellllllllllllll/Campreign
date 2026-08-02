@@ -213,3 +213,65 @@ test('nothing the machine steers carries a second attack', () => {
   }
   assert.ok(LOYAL_SQUIRE.attacks.length <= 1)
 })
+
+// --- The same fights, with the spells actually cast -------------------------
+
+test('the no-cast floor understates whoever has offensive spells', () => {
+  /*
+   * Guards the policy, not the game.
+   *
+   * `winRate(..., casts)` plays a meagre caster — heal yourself under half,
+   * otherwise throw the biggest damaging spell that resolves, otherwise swing.
+   * If it ever silently stopped casting, every figure it produces would quietly
+   * become the default floor again and nothing would look wrong. So: a wizard
+   * has to do materially better with its spells than without them.
+   */
+  const wizard = buildAtLevel(
+    { classId: 'wizard', subclassId: 'evocation', magicStyleId: 'pyromancer' },
+    2,
+  )
+  const mute = winRate(() => rosterFor('rafters', wizard), RUNS)
+  const casting = winRate(() => rosterFor('rafters', wizard), RUNS, 1, true)
+
+  assert.ok(
+    casting.party > mute.party + 0.2,
+    `casting should transform a wizard; ${(mute.party * 100).toFixed(1)}% -> ${(casting.party * 100).toFixed(1)}%`,
+  )
+})
+
+test('a fighter plays the same either way, because it has nothing to cast', () => {
+  // The control. Any drift here means the casting branch is reaching combatants
+  // it has no business touching.
+  const fighter = fighterAtLevel(2)
+  const mute = winRate(() => rosterFor('rafters', fighter), RUNS)
+  const casting = winRate(() => rosterFor('rafters', fighter), RUNS, 1, true)
+  assert.equal(casting.party, mute.party)
+})
+
+test('the life cleric is the weakest build in the rafters however it is played', () => {
+  /*
+   * The finding, pinned so it cannot quietly change without somebody noticing.
+   *
+   * Every other caster leaps when it starts casting — the wizard goes from 54%
+   * to 92%, the light cleric from 52% to 83%. The life cleric goes *down*, 35%
+   * to 32%, because the only thing its style gives it to spend an action on is
+   * healing, and against a single enemy hitting as hard as the spider, healing
+   * loses the race. Trading a turn for hit points you are about to lose again
+   * is worse than trading it for damage, which is a real lesson about 5e and
+   * not an artifact of playing badly — both policies agree, and they disagree
+   * about everything else.
+   *
+   * Left as a measurement rather than acted on. Whether the fight should be
+   * softened, the style given something offensive, or the number simply
+   * accepted because a human plays better than this, is a design call.
+   */
+  const life = buildAtLevel(
+    { classId: 'cleric', subclassId: 'life', magicStyleId: 'healersMercy' },
+    2,
+  )
+  const casting = winRate(() => rosterFor('rafters', life), RUNS, 1, true)
+  assert.ok(
+    casting.party > 0.25 && casting.party < 0.45,
+    `life cleric rafters, casting: ${(casting.party * 100).toFixed(1)}%`,
+  )
+})

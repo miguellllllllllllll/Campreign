@@ -1,11 +1,17 @@
 import {
+  activeCombatant,
+  castFromActive,
+  combatantsOf,
   createEncounter,
   encounterWinner,
   endTurn,
   resolveReaction,
   takeAutomaticTurn,
 } from '../../src/lib/dnd/encounter.ts'
+import { castableSpells } from '../../src/lib/dnd/casting.ts'
+import { gridDistance, isDefeated } from '../../src/lib/dnd/combat.ts'
 import type { Combatant, Team } from '../../src/types/combat.ts'
+import type { Encounter } from '../../src/lib/dnd/encounter.ts'
 import type { Rng } from '../../src/types/dice.ts'
 import { seededRng } from './rng.ts'
 
@@ -34,6 +40,64 @@ function settleReaction(encounter: ReturnType<typeof createEncounter>, rng: Rng)
 }
 
 /**
+ * A caster's turn, or null if this actor has nothing worth casting right now.
+ *
+ * Deliberately meagre. The default floor plays nobody's spells at all, which is
+ * honest but flattens the classes whose whole kit is spells — a life cleric
+ * measured that way is a mace with a holy symbol. This exists to put a number
+ * beside that one, not to play well:
+ *
+ *   - heal yourself when under half, because the alternative is dying
+ *   - otherwise throw the biggest damaging spell that will resolve
+ *   - otherwise hand back to the ordinary attack turn
+ *
+ * It never moves before casting and never repositions to get range. A refusal
+ * is taken as "not now" and falls through, rather than reimplementing the range
+ * and slot rules the engine already owns — asking and being told no is cheaper
+ * than predicting the answer, and cannot drift from it.
+ */
+function castingTurn(encounter: Encounter, rng: Rng): Encounter | null {
+  const actor = activeCombatant(encounter)
+  if (actor === undefined || actor.team !== 'party') return null
+
+  const board = Object.values(encounter.combatants)
+  const options = castableSpells(actor, board).filter((one) => one.castable)
+  if (options.length === 0) return null
+
+  const wounded = actor.currentHp / actor.maxHp < 0.5
+  const heal = options.find((one) => one.spell.effect?.kind === 'heal')
+  if (wounded && heal !== undefined) {
+    const healed = castFromActive(encounter, {
+      spellId: heal.spell.id,
+      targetId: actor.id,
+      rng,
+    })
+    if (healed.refusal === null) return healed.encounter
+  }
+
+  const foes = combatantsOf(encounter, 'foes').filter((one) => !isDefeated(one))
+  const target = foes
+    .slice()
+    .sort(
+      (a, b) =>
+        gridDistance(actor.position, a.position) - gridDistance(actor.position, b.position),
+    )[0]
+  if (target === undefined) return null
+
+  for (const option of options) {
+    const kind = option.spell.effect?.kind
+    if (kind !== 'autoHit' && kind !== 'spellAttack' && kind !== 'aoeSave') continue
+    const cast = castFromActive(encounter, {
+      spellId: option.spell.id,
+      targetId: target.id,
+      rng,
+    })
+    if (cast.refusal === null) return cast.encounter
+  }
+  return null
+}
+
+/**
  * One fight, start to finish.
  *
  * The round cap is a deadlock guard rather than a rule. Two combatants who can
@@ -44,6 +108,7 @@ export function playOut(
   roster: readonly Combatant[],
   rng: Rng,
   maxTurns = 400,
+  casts = false,
 ): Team | null {
   let encounter = createEncounter(roster, rng)
 
@@ -51,7 +116,11 @@ export function playOut(
     const winner = encounterWinner(encounter)
     if (winner !== null) return winner
 
-    encounter = settleReaction(takeAutomaticTurn(encounter, rng).encounter, rng)
+    const cast = casts ? castingTurn(encounter, rng) : null
+    encounter = settleReaction(
+      cast ?? takeAutomaticTurn(encounter, rng).encounter,
+      rng,
+    )
     // Checked again before ending the turn: `endTurn` refuses to advance a
     // decided fight, so asking it to would spin the loop rather than stop it.
     if (encounterWinner(encounter) !== null) return encounterWinner(encounter)
@@ -79,13 +148,14 @@ export function winRate(
   rosterFor: () => readonly Combatant[],
   runs: number,
   seed = 1,
+  casts = false,
 ): WinRate {
   const rng = seededRng(seed)
   let wins = 0
   let undecided = 0
 
   for (let run = 0; run < runs; run += 1) {
-    const winner = playOut(rosterFor(), rng)
+    const winner = playOut(rosterFor(), rng, 400, casts)
     if (winner === null) undecided += 1
     else if (winner === 'party') wins += 1
   }

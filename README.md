@@ -348,6 +348,36 @@ as a life cleric, 67% against 35%, and the floor is set at a third. The healer i
 the build this measurement flatters least — auto-play never heals — which is
 exactly why the floor is generous rather than tight.
 
+### What the floor hides, and the one thing it does not
+
+The floor plays nobody's spells, which is honest and flattens the classes whose
+kit *is* spells. `winRate(..., casts)` puts a number beside it with a meagre
+caster — heal yourself under half, otherwise throw the biggest damaging spell
+that resolves, otherwise swing:
+
+    rafters, level 2      no-cast   casting
+    wizard/evocation        54.0      92.3
+    cleric/light            51.8      82.5
+    paladin/devotion        65.2      64.3
+    cleric/life             35.3      32.2
+    fighter/champion        69.3      69.3
+
+So the wizard's floor understated it by nearly forty points, and any conclusion
+drawn from the no-cast figures about a caster was worth very little.
+
+The exception is the finding. **The life cleric goes down when it starts
+casting**, and it is the weakest build in the rafters under either policy. The
+only thing `healersMercy` gives it to spend an action on is healing, and against
+one enemy hitting as hard as the spider, healing loses the race — a turn traded
+for hit points you are about to lose again is worse than a turn traded for
+damage. That is a real property of 5e rather than a simulation artifact, and the
+two policies agreeing on it while disagreeing about everything else is the
+reason to believe it.
+
+Recorded rather than acted on. Whether to soften the fight, give the style
+something offensive, or accept the number because a human plays better than any
+of this, is a design call and not one a measurement gets to make.
+
 The bands are wide on purpose. Pinning 59.2% would fail on noise and teach a
 reader to ignore the test; the assertions say "a close fight the party usually
 takes", "not a coin flip", and — the claim that survives both numbers drifting —
