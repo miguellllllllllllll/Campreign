@@ -502,6 +502,31 @@
 }
 
 /**
+ * The cellar floor under the battle map.
+ *
+ * On the board rather than on each square, and that is the whole trick: a
+ * background lives in its own element's box, so texturing the cells would show
+ * every square the identical patch of stone and the board would read as
+ * twenty-five copies of one tile. Put on the container, the cobbles run
+ * continuously underneath and the squares are a grid ruled over a floor.
+ *
+ * Centred on mid-grey and blended, like the plank grain: the cells keep their
+ * own colours — amber for reachable, wood for the rest — and the stone only
+ * supplies relief.
+ *
+ * The material matters here: the first stone tried was lit unevenly across its
+ * own sheet, and that low-frequency variation is exactly what tiles visibly. No
+ * amount of contrast tuning fixes a gradient baked into the source; the fix was
+ * a source without one, an evenly lit fan of cobbles. See NOTICE; ambientCG,
+ * CC0.
+ */
+@utility texture-stone {
+  background-image: url("/ui/stone-floor.jpg");
+  background-size: 190px 190px;
+  background-blend-mode: overlay;
+}
+
+/**
  * A resource bar's track: a narrow well with the fill sitting down inside it.
  *
  * The RPG-kit look this comes from is a sunken channel holding a domed pill,

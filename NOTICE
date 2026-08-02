@@ -82,6 +82,10 @@ the work rather than waiving it, and require a visible credit wherever the asset
 appears — a permanent obligation on the page, on top of the SRD attribution
 above, in exchange for artwork of no greater use.
 
+`public/ui/stone-floor.jpg` is derived from the "PavingStones151" material by
+ambientCG (https://ambientcg.com/view?id=PavingStones151), CC0 on the same
+terms. Colour map only, desaturated, centred on mid-grey and scaled to 512.
+
 `public/ui/parchment-map.jpg` is derived from the "Paper005" material by
 ambientCG (https://ambientcg.com/view?id=Paper005), CC0 on the same terms. It
 is the *displacement* map rather than the colour map — for paper the creases
