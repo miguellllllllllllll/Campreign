@@ -14,6 +14,8 @@ import type { Combatant, Team } from '../../src/types/combat.ts'
 import type { Encounter } from '../../src/lib/dnd/encounter.ts'
 import type { Rng } from '../../src/types/dice.ts'
 import { seededRng } from './rng.ts'
+import { FIRST_STEP_ID, stepById } from '../../src/content/goblinCellar.ts'
+import type { TutorialStep } from '../../src/types/tutorial.ts'
 
 /**
  * Plays a whole fight with nobody steering, and reports who was left standing.
@@ -127,6 +129,39 @@ export function playOut(
     encounter = endTurn(encounter, rng)
   }
   return null
+}
+
+/**
+ * What level the hero actually is when each encounter starts.
+ *
+ * Walked out of the tutorial rather than written down, because writing it down
+ * is how it went wrong. The harness fed level 2 to every fight, which was true
+ * of neither: `deeper` is reached with no level-up between it and the goblin,
+ * and `rafters` carries two of them in its own `onEnter`. So the second
+ * encounter was being measured a level stronger than it is ever played and the
+ * third a level weaker, and the floors set from those numbers were guarding a
+ * party that does not exist.
+ *
+ * A sibling test had the identical bug with the identical cause — an arithmetic
+ * bound hardcoding "the party at level 2" — and stayed green for longer. Both
+ * were content changing under a constant nobody re-derived. This walks the step
+ * chain instead, so moving a `levelUp` moves these numbers with it.
+ */
+export function levelAtEncounter(): Record<string, number> {
+  const levels: Record<string, number> = {}
+  let level = 1
+
+  for (let id: string | null = FIRST_STEP_ID; id !== null; ) {
+    const step: TutorialStep | undefined = stepById(id)
+    if (step === undefined) break
+    for (const effect of step.onEnter ?? []) {
+      if (effect.kind === 'levelUp') level += 1
+      // The opening fight names no encounter; the store defaults it the same way.
+      if (effect.kind === 'startCombat') levels[effect.encounterId ?? 'cellar'] = level
+    }
+    id = step.next
+  }
+  return levels
 }
 
 export interface WinRate {

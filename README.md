@@ -348,6 +348,37 @@ as a life cleric, 67% against 35%, and the floor is set at a third. The healer i
 the build this measurement flatters least — auto-play never heals — which is
 exactly why the floor is generous rather than tight.
 
+### The levels the fights are actually fought at
+
+The harness built one hero at level 2 and sent it into every encounter. Nobody
+meets any of them at level 2. `deeper` is reached with no level-up since the
+goblin, and `rafters` carries two in its own `onEnter` — so the second fight was
+being scored a level too strong and the third a level too weak, and every floor
+set from those numbers guarded a party the game does not produce.
+
+`levelAtEncounter()` now walks the step chain and counts the level-ups, so
+moving one moves the measurements with it. It reports `{cellar: 1, deeper: 1,
+rafters: 3}`.
+
+**Correcting it inverted a claim this README made.** The old ordering test built
+one hero and compared the two encounters at a common level, which is a fair
+measure of the encounters and a meaningless one of the game. As played:
+
+    as played              deeper (L1)   rafters (L3)
+    fighter/champion            90.8          78.7
+    wizard/pyromancer, casting  91.0          97.7
+
+For a fighter the curve still rises. **For a caster it runs backwards** — the
+fight the tutorial calls its hardest is the one a wizard wins most, because two
+levels and a second tier of magic arrive ninety seconds before the spider does.
+The level-ups are stacked there for a pacing reason, since that is where the
+game teaches levelling, and the consequence is that difficulty rises for classes
+whose power comes from equipment and falls for classes whose power comes from
+level.
+
+Both are asserted, so fixing the inversion is a deliberate act with a failing
+test attached rather than something that can be undone by accident.
+
 ### What the floor hides, and the one thing it does not
 
 The floor plays nobody's spells, which is honest and flattens the classes whose

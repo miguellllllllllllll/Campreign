@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { levelUp } from '../src/lib/dnd/leveling.ts'
 import { rosterFor } from '../src/stores/tutorialStore.ts'
-import { winRate } from './helpers/autoplay.ts'
+import { levelAtEncounter, winRate } from './helpers/autoplay.ts'
 import { MONSTERS } from '../src/lib/dnd/data/monsters.ts'
 import { LOYAL_SQUIRE } from '../src/lib/dnd/data/companions.ts'
 import type { Character, CreationAnswers } from '../src/types/character.ts'
@@ -53,21 +53,36 @@ function fighterAtLevel(level: number): Character {
 
 const RUNS = 600
 
+/*
+ * Read out of the tutorial, not chosen. Every figure below was once measured at
+ * level 2 for all three fights, which is true of none of them: `deeper` is
+ * reached with no level-up since the goblin, and `rafters` carries two in its
+ * own `onEnter`. The second encounter was being scored a level too strong and
+ * the third a level too weak, and every floor set from those numbers was
+ * guarding a party the game never produces.
+ */
+const LEVELS = levelAtEncounter()
+
 test('the spider alone is a fight the party usually wins', () => {
-  const hero = fighterAtLevel(2)
+  const hero = fighterAtLevel(LEVELS.rafters ?? 3)
   const rate = winRate(() => rosterFor('rafters', hero), RUNS)
 
   assert.equal(rate.undecided, 0, 'a fight nobody can finish means the harness is lying')
-  // Documented at 67% for a fighter. Auto-play never casts, drinks or surges,
-  // so the real player sits above this.
+  /*
+   * 82% for a fighter, at the 3rd level it is actually met at. The 67% this
+   * said before was the same fight measured at 2nd, which is a level nobody
+   * fights it at — the two level-ups sit in the encounter's own `onEnter`.
+   * Auto-play still never casts, drinks or surges, so a real player sits above
+   * even this.
+   */
   assert.ok(
-    rate.party > 0.58 && rate.party < 0.78,
+    rate.party > 0.72 && rate.party < 0.92,
     `the spider is meant to be a close fight the party takes; got ${(rate.party * 100).toFixed(1)}%`,
   )
 })
 
 test('the bat and skeleton are the gentler fight that comes first', () => {
-  const hero = fighterAtLevel(2)
+  const hero = fighterAtLevel(LEVELS.deeper ?? 1)
   const rate = winRate(() => rosterFor('deeper', hero), RUNS)
 
   assert.equal(rate.undecided, 0)
@@ -79,16 +94,22 @@ test('the bat and skeleton are the gentler fight that comes first', () => {
   )
 })
 
-test('the rafters are harder than the fight before them', () => {
+test('the last fight is the harder one for a fighter, as played', () => {
   /*
-   * The ordering is the real claim, and it survives both numbers drifting. If a
-   * change ever made the spider the easier of the two, the tutorial would be
-   * teaching a difficulty curve that runs backwards, and both assertions above
-   * could still pass while it did.
+   * This used to build one hero at level 2 and send it into both encounters. As
+   * a comparison of the two *encounters* that was fair; as a statement about the
+   * game it was meaningless, because nobody meets them at the same level. The
+   * spider is fought at 3rd — two level-ups sit in its own `onEnter` — and the
+   * bat and skeleton at 1st.
+   *
+   * At the levels actually played it still holds for a fighter, whose kit does
+   * not change much with a level: 79% against the spider, 91% against the pair.
    */
-  const hero = fighterAtLevel(2)
-  const rafters = winRate(() => rosterFor('rafters', hero), RUNS)
-  const deeper = winRate(() => rosterFor('deeper', hero), RUNS)
+  const rafters = winRate(
+    () => rosterFor('rafters', fighterAtLevel(LEVELS.rafters ?? 3)),
+    RUNS,
+  )
+  const deeper = winRate(() => rosterFor('deeper', fighterAtLevel(LEVELS.deeper ?? 1)), RUNS)
 
   assert.ok(
     rafters.party < deeper.party,
@@ -96,10 +117,50 @@ test('the rafters are harder than the fight before them', () => {
   )
 })
 
+test('for a caster the curve runs backwards, which is a real problem', () => {
+  /*
+   * Recorded because it is true, not because it is wanted.
+   *
+   * A wizard meets the bat and skeleton at 1st level with one spell slot, and
+   * the spider at 3rd with two levels and a second tier of magic that arrived
+   * ninety seconds earlier. So the fight the tutorial calls its hardest is the
+   * one it wins most: 98% against the spider, 91% against the pair.
+   *
+   * The two level-ups are stacked immediately before the last encounter, which
+   * is a pacing decision — it is where the game teaches levelling — and it means
+   * the difficulty curve of the tutorial rises for the classes whose power comes
+   * from equipment and falls for the classes whose power comes from level.
+   *
+   * Asserted so that fixing it is a deliberate act with a failing test attached,
+   * rather than something that could be undone by accident. If this ever goes
+   * red because the spider outgrew the level-ups, that is the good outcome and
+   * the test should be rewritten to say so.
+   */
+  const spec = { classId: 'wizard', subclassId: 'evocation', magicStyleId: 'pyromancer' } as const
+  const rafters = winRate(
+    () => rosterFor('rafters', buildAtLevel(spec, LEVELS.rafters ?? 3)),
+    RUNS,
+    1,
+    true,
+  )
+  const deeper = winRate(
+    () => rosterFor('deeper', buildAtLevel(spec, LEVELS.deeper ?? 1)),
+    RUNS,
+    1,
+    true,
+  )
+
+  assert.ok(
+    rafters.party > deeper.party,
+    `the inversion has gone: rafters ${(rafters.party * 100).toFixed(1)}%, `
+      + `deeper ${(deeper.party * 100).toFixed(1)}% — rewrite this test`,
+  )
+})
+
 test('the opening goblin is the easiest thing in the game', () => {
   // Level 1, because that is who meets it. It has AC 12 rather than the SRD's
   // 15 for exactly this reason, and that divergence is documented as deliberate.
-  const rate = winRate(() => rosterFor('cellar', fighterAtLevel(1)), RUNS)
+  const rate = winRate(() => rosterFor('cellar', fighterAtLevel(LEVELS.cellar ?? 1)), RUNS)
 
   assert.equal(rate.undecided, 0)
   assert.ok(
@@ -156,10 +217,11 @@ function buildAtLevel(spec: (typeof BUILDS)[number], level: number): Character {
 test('no class is locked out of the tutorial it has to finish', () => {
   for (const spec of BUILDS) {
     const name = `${spec.classId}/${spec.subclassId}`
-    const cellar = winRate(() => rosterFor('cellar', buildAtLevel(spec, 1)), RUNS)
-    const hero = buildAtLevel(spec, 2)
-    const deeper = winRate(() => rosterFor('deeper', hero), RUNS)
-    const rafters = winRate(() => rosterFor('rafters', hero), RUNS)
+    const cellar = winRate(() => rosterFor('cellar', buildAtLevel(spec, LEVELS.cellar ?? 1)), RUNS)
+    const forDeeper = buildAtLevel(spec, LEVELS.deeper ?? 1)
+    const forRafters = buildAtLevel(spec, LEVELS.rafters ?? 3)
+    const deeper = winRate(() => rosterFor('deeper', forDeeper), RUNS)
+    const rafters = winRate(() => rosterFor('rafters', forRafters), RUNS)
 
     assert.equal(cellar.undecided + deeper.undecided + rafters.undecided, 0, `${name} stalled`)
     assert.ok(cellar.party > 0.95, `${name} cellar ${(cellar.party * 100).toFixed(1)}%`)
@@ -228,7 +290,7 @@ test('the no-cast floor understates whoever has offensive spells', () => {
    */
   const wizard = buildAtLevel(
     { classId: 'wizard', subclassId: 'evocation', magicStyleId: 'pyromancer' },
-    2,
+    LEVELS.rafters ?? 3,
   )
   const mute = winRate(() => rosterFor('rafters', wizard), RUNS)
   const casting = winRate(() => rosterFor('rafters', wizard), RUNS, 1, true)
@@ -242,7 +304,7 @@ test('the no-cast floor understates whoever has offensive spells', () => {
 test('a fighter plays the same either way, because it has nothing to cast', () => {
   // The control. Any drift here means the casting branch is reaching combatants
   // it has no business touching.
-  const fighter = fighterAtLevel(2)
+  const fighter = fighterAtLevel(LEVELS.rafters ?? 3)
   const mute = winRate(() => rosterFor('rafters', fighter), RUNS)
   const casting = winRate(() => rosterFor('rafters', fighter), RUNS, 1, true)
   assert.equal(casting.party, mute.party)
@@ -269,7 +331,7 @@ test('the healer can now spend a turn on something other than mercy', () => {
    */
   const life = buildAtLevel(
     { classId: 'cleric', subclassId: 'life', magicStyleId: 'healersMercy' },
-    2,
+    LEVELS.rafters ?? 3,
   )
   const casting = winRate(() => rosterFor('rafters', life), RUNS, 1, true)
   assert.ok(

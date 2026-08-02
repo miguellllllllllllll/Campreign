@@ -273,9 +273,18 @@ export function rosterFor(encounterId: string, character: Character): Combatant[
   }
   /*
    * One enemy, and the hardest one written. Simulated over 600 auto-played runs
-   * at level 2: a fighter wins 67% against the spider alone, 98% against the
-   * bat and skeleton it follows. Pairing it with either of them drops the
-   * party under 40% — so it fights alone.
+   * at the levels these are actually met at — 3rd here, 1st for the pair before
+   * it, which `tests/balance.test.ts` reads out of the tutorial rather than
+   * assuming: a fighter wins 82% against the spider alone and 91% against the
+   * bat and skeleton. Pairing the spider with either of them drops the party
+   * far enough that it fights alone.
+   *
+   * These read 67% and 98% until the harness was corrected, because it built
+   * one hero at level 2 and sent it into both fights. Nobody meets either at
+   * level 2. The second number was a level too generous and the first a level
+   * too harsh, which is the same failure as the arithmetic bound in
+   * `monsters.test.ts` that hardcoded a level-2 party and went green for weeks
+   * after the level-ups moved.
    *
    * "A fighter" is the correction. These read "the party" while only one build
    * had ever been measured, and running the other four found the auto-player
