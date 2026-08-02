@@ -70,6 +70,16 @@
      brass button and the well behind every resource bar, and both still need
      to be dark now that the room around them is not.
 
+     Browner and more worn than it started, and the two pull against the ink.
+     Deepening the creases and warming the paper both darken the worst patch of
+     the surface, which is what text contrast is measured against — the first
+     attempt at "browner and more used" took the ink from 6.01:1 to 5.62:1
+     while looking like an improvement. The fix is that `overlay` lightens above
+     mid-grey: the crease map keeps its new amplitude but sits higher, so wear
+     shows mostly as highlight rather than as shadow. Ink is near-black now and
+     the worst case is 6.56:1, better than before the change, with clean
+     parchment at 10.92:1.
+
      The surface is a creased chart rather than a photograph laid down flat,
      and the processing is a contrast requirement rather than taste. Text on a
      textured surface is only as readable as that surface's darkest patch, and
@@ -79,8 +89,8 @@
      material's *height* map rather than its colour, centred on mid-grey and
      blended, which textures the parchment without ever moving it far from the
      tone the tokens promise. */
-  --color-table: #e3d2a9;
-  --color-table-ink: #33220f;
+  --color-table: #dfc488;
+  --color-table-ink: #1d1104;
 
   --color-ink: var(--color-obsidian);
   --color-surface: var(--color-dungeon-card);
@@ -370,6 +380,13 @@
        on it — every stroke is ink at 26% or less, so the darkest point of the
        whole composite stays inside AA. */
     url("/ui/fantasy-map.svg"),
+    /* Foxing and old water marks. Soft-edged and few, because a stain that is
+       darker than the ruling reads as damage to the screen rather than to the
+       paper. */
+    radial-gradient(ellipse 18% 12% at 12% 22%, color-mix(in srgb, var(--color-edge) 8%, transparent), transparent 70%),
+    radial-gradient(ellipse 14% 20% at 88% 68%, color-mix(in srgb, var(--color-edge) 7%, transparent), transparent 72%),
+    radial-gradient(ellipse 22% 10% at 62% 6%, color-mix(in srgb, var(--color-edge) 6%, transparent), transparent 74%),
+    radial-gradient(ellipse 12% 16% at 34% 92%, color-mix(in srgb, var(--color-edge) 6%, transparent), transparent 70%),
     url("/ui/parchment-map.jpg");
   /* Per layer, and the `auto`s matter: one `background-size` applies to every
      layer, so sizing the parchment also tiled the two washes and put a hard
@@ -380,6 +397,10 @@
     auto,
     auto,
     cover,
+    auto,
+    auto,
+    auto,
+    auto,
     440px 440px;
   background-repeat:
     no-repeat,
@@ -387,10 +408,14 @@
     repeat,
     repeat,
     no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
     repeat;
   /* Only the parchment blends — it is height data centred on mid-grey, so
      `overlay` creases the surface colour without shifting it. */
-  background-blend-mode: normal, normal, normal, normal, normal, overlay;
+  background-blend-mode: normal, normal, normal, normal, normal, normal, normal, normal, normal, overlay;
   background-attachment: fixed;
 }
 
@@ -400,8 +425,8 @@
  */
 @utility bg-motes {
   background-image:
-    radial-gradient(color-mix(in srgb, var(--color-parchment) 13%, transparent) 1px, transparent 1.4px),
-    radial-gradient(color-mix(in srgb, var(--color-amber-torch) 10%, transparent) 1px, transparent 1.6px);
+    radial-gradient(color-mix(in srgb, var(--color-parchment) 8%, transparent) 1px, transparent 1.4px),
+    radial-gradient(color-mix(in srgb, var(--color-amber-torch) 6%, transparent) 1px, transparent 1.6px);
   background-size:
     140px 200px,
     90px 160px;
@@ -488,7 +513,7 @@
 @utility bar-well {
   box-shadow:
     inset 0 2px 4px -1px rgb(0 0 0 / 0.7),
-    0 1px 0 color-mix(in srgb, var(--color-parchment) 9%, transparent);
+    0 1px 0 color-mix(in srgb, var(--color-parchment) 6%, transparent);
 }
 
 /**
