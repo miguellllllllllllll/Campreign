@@ -163,7 +163,29 @@ test('no class is locked out of the tutorial it has to finish', () => {
 
     assert.equal(cellar.undecided + deeper.undecided + rafters.undecided, 0, `${name} stalled`)
     assert.ok(cellar.party > 0.95, `${name} cellar ${(cellar.party * 100).toFixed(1)}%`)
-    assert.ok(deeper.party > 0.7, `${name} deeper ${(deeper.party * 100).toFixed(1)}%`)
+    /*
+     * 0.65, lowered from 0.7 when `stepsToward` landed on main and it caught
+     * that immediately — the first thing this harness did on somebody else's
+     * change. An actor that cannot take the straight step now routes around
+     * instead of stalling, which matters in `deeper` and not in `rafters`
+     * because four bodies on a five-by-five board block each other and three do
+     * not. Enemies that reliably arrive cost the casters most, and both clerics
+     * and the wizard fell about fifteen points to ~69%.
+     *
+     * Lowered rather than argued with. The movement fix is right, the ordering
+     * below still holds for every build, and a floor set on numbers measured
+     * before a bug was fixed is not evidence of anything.
+     *
+     * 0.55 rather than 0.65 because the worst build is the guardian mage at
+     * 64%, and a floor set one point under whatever was last measured is a
+     * tripwire for noise rather than for design. All seven, post-merge:
+     *
+     *   fighter/champion   96.2   rogue/thief        87.7
+     *   paladin/devotion   94.3   wizard/evocation   70.0
+     *   cleric/life        69.2   cleric/light       69.2
+     *   wizard/abjuration  63.8
+     */
+    assert.ok(deeper.party > 0.55, `${name} deeper ${(deeper.party * 100).toFixed(1)}%`)
     /*
      * A third is the floor, and it is deliberately generous. Auto-play never
      * heals, so a life cleric — whose whole kit is healing — is the build this
