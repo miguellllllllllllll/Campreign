@@ -331,7 +331,21 @@ export function buildCharacter(
     ...(selection.preparedSpellIds.length === 0
       ? {}
       : { preparedSpells: [...selection.preparedSpellIds] }),
-    ...(answers.magicStyleId === undefined ? {} : { magicStyleId: answers.magicStyleId }),
+    /*
+     * Checked against the registry like its two neighbours below, which it was
+     * not until an id one letter wrong turned up in a test fixture.
+     *
+     * The other two drop an unknown id and leave a character who is simply
+     * plainer than intended. This one was stored unchecked, and an unknown
+     * style resolves to no cantrips and no prepared spells — so a wizard came
+     * out with a style printed on their sheet, no magic of any kind behind it,
+     * and nothing anywhere saying the two disagreed. A caster with nothing to
+     * cast is the inert-content failure this project keeps finding, arrived at
+     * from the other direction.
+     */
+    ...(answers.magicStyleId === undefined || magicStyleById(answers.magicStyleId) === undefined
+      ? {}
+      : { magicStyleId: answers.magicStyleId }),
     // Only written when advanced mode actually produced a pick, so a fast-track
     // character serialises exactly as it did before the feature existed.
     ...(subclassById(answers.subclassId) === undefined ? {} : { subclassId: answers.subclassId }),

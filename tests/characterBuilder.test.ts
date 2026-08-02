@@ -344,3 +344,65 @@ test('a caster is granted no spell attack they did not choose', () => {
     ['rayOfFrost'],
   )
 })
+
+// --- Ids the registry does not recognise ------------------------------------
+
+/*
+ * None of this is reachable from the creation flow, which offers only ids it
+ * read out of the registries. It is here because a fixture in
+ * `tests/balance.test.ts` asked for `battleMaster` — one capital letter wrong —
+ * got a subclass-less fighter without complaint, and every Battle Master figure
+ * measured from it was a plain fighter's. The interesting part was what turned
+ * up next to it: the three sibling fields did not agree on what to do.
+ */
+
+const CASTER = {
+  classId: 'wizard',
+  raceId: 'human',
+  backgroundId: 'noble',
+  flawId: 'obeyed',
+  equipmentChoice: 'offensive',
+  auraId: 'amber',
+  magicStyleId: 'pyromancer',
+} as CreationAnswers
+
+test('an unrecognised id is dropped rather than stored, whichever field it is', () => {
+  for (const [field, bad] of [
+    ['subclassId', 'evocationn'],
+    ['featId', 'nonsense'],
+    ['magicStyleId', 'pyromancerr'],
+  ] as const) {
+    const hero = buildCharacter({ ...CASTER, [field]: bad }, 'S', { id: 's', now: 0 })
+    assert.equal(
+      hero[field],
+      undefined,
+      `${field} kept "${bad}", so the sheet claims something the registry has never heard of`,
+    )
+  }
+})
+
+test('a caster never ends up displaying magic it does not have', () => {
+  /*
+   * The one that mattered. An unknown subclass or feat leaves a character who is
+   * plainer than intended and entirely playable; an unknown *style* resolved to
+   * no cantrips and no prepared spells, so the wizard kept the style on their
+   * sheet and had nothing at all to cast — a caster reduced to hitting things
+   * with a stick, with no error anywhere.
+   */
+  const broken = buildCharacter({ ...CASTER, magicStyleId: 'pyromancerr' }, 'S', {
+    id: 's',
+    now: 0,
+  })
+  assert.equal(broken.magicStyleId, undefined)
+  assert.equal(
+    (broken.cantrips ?? []).length,
+    0,
+    'the premise of this test is that the style granted nothing',
+  )
+
+  // And the working case still works, so the check did not cost anybody magic.
+  const whole = buildCharacter(CASTER, 'S', { id: 's', now: 0 })
+  assert.equal(whole.magicStyleId, 'pyromancer')
+  assert.ok((whole.cantrips ?? []).length > 0)
+  assert.ok((whole.preparedSpells ?? []).length > 0)
+})
