@@ -248,7 +248,7 @@ test('a fighter plays the same either way, because it has nothing to cast', () =
   assert.equal(casting.party, mute.party)
 })
 
-test('the life cleric is the weakest build in the rafters however it is played', () => {
+test('the healer can now spend a turn on something other than mercy', () => {
   /*
    * The finding, pinned so it cannot quietly change without somebody noticing.
    *
@@ -261,9 +261,11 @@ test('the life cleric is the weakest build in the rafters however it is played',
    * not an artifact of playing badly — both policies agree, and they disagree
    * about everything else.
    *
-   * Left as a measurement rather than acted on. Whether the fight should be
-   * softened, the style given something offensive, or the number simply
-   * accepted because a human plays better than this, is a design call.
+   * Resolved by giving Mercy & Mending a Guiding Bolt, third in its list so the
+   * trim cannot take it. 32% became 65% — beside the fighter's 69%, and still
+   * well under Radiance & Wrath's 83%, which is the style that is supposed to
+   * out-damage it. The band below is the shape that was bought: no longer the
+   * outlier, not turned into a second wrath cleric.
    */
   const life = buildAtLevel(
     { classId: 'cleric', subclassId: 'life', magicStyleId: 'healersMercy' },
@@ -271,7 +273,7 @@ test('the life cleric is the weakest build in the rafters however it is played',
   )
   const casting = winRate(() => rosterFor('rafters', life), RUNS, 1, true)
   assert.ok(
-    casting.party > 0.25 && casting.party < 0.45,
+    casting.party > 0.5 && casting.party < 0.78,
     `life cleric rafters, casting: ${(casting.party * 100).toFixed(1)}%`,
   )
 })

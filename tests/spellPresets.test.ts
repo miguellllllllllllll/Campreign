@@ -176,8 +176,15 @@ test('the draft the creation wizard actually builds is legal for every ancestry'
 test('a draft too early to know its caps is left alone', () => {
   // No race yet means no modifier, so nothing to trim against. The style's full
   // list stands until there is a real answer to measure it by.
+  //
+  // Measured against the style rather than a literal. This said `4`, which was
+  // that style's length at the time and had nothing to do with what the test is
+  // about — adding a fifth spell to Mercy & Mending broke it, and the thing it
+  // exists to check had not changed at all.
+  const style = MAGIC_STYLE_PRESETS.find((one) => one.id === 'healersMercy')
+  assert.ok(style !== undefined)
   const selection = resolveSpellSelection({ classId: 'cleric', magicStyleId: 'healersMercy' })
-  assert.equal(selection.preparedSpellIds.length, 4)
+  assert.equal(selection.preparedSpellIds.length, style.preparedSpellIds.length)
 })
 
 test('a preset never lists the same spell twice', () => {
@@ -300,4 +307,70 @@ test('the wizard styles differ in what they prepare, not only in cantrips', () =
     wizards.length,
     'two wizard styles prepare the same spells, so picking between them is decoration',
   )
+})
+
+// --- What the trim is allowed to take away ----------------------------------
+
+const OFFENSIVE = new Set(['guidingBolt', 'inflictWounds', 'magicMissile', 'burningHands', 'rayOfSickness', 'shatter'])
+
+test('trimming a style to the cap never removes its last offensive spell', () => {
+  /*
+   * The general form of two bugs, rather than a third restatement of them.
+   *
+   * Styles are written long and cut to 1 + Wisdom modifier, so the tail is
+   * whatever the caster is not clever enough to keep. `faithfulWard` listed its
+   * only offensive spell fourth, and a dwarf, elf, halfling or tiefling cleric
+   * caps at three — so four races out of five were handed a style with nothing
+   * to attack with, and the fifth was fine, which is exactly how it went
+   * unnoticed. `healersMercy` had the same shape for a different reason: it
+   * listed no offensive spell at all.
+   *
+   * Asserted over every style and every race, because the failure only appears
+   * at some combinations and testing the one in front of you is what let this
+   * survive.
+   */
+  for (const style of MAGIC_STYLE_PRESETS) {
+    const listed = style.preparedSpellIds.filter((id) => OFFENSIVE.has(id))
+    if (listed.length === 0) continue
+
+    for (const raceId of Object.keys(RACE_PRESETS)) {
+      const hero = buildCharacter(
+        {
+          classId: style.classId,
+          raceId,
+          backgroundId: 'noble',
+          flawId: 'obeyed',
+          equipmentChoice: 'defensive',
+          auraId: 'amber',
+          magicStyleId: style.id,
+        } as CreationAnswers,
+        'S',
+        { id: 's', now: 0 },
+      )
+      const kept = (hero.preparedSpells ?? []).filter((id) => OFFENSIVE.has(id))
+      assert.ok(
+        kept.length > 0,
+        `${style.id} + ${raceId} (wis ${hero.scores.wis}) trimmed away every offensive spell: `
+          + `${(hero.preparedSpells ?? []).join(', ')}`,
+      )
+    }
+  }
+})
+
+test('every cleric style can spend an action on something other than mercy', () => {
+  /*
+   * Mercy & Mending had four spells and all of them were kind. Simulated against
+   * the last encounter it was the weakest build in the game and the only one
+   * that got *worse* when it began casting — 35% down to 32% — because a turn
+   * traded for hit points you are about to lose again loses to a turn traded for
+   * damage. Guiding Bolt took it to 65%, beside the fighter's 69% and still well
+   * under Radiance & Wrath's 83%, which is the style that is supposed to do this
+   * better.
+   */
+  for (const style of MAGIC_STYLE_PRESETS.filter((one) => one.classId === 'cleric')) {
+    assert.ok(
+      style.preparedSpellIds.some((id) => OFFENSIVE.has(id)),
+      `${style.id} has no way to hurt anything with a spell slot`,
+    )
+  }
 })

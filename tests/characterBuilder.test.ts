@@ -297,8 +297,20 @@ test('hand-picked spells override the style they came from', () => {
   )
 
   assert.deepEqual(hero.cantrips, ['sacredFlame'], 'the explicit list wins')
-  // The prepared list was never touched, so it still comes from the style.
-  assert.deepEqual(hero.preparedSpells, [...(magicStyleById('healersMercy')?.preparedSpellIds ?? [])])
+
+  /*
+   * The prepared list was never touched, so it still comes from the style —
+   * which means the style's list *trimmed to the cap*, not the whole of it.
+   *
+   * This compared against the untrimmed preset, which held only while Mercy &
+   * Mending happened to be exactly cap-length. Giving it a fifth spell broke an
+   * assertion about explicit cantrips overriding a style, which is not a thing
+   * that changed. A prefix is what "came from the style" actually means here.
+   */
+  const listed = magicStyleById('healersMercy')?.preparedSpellIds ?? []
+  const prepared = hero.preparedSpells ?? []
+  assert.ok(prepared.length > 0)
+  assert.deepEqual(prepared, listed.slice(0, prepared.length))
 })
 
 test('picking a cantrip the class already grants does not double the attack', () => {

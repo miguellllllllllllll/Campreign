@@ -111,7 +111,27 @@ export const MAGIC_STYLE_PRESETS: readonly MagicStylePreset[] = [
     description:
       'You keep everyone standing. The least glamorous role at the table and the one nobody wants to be without.',
     cantripIds: ['spareTheDying', 'guidance', 'sacredFlame'],
-    preparedSpellIds: ['healingWord', 'cureWounds', 'bless', 'shieldOfFaith'],
+    /*
+     * Guiding Bolt sits third, and both facts matter.
+     *
+     * It is here because this was the only cleric style with nothing at all to
+     * spend an action on but healing, and simulation says that loses: against
+     * one enemy hitting as hard as the spider, a turn traded for hit points you
+     * are about to lose again is worse than a turn traded for damage. It was the
+     * weakest build in the last encounter by a wide margin, and the only one
+     * that got *worse* when it started casting — 35% down to 32%.
+     *
+     * Third rather than last because the list is trimmed to 1 + Wisdom modifier
+     * and the tail is what falls off. A cleric with Wisdom 14 keeps three, so an
+     * offensive spell written fourth would be cut from precisely the cleric who
+     * has the least of everything else. The two heals still lead, because they
+     * are what makes this style itself.
+     *
+     * One, not two. `radiantWrath` carries Guiding Bolt *and* Inflict Wounds and
+     * is meant to out-damage this; the point here is to stop a healer being
+     * helpless, not to make the healer a second wrath cleric.
+     */
+    preparedSpellIds: ['healingWord', 'cureWounds', 'guidingBolt', 'bless', 'shieldOfFaith'],
   },
   {
     id: 'faithfulWard',
@@ -120,7 +140,21 @@ export const MAGIC_STYLE_PRESETS: readonly MagicStylePreset[] = [
     description:
       'Divine protection spread over your allies. You make the front line harder to kill and the whole party luckier.',
     cantripIds: ['sacredFlame', 'guidance', 'light'],
-    preparedSpellIds: ['shieldOfFaith', 'bless', 'cureWounds', 'guidingBolt'],
+    /*
+     * Guiding Bolt moved from fourth to third, which is a bug fix rather than a
+     * balance tweak — it was being deleted from most of the clerics who chose
+     * this style.
+     *
+     * The list is trimmed to 1 + Wisdom modifier. A human cleric reaches Wisdom
+     * 16 and keeps four; a dwarf, elf, halfling or tiefling sits at 15, keeps
+     * three, and lost the only offensive spell on the list. Four races out of
+     * five got a protection style with literally nothing to attack with beyond
+     * a cantrip, and nothing anywhere said so.
+     *
+     * Shield of Faith and Bless still lead — they are the style — and Cure
+     * Wounds is now what the tail gives up instead.
+     */
+    preparedSpellIds: ['shieldOfFaith', 'bless', 'guidingBolt', 'cureWounds'],
   },
 ]
 

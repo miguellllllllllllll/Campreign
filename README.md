@@ -365,18 +365,31 @@ that resolves, otherwise swing:
 So the wizard's floor understated it by nearly forty points, and any conclusion
 drawn from the no-cast figures about a caster was worth very little.
 
-The exception is the finding. **The life cleric goes down when it starts
-casting**, and it is the weakest build in the rafters under either policy. The
-only thing `healersMercy` gives it to spend an action on is healing, and against
-one enemy hitting as hard as the spider, healing loses the race — a turn traded
-for hit points you are about to lose again is worse than a turn traded for
-damage. That is a real property of 5e rather than a simulation artifact, and the
-two policies agreeing on it while disagreeing about everything else is the
-reason to believe it.
+The exception was the finding. **The life cleric went down when it started
+casting** — 35% to 32%, the weakest build under either policy. The only thing
+`healersMercy` gave it to spend an action on was healing, and against one enemy
+hitting as hard as the spider, healing loses the race: a turn traded for hit
+points you are about to lose again beats nothing and loses to a turn traded for
+damage. A real property of 5e rather than a simulation artifact, and the two
+policies agreeing on it while disagreeing about everything else is the reason to
+believe it.
 
-Recorded rather than acted on. Whether to soften the fight, give the style
-something offensive, or accept the number because a human plays better than any
-of this, is a design call and not one a measurement gets to make.
+**Fixed by giving Mercy & Mending a Guiding Bolt**, which took it to 65% —
+beside the fighter's 69%, still well under Radiance & Wrath's 83%. One offensive
+spell, not two: the point was to stop a healer being helpless, not to build a
+second wrath cleric.
+
+It sits **third** in the list, and that is the part worth reading. Styles are
+trimmed to 1 + Wisdom modifier, so the tail is what a caster gives up. Writing
+the offensive spell fourth would delete it from exactly the cleric with the
+least of everything else — which is not hypothetical, because **Shield of the
+Faithful was already doing it**. It listed Guiding Bolt fourth, a human cleric
+reaches Wisdom 16 and keeps four, and a dwarf, elf, halfling or tiefling caps at
+three. Four races out of five had been handed a protection style with no
+offensive spell at all, and the fifth was fine, which is how it went unnoticed.
+
+Both are now covered by one test over every style crossed with every race,
+rather than a third assertion about the two cases already found.
 
 The bands are wide on purpose. Pinning 59.2% would fail on noise and teach a
 reader to ignore the test; the assertions say "a close fight the party usually
