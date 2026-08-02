@@ -6,18 +6,18 @@
     triangle in a hexagon, which is the Vercel logo, which is the exact thing
     this file exists to stop serving.
 
+    Ink on parchment rather than gold on near-black. The app was a candlelit
+    cellar when this was drawn; it is a chart on a table now, and a tab mark
+    that still carries the old scheme is the same stale-literal problem as a
+    hardcoded colour, just somewhere nobody looks. Dark-on-light also holds up
+    better in a light browser chrome than the old dark square did.
+
     Strokes are heavy on purpose: at sixteen pixels the 2.2 outline lands on
     roughly one device pixel, and anything finer would disappear.
   -->
-  <defs>
-    <linearGradient id="gold" x1="16" y1="2.4" x2="16" y2="29.6" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#f4d97a" />
-      <stop offset="1" stop-color="#c08b1f" />
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="7" fill="#14100c" />
-  <g stroke="url(#gold)" fill="none" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M16 2.6 27.6 9.4v13.2L16 29.4 4.4 22.6V9.4z" stroke-width="2.2" fill="#d4af37" fill-opacity="0.16" />
+  <rect width="32" height="32" rx="7" fill="#dfc488" />
+  <g stroke="#1d1104" fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M16 2.6 27.6 9.4v13.2L16 29.4 4.4 22.6V9.4z" stroke-width="2.2" fill="#1d1104" fill-opacity="0.12" />
     <path d="M16 9.2 22.9 21.4H9.1z" stroke-width="1.9" />
     <path d="M16 9.2V2.6M9.1 21.4 4.4 22.6M22.9 21.4l4.7 1.2" stroke-width="1.7" />
   </g>
