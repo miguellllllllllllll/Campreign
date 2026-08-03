@@ -124,6 +124,25 @@ the sheet and the printed page and stops there — so the only rules are "not
 empty" and a 140-character ceiling the engine enforces itself rather than
 trusting the field to.
 
+**And you can pick the two skills yourself.** The background offers "the usual
+two" or "choose my own", and choosing your own replaces its pair with any two of
+the eighteen. Only the training changes — the trinket, the ideal and the bond
+still come from the life you picked, because a soldier who learned medicine
+instead of intimidation is still a soldier.
+
+Safe for the same reason the free-text weakness is: a background's skills were
+never load-bearing anywhere else. `Character.skillProficiencies` is a resolved
+list that the sheet, the printed page and every check read directly, so nothing
+downstream has to learn that the pair was swapped. The class's own training is
+merged on top and cannot be traded away — a fighter keeps athletics whatever the
+background does, which is why swapping a soldier's pair drops intimidation and
+leaves athletics standing.
+
+The two questions are invisible until you ask for them. An empty choice list is
+how a field hides itself here, and it is also how the step decides it has been
+answered — so the fast path costs a beginner nothing, and the second list drops
+whatever the first one took rather than offering a choice that cannot be made.
+
 **A weakness is not chained to a background.** Each background's own three come
 first, because they are the obvious answer and a beginner should find it at the
 top. After them sit eight anyone can carry, marked as such. Nothing mechanical
@@ -295,6 +314,120 @@ prompt when a blow is about to land, alongside Warding Flare if you have both.
 Light and Thaumaturgy still do nothing — neither has a combat effect to have.
 They are deliberately kept off the action bar rather than shown greyed out; a
 button that will never work teaches nothing.
+
+### The balance numbers run themselves now
+
+Sentences like "the party wins 59% against the spider alone" decide things — that
+one is the reason the spider fights without company. They were all measured by
+scripts that were run once and thrown away, so nothing could re-check them after
+a monster changed, and one note in the bestiary went on claiming the giant spider
+had no venom for several commits after it grew a 2d8 one.
+
+`tests/balance.test.ts` plays each tutorial encounter 600 times on a fixed seed
+and asserts the documented shape still holds. It imports `rosterFor` from the
+store rather than rebuilding the roster, which is the point: a copy would measure
+the fight somebody remembered writing, and would stay green through exactly the
+change the test exists to catch. Adding a second monster to the rafters drops the
+party to 38% and turns it red.
+
+It also covers all five classes, which turned out to matter. The figures were
+measured on a fighter and written down as "the party", and running the rest
+found a defect in the simulation rather than the design: `takeAutomaticTurn`
+swung `attacks[0]`, always the melee weapon, so an auto-played wizard walked
+across the cellar holding Fire Bolt to hit things with a stick. It won 17% of
+the rafters. Choosing by reach and damage instead puts it at 54%.
+
+That fix is a provable no-op for the shipped game — every monster and the squire
+carry exactly one attack, and a test asserts it, so the choice can only start
+deciding real fights if somebody gives a monster a bow. It did move the
+documented numbers, because a fighter now throws its handaxe while closing
+instead of arriving empty-handed: 59% became 67%.
+
+What survives is a real spread. A fighter takes the rafters about twice as often
+as a life cleric, 67% against 35%, and the floor is set at a third. The healer is
+the build this measurement flatters least — auto-play never heals — which is
+exactly why the floor is generous rather than tight.
+
+### The levels the fights are actually fought at
+
+The harness built one hero at level 2 and sent it into every encounter. Nobody
+meets any of them at level 2. `deeper` is reached with no level-up since the
+goblin, and `rafters` carries two in its own `onEnter` — so the second fight was
+being scored a level too strong and the third a level too weak, and every floor
+set from those numbers guarded a party the game does not produce.
+
+`levelAtEncounter()` now walks the step chain and counts the level-ups, so
+moving one moves the measurements with it. It reports `{cellar: 1, deeper: 1,
+rafters: 3}`.
+
+**Correcting it inverted a claim this README made.** The old ordering test built
+one hero and compared the two encounters at a common level, which is a fair
+measure of the encounters and a meaningless one of the game. As played:
+
+    as played              deeper (L1)   rafters (L3)
+    fighter/champion            90.8          78.7
+    wizard/pyromancer, casting  91.0          97.7
+
+For a fighter the curve still rises. **For a caster it runs backwards** — the
+fight the tutorial calls its hardest is the one a wizard wins most, because two
+levels and a second tier of magic arrive ninety seconds before the spider does.
+The level-ups are stacked there for a pacing reason, since that is where the
+game teaches levelling, and the consequence is that difficulty rises for classes
+whose power comes from equipment and falls for classes whose power comes from
+level.
+
+Both are asserted, so fixing the inversion is a deliberate act with a failing
+test attached rather than something that can be undone by accident.
+
+### What the floor hides, and the one thing it does not
+
+The floor plays nobody's spells, which is honest and flattens the classes whose
+kit *is* spells. `winRate(..., casts)` puts a number beside it with a meagre
+caster — heal yourself under half, otherwise throw the biggest damaging spell
+that resolves, otherwise swing:
+
+    rafters, level 2      no-cast   casting
+    wizard/evocation        54.0      92.3
+    cleric/light            51.8      82.5
+    paladin/devotion        65.2      64.3
+    cleric/life             35.3      32.2
+    fighter/champion        69.3      69.3
+
+So the wizard's floor understated it by nearly forty points, and any conclusion
+drawn from the no-cast figures about a caster was worth very little.
+
+The exception was the finding. **The life cleric went down when it started
+casting** — 35% to 32%, the weakest build under either policy. The only thing
+`healersMercy` gave it to spend an action on was healing, and against one enemy
+hitting as hard as the spider, healing loses the race: a turn traded for hit
+points you are about to lose again beats nothing and loses to a turn traded for
+damage. A real property of 5e rather than a simulation artifact, and the two
+policies agreeing on it while disagreeing about everything else is the reason to
+believe it.
+
+**Fixed by giving Mercy & Mending a Guiding Bolt**, which took it to 65% —
+beside the fighter's 69%, still well under Radiance & Wrath's 83%. One offensive
+spell, not two: the point was to stop a healer being helpless, not to build a
+second wrath cleric.
+
+It sits **third** in the list, and that is the part worth reading. Styles are
+trimmed to 1 + Wisdom modifier, so the tail is what a caster gives up. Writing
+the offensive spell fourth would delete it from exactly the cleric with the
+least of everything else — which is not hypothetical, because **Shield of the
+Faithful was already doing it**. It listed Guiding Bolt fourth, a human cleric
+reaches Wisdom 16 and keeps four, and a dwarf, elf, halfling or tiefling caps at
+three. Four races out of five had been handed a protection style with no
+offensive spell at all, and the fifth was fine, which is how it went unnoticed.
+
+Both are now covered by one test over every style crossed with every race,
+rather than a third assertion about the two cases already found.
+
+The bands are wide on purpose. Pinning 59.2% would fail on noise and teach a
+reader to ignore the test; the assertions say "a close fight the party usually
+takes", "not a coin flip", and — the claim that survives both numbers drifting —
+that the rafters are harder than the fight before them. A change that made the
+last one false would run the tutorial's difficulty curve backwards while both
+individual figures still looked reasonable.
 
 **Resistance is absent on purpose, and the reason is arithmetic.** It was the
 obvious fourth working cantrip: the SRD lends 1d4 to a saving throw, the

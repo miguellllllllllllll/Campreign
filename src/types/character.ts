@@ -25,6 +25,17 @@ export interface CreationAnswers {
   classId: ClassId
   raceId: RaceId
   backgroundId: BackgroundId
+  /**
+   * Whether the background's usual training was kept or replaced.
+   *
+   * Absent means kept, so every character built before this existed is
+   * unchanged by it — and a player who never opens the question gets the fast
+   * path they came for.
+   */
+  trainingChoice?: 'standard' | 'custom'
+  /** The two skills a custom training trains instead. */
+  backgroundSkillA?: SkillName
+  backgroundSkillB?: SkillName
   /** Which of the background's flaws the player owned up to. */
   flawId: string
   /**
@@ -119,6 +130,23 @@ export interface Character {
   classId: ClassId
   raceId: RaceId
   backgroundId: BackgroundId
+  /**
+   * What this character calls their background, when the preset's name is not it.
+   *
+   * Display only. `backgroundId` stays required and keeps carrying everything
+   * mechanical — the trinket, the ideal, the bond and the default skill pair —
+   * so a renamed background is still a soldier to every calculation. Absent on
+   * every character built so far, which is what makes the three sheet
+   * components able to fall back to the preset's label without behaving
+   * differently.
+   *
+   * Declared before anything reads it, deliberately. The three reads are the
+   * interface session's files, and a property missing from this type is a
+   * TS2339 at their call site rather than a harmless absent value — an optional
+   * field is only safe to *read* once the type admits it exists. Landed on its
+   * own so no commit in that sequence reddens the gate.
+   */
+  backgroundLabel?: string
   scores: AbilityScores
   maxHp: number
   currentHp: number

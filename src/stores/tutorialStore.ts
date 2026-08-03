@@ -254,7 +254,7 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
  * to spawn a level-2 hero with the hit points and slots they just earned, and
  * a roster stored once at the beginning cannot know about them.
  */
-function rosterFor(encounterId: string, character: Character): Combatant[] {
+export function rosterFor(encounterId: string, character: Character): Combatant[] {
   const hero = characterToCombatant(character, {
     position: HERO_START,
     speedSquares: TUTORIAL_SPEED_SQUARES,
@@ -273,13 +273,39 @@ function rosterFor(encounterId: string, character: Character): Combatant[] {
   }
   /*
    * One enemy, and the hardest one written. Simulated over 600 auto-played runs
-   * at level 2: the party wins 59% against the spider alone, 96% against the
-   * bat and skeleton it follows. Pairing it with either of them dropped the
-   * party under 40%, and all three together to 31% — so it fights alone.
+   * at the levels these are actually met at — 3rd here, 1st for the pair before
+   * it, which `tests/balance.test.ts` reads out of the tutorial rather than
+   * assuming: a fighter wins 82% against the spider alone and 91% against the
+   * bat and skeleton. Pairing the spider with either of them drops the party
+   * far enough that it fights alone.
+   *
+   * These read 67% and 98% until the harness was corrected, because it built
+   * one hero at level 2 and sent it into both fights. Nobody meets either at
+   * level 2. The second number was a level too generous and the first a level
+   * too harsh, which is the same failure as the arithmetic bound in
+   * `monsters.test.ts` that hardcoded a level-2 party and went green for weeks
+   * after the level-ups moved.
+   *
+   * "A fighter" is the correction. These read "the party" while only one build
+   * had ever been measured, and running the other four found the auto-player
+   * swinging `attacks[0]` — always the melee weapon — so a wizard walked into
+   * knife range holding Fire Bolt and took the rafters 17% of the time. Fixed
+   * in `takeAutomaticTurn`, which moved these numbers up too: the fighter now
+   * throws its handaxe while closing instead of arriving empty-handed.
+   *
+   * The spread that survives is real and is the thing to watch. A fighter takes
+   * this fight about twice as often as a life cleric (67% against 35%), and
+   * `tests/balance.test.ts` holds every class above a third.
    *
    * Those numbers are a floor rather than a forecast: the simulation plays the
    * hero automatically, so it never casts, drinks or spends an Action Surge.
    * A player holding the same character does better than 59%.
+   *
+   * The simulation is `tests/balance.test.ts` now, rather than a script that
+   * was run once and thrown away. It imports `rosterFor` directly, so adding a
+   * second monster here turns the sentence above red instead of leaving it
+   * quietly wrong — which is what happened to the note in the bestiary claiming
+   * the spider had no venom, for several commits after it grew one.
    */
   if (encounterId === 'rafters') {
     return [hero, squire, spawnMonster(GIANT_SPIDER, { id: 'giantSpider', position: SPIDER_START })]

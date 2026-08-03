@@ -113,7 +113,7 @@ export function CombatGrid({
 
   return (
     <div
-      className="flex aspect-square w-full max-w-sm flex-col gap-1 rounded-card border border-gold-border/40 bg-ink/70 p-2 shadow-[inset_0_0_30px_rgb(0_0_0/0.6)]"
+      className="texture-stone flex aspect-square w-full max-w-sm flex-col gap-1 rounded-card border-2 border-gold-border/50 bg-ink p-2 shadow-[inset_0_0_30px_rgb(0_0_0/0.6)]"
       role="grid"
       aria-label="Cellar floor, five squares by five. Use the arrow keys to read the board."
       onKeyDown={onKeyDown}
@@ -164,14 +164,14 @@ export function CombatGrid({
                   'relative flex flex-1 items-center justify-center rounded border text-lg transition-colors',
                   'focus-visible:ring-2 focus-visible:ring-parchment focus-visible:ring-offset-1 focus-visible:ring-offset-ink focus-visible:outline-none',
                   canStepHere
-                    ? 'cursor-pointer border-amber-torch/60 bg-amber-torch/10 shadow-[inset_0_0_12px_rgb(212_175_55/0.2)] hover:bg-amber-torch/25'
-                    : 'border-edge/60 bg-surface/40 shadow-[inset_0_1px_0_rgb(244_232_193/0.04)]',
+                    ? 'cursor-pointer border-amber-torch/60 bg-amber-torch/10 shadow-[inset_0_0_12px_color-mix(in_srgb,var(--color-amber-torch)_22%,transparent)] hover:bg-amber-torch/25'
+                    : 'border-edge/60 bg-surface/40 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-parchment)_6%,transparent)]',
                 )}
               >
                 {canStepHere && occupant === undefined && (
                   <span
                     aria-hidden
-                    className="animate-rune-pulse size-1.5 rounded-full bg-amber-torch shadow-[0_0_8px_rgb(212_175_55/0.8)]"
+                    className="animate-rune-pulse size-1.5 rounded-full bg-amber-torch shadow-[0_0_8px_color-mix(in_srgb,var(--color-amber-torch)_80%,transparent)]"
                   />
                 )}
                 {occupant !== undefined && (

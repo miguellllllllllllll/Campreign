@@ -115,7 +115,7 @@ function spellcastingFor(
   }
 }
 
-function uniqueSkills(...groups: readonly SkillName[][]): SkillName[] {
+function uniqueSkills(...groups: readonly (readonly SkillName[])[]): SkillName[] {
   return [...new Set(groups.flat())]
 }
 
@@ -182,6 +182,30 @@ function spellLimitsFor(answers: CreationDraft): SpellcastingLimits | undefined 
     abilityModifier(scores.wis),
     abilityModifier(scores.int),
   )
+}
+
+/**
+ * The two skills a background trains, or the two the player chose instead.
+ *
+ * Both or neither: a single pick would silently half-replace the pair, leaving a
+ * character trained in one skill they asked for and one they did not, with
+ * nothing on screen to explain which. The creation step cannot produce that —
+ * the second question is required once the first is answered — but this is a
+ * pure function and should not depend on the wizard being careful.
+ *
+ * Everything else the background gives is untouched. Its keepsake, its ideal and
+ * its bond are the life you had; these two are what it taught you, and only that
+ * is being swapped.
+ */
+export function trainedSkills(
+  answers: CreationDraft,
+  background: { skills: readonly SkillName[] },
+): readonly SkillName[] {
+  if (answers.trainingChoice !== 'custom') return background.skills
+  const { backgroundSkillA: first, backgroundSkillB: second } = answers
+  if (first === undefined || second === undefined) return background.skills
+  if (first === second) return background.skills
+  return [first, second]
 }
 
 /**
@@ -291,7 +315,7 @@ export function buildCharacter(
     equipmentChoice: loadout.id,
     loadoutName: loadout.label,
     proficiencyBonus: proficiencyBonus(level),
-    skillProficiencies: uniqueSkills(klass.skillProficiencies, background.skills),
+    skillProficiencies: uniqueSkills(klass.skillProficiencies, trainedSkills(answers, background)),
     savingThrows: [...klass.savingThrows],
     attacks: dedupeAttacks([
       ...loadout.attacks,
@@ -307,7 +331,21 @@ export function buildCharacter(
     ...(selection.preparedSpellIds.length === 0
       ? {}
       : { preparedSpells: [...selection.preparedSpellIds] }),
-    ...(answers.magicStyleId === undefined ? {} : { magicStyleId: answers.magicStyleId }),
+    /*
+     * Checked against the registry like its two neighbours below, which it was
+     * not until an id one letter wrong turned up in a test fixture.
+     *
+     * The other two drop an unknown id and leave a character who is simply
+     * plainer than intended. This one was stored unchecked, and an unknown
+     * style resolves to no cantrips and no prepared spells — so a wizard came
+     * out with a style printed on their sheet, no magic of any kind behind it,
+     * and nothing anywhere saying the two disagreed. A caster with nothing to
+     * cast is the inert-content failure this project keeps finding, arrived at
+     * from the other direction.
+     */
+    ...(answers.magicStyleId === undefined || magicStyleById(answers.magicStyleId) === undefined
+      ? {}
+      : { magicStyleId: answers.magicStyleId }),
     // Only written when advanced mode actually produced a pick, so a fast-track
     // character serialises exactly as it did before the feature existed.
     ...(subclassById(answers.subclassId) === undefined ? {} : { subclassId: answers.subclassId }),

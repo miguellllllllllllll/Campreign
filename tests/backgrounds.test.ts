@@ -2,12 +2,18 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   BACKGROUND_PRESETS,
+  CLASS_PRESETS,
   MAX_WRITTEN_FLAW,
   UNIVERSAL_FLAWS,
   flawsFor,
   personalityOf,
 } from '../src/lib/dnd/presets.ts'
-import { flawChoices, stepAnswered, stepsFor } from '../src/content/creationQuestions.ts'
+import {
+  flawChoices,
+  skillChoices,
+  stepAnswered,
+  stepsFor,
+} from '../src/content/creationQuestions.ts'
 import { buildCharacter } from '../src/lib/dnd/characterBuilder.ts'
 import { SKILL_LABELS } from '../src/lib/dnd/stats.ts'
 import type { BackgroundId, CreationAnswers } from '../src/types/character.ts'
@@ -266,4 +272,123 @@ test('a built character needs no picked flaw when one was written', () => {
   )
   assert.equal(hero.personality.flaw, 'I flinch at kindness and cover it with a joke.')
   assert.ok(hero.personality.ideal.length > 0, 'the background still supplies the rest')
+})
+
+// --- Training you chose yourself ------------------------------------------
+
+const soldier = {
+  classId: 'fighter',
+  raceId: 'human',
+  backgroundId: 'soldier',
+  flawId: 'orders',
+  equipmentChoice: 'defensive',
+  auraId: 'amber',
+} as CreationAnswers
+
+test('a background trains its usual two unless you say otherwise', () => {
+  const hero = buildCharacter(soldier, 'A', { id: 'a', now: 0 })
+  for (const skill of BACKGROUND_PRESETS.soldier.skills) {
+    assert.ok(hero.skillProficiencies.includes(skill))
+  }
+})
+
+test('choosing your own two replaces them, and nothing else', () => {
+  const hero = buildCharacter(
+    { ...soldier, trainingChoice: 'custom', backgroundSkillA: 'arcana', backgroundSkillB: 'medicine' },
+    'A',
+    { id: 'a', now: 0 },
+  )
+  assert.ok(hero.skillProficiencies.includes('arcana'))
+  assert.ok(hero.skillProficiencies.includes('medicine'))
+  /*
+   * Gone *unless the class also trains it*. A fighter is trained in athletics in
+   * its own right, and a soldier background happens to train it too — so
+   * swapping the background's pair cannot take it away. Asserting the flat
+   * absence failed here and the assertion was the thing that was wrong.
+   */
+  const classSkills: readonly string[] = CLASS_PRESETS.fighter.skillProficiencies
+  for (const skill of BACKGROUND_PRESETS.soldier.skills) {
+    if (classSkills.includes(skill)) continue
+    assert.equal(hero.skillProficiencies.includes(skill), false, `${skill} should be gone`)
+  }
+  // The life you had is untouched; only what it taught you changed.
+  assert.equal(hero.trinket.name, BACKGROUND_PRESETS.soldier.trinket.name)
+  assert.equal(hero.personality.ideal, BACKGROUND_PRESETS.soldier.ideal)
+  assert.equal(hero.personality.bond, BACKGROUND_PRESETS.soldier.bond)
+})
+
+test('a class keeps its own training either way', () => {
+  const custom = buildCharacter(
+    { ...soldier, trainingChoice: 'custom', backgroundSkillA: 'arcana', backgroundSkillB: 'medicine' },
+    'A',
+    { id: 'a', now: 0 },
+  )
+  const usual = buildCharacter(soldier, 'A', { id: 'a', now: 0 })
+  for (const skill of CLASS_PRESETS.fighter.skillProficiencies) {
+    assert.ok(custom.skillProficiencies.includes(skill), `${skill} is the class's, not the background's`)
+    assert.ok(usual.skillProficiencies.includes(skill))
+  }
+})
+
+test('half an answer changes nothing rather than half-swapping', () => {
+  /*
+   * The creation step cannot produce this — the second question is required
+   * once the first is answered — but the builder is a pure function and should
+   * not rely on the wizard being careful. A single pick would leave a character
+   * trained in one skill they asked for and one they did not, with nothing on
+   * screen to say which.
+   */
+  for (const partial of [
+    { backgroundSkillA: 'arcana' },
+    { backgroundSkillB: 'medicine' },
+    { backgroundSkillA: 'arcana', backgroundSkillB: 'arcana' },
+  ] as const) {
+    const hero = buildCharacter(
+      { ...soldier, trainingChoice: 'custom', ...partial },
+      'A',
+      { id: 'a', now: 0 },
+    )
+    for (const skill of BACKGROUND_PRESETS.soldier.skills) {
+      assert.ok(hero.skillProficiencies.includes(skill), `${JSON.stringify(partial)} half-swapped`)
+    }
+  }
+})
+
+test('the questions stay hidden until somebody asks for them', () => {
+  // An empty choice list is how a field hides itself, and how `stepAnswered`
+  // treats it as answered. So these cost a beginner nothing at all.
+  assert.deepEqual(skillChoices({ backgroundId: 'soldier' }, undefined), [])
+  assert.ok(skillChoices({ trainingChoice: 'custom' }, undefined).length > 10)
+})
+
+test('the second question cannot offer the skill you just took', () => {
+  const offered = skillChoices({ trainingChoice: 'custom' }, 'arcana')
+  assert.equal(offered.some((one) => one.id === 'arcana'), false, 'a choice you cannot make is worse than none')
+  assert.ok(offered.length > 10)
+})
+
+test('opting in makes both skills required, and opting out does not', () => {
+  const step = stepsFor({ classId: 'fighter' }).find((one) =>
+    one.fields.some((field) => field.id === 'backgroundSkillA'),
+  )
+  assert.ok(step !== undefined)
+  const base = { classId: 'fighter', backgroundId: 'soldier', flawId: 'orders' } as const
+
+  assert.equal(stepAnswered(step, base), true, 'the fast path is untouched')
+  assert.equal(
+    stepAnswered(step, { ...base, trainingChoice: 'custom' }),
+    false,
+    'asking to choose means you have to',
+  )
+  assert.equal(
+    stepAnswered(step, { ...base, trainingChoice: 'custom', backgroundSkillA: 'arcana' }),
+    false,
+    'one of two is not both',
+  )
+  assert.equal(
+    stepAnswered(step, {
+      ...base, trainingChoice: 'custom', backgroundSkillA: 'arcana', backgroundSkillB: 'medicine',
+    }),
+    true,
+  )
 })

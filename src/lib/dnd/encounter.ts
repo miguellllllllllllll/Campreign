@@ -36,7 +36,7 @@ import { availableReactions, canShield, resolveShield, resolveWardingFlare } fro
 import { castAreaSpell, castBlessing, castSpell } from './casting.ts'
 import { SPELLS_BY_ID } from '../../content/spells.ts'
 import { POTION_LABEL, POTION_OF_HEALING, hasPotion, resolveItemUseCost } from './items.ts'
-import { roll } from './dice.ts'
+import { roll, parseNotation } from './dice.ts'
 import { spendSlot } from './slots.ts'
 import { ABILITY_LABELS, abilityModifier, formatModifier } from './stats.ts'
 import { narrateAttackFully } from './narrate.ts'
@@ -1057,6 +1057,40 @@ function stepsToward(from: GridPosition, to: GridPosition): GridPosition[] {
  * deliberately simple — the tutorial is teaching the player's turn, not
  * showing off tactics.
  */
+/** Mean damage of a notation, used only to rank one attack against another. */
+function averageDamage(attack: AttackAction): number {
+  return parseNotation(attack.damage).reduce(
+    (total, term) =>
+      total
+      + term.sign
+        * (term.kind === 'flat' ? term.value : (term.count * (term.size + 1)) / 2),
+    0,
+  )
+}
+
+/**
+ * The attack this actor should be making, rather than whichever was listed first.
+ *
+ * `attacks[0]` is always the melee weapon, so an actor holding both a
+ * quarterstaff and Fire Bolt would walk into knife range to swing the stick.
+ * Nothing in the shipped game noticed — every monster and the squire carry
+ * exactly one attack — but the balance simulation drives the *hero*, and it was
+ * measuring every caster as a bad fighter. Reach is the variable that decides
+ * the second encounter on a five-square board, which is written down in the
+ * README with the numbers behind it.
+ *
+ * Already-in-range wins over bigger dice: standing still and shooting beats
+ * closing to swing, and a ranged attacker that walks toward its target throws
+ * away the only advantage it has.
+ */
+function chooseAttack(
+  actor: Combatant,
+  target: Combatant,
+): AttackAction | undefined {
+  const usable = [...actor.attacks].sort((a, b) => averageDamage(b) - averageDamage(a))
+  return usable.find((attack) => isInRange(actor, target, attack)) ?? usable[0]
+}
+
 /**
  * Plays one turn for a combatant nobody is steering.
  *
@@ -1071,8 +1105,9 @@ export function takeAutomaticTurn(
   const actor = activeCombatant(encounter)
   if (actor === undefined || !canAct(actor)) return { encounter, outcome: null }
 
-  const attack: AttackAction | undefined = actor.attacks[0]
   const target = nearestEnemy(encounter, actor)
+  const attack: AttackAction | undefined =
+    target === undefined ? undefined : chooseAttack(actor, target)
   if (attack === undefined || target === undefined) return { encounter, outcome: null }
 
   let current = encounter
