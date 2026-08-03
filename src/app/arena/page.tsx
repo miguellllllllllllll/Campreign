@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ArenaPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-10">
+    <main id="main" className="mx-auto w-full max-w-3xl px-5 pt-20 pb-10">
       <PracticeArena />
     </main>
   )

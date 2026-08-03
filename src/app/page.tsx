@@ -27,7 +27,7 @@ const PROMISES = [
 
 export default function Home() {
   return (
-    <main className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col gap-12 px-5 py-16">
+    <main id="main" className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col gap-12 px-5 py-16">
       {/* The torch itself: a warm bloom behind the title that breathes. */}
       <div
         aria-hidden

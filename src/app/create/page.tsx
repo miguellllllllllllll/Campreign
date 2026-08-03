@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function CreatePage() {
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-10">
+    <main id="main" className="mx-auto w-full max-w-6xl px-5 pt-20 pb-10">
       <CreatorWizard />
     </main>
   )

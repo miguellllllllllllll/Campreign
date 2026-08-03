@@ -8,6 +8,8 @@ import {
 } from 'next/font/google'
 import { PrintOverlay } from '../components/character/PrintOverlay.tsx'
 import { CharacterHudModal } from '../components/nav/CharacterHudModal.tsx'
+import { HistoryNav } from '../components/nav/HistoryNav.tsx'
+import { ScrollToTop } from '../components/ui/scroll-to-top.tsx'
 import { ReducedMotionProvider } from '../components/ui/reduced-motion.tsx'
 import { SoundToggle } from '../components/ui/sound-toggle.tsx'
 import './globals.css'
@@ -88,9 +90,22 @@ export default function RootLayout({
               aria-hidden
               className="bg-motes animate-ember-drift pointer-events-none fixed inset-0 -z-10 opacity-60"
             />
+            {/*
+              Visible only once focused. The fixed controls below sit ahead of
+              the page in the tab order, so without this a keyboard reader pays
+              for them on every route before reaching a word of content.
+            */}
+            <a
+              href="#main"
+              className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-1/2 focus:z-50 focus:-translate-x-1/2 focus:rounded-lg focus:border focus:border-gold-border focus:bg-surface focus:px-4 focus:py-2 focus:text-parchment"
+            >
+              Skip to main content
+            </a>
+            <HistoryNav />
             <SoundToggle />
             <CharacterHudModal />
             {children}
+            <ScrollToTop />
           </div>
           <PrintOverlay />
         </ReducedMotionProvider>

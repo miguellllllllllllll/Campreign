@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function TutorialPage() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-5 py-10">
+    <main id="main" className="mx-auto w-full max-w-5xl px-5 pt-20 pb-10">
       <TutorialRunner />
     </main>
   )
