@@ -32,6 +32,26 @@ import type { TutorialStep } from '../../src/types/tutorial.ts'
  * `takeAutomaticTurn` drives both sides, which is not a shortcut — it is the
  * documented methodology. The hero never casts, drinks, or spends a feature, so
  * every figure this produces is a floor rather than a forecast.
+ *
+ * WHAT REACHES THESE NUMBERS BY ITSELF, AND WHAT DOES NOT
+ *
+ * Worth knowing before you change something and wonder whether to re-read them.
+ * The harness pulls the roster from `rosterFor` in the tutorial store and the
+ * levels from the step chain, so all of this flows in on its own:
+ *
+ *   - monster stats, and which monsters are in a fight
+ *   - roster composition, including the squire
+ *   - where the level-ups sit, and therefore what level each fight is at
+ *   - movement, targeting and attack resolution
+ *
+ * Spell and style content does not. `BUILDS` in `balance.test.ts` names classes
+ * and styles explicitly, so adding a spell to a preset, or a style, changes what
+ * a caster can do without changing what is measured until somebody re-reads it.
+ *
+ * That split is not theoretical: both times this caught the other rules session
+ * it was because they had changed something the tutorial owns — a monster's
+ * speed, and where a level-up sits — and neither time had they thought to look.
+ * Both times it caught me it was content, and both times I had to go and look.
  */
 
 /** Reactions are declined: the auto-played hero has nobody to press the button. */
